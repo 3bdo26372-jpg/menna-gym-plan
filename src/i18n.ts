@@ -1,0 +1,151 @@
+export type Language = 'en' | 'ar'
+
+export const ui = {
+  en: {
+    overview: 'Overview', nutrition: 'Nutrition', progress: 'Progress', library: 'Library', mindset: 'Mindset',
+    day: 'Day', settings: 'Settings', language: 'Language', close: 'Close', menu: 'Menu',
+    plan: 'My plan', exercises: 'exercises', prescribed: 'prescribed exercises', focus: 'Today’s focus',
+    sets: 'Sets & reps', rest: 'Rest', technique: 'Form cue', equipment: 'Equipment',
+    openDemo: 'Open GIF demonstration', closeDemo: 'Close demonstration', all: 'All', lower: 'Lower body', upper: 'Upper body', core: 'Core',
+    heroKicker: 'Your personalized strength era', heroTitleA: 'Strong looks', heroTitleB: 'beautiful', heroTitleC: 'on you.',
+    heroCopy: 'A balanced path made for Menna—to feel athletic, energized, and more confident every week.',
+    viewPlan: 'View my plan', start: 'Start with Day A', welcome: 'Hi, Menna!',
+    weekly: 'Your weekly rhythm', weeklyTitle: 'Three days. Full body. Real progress.',
+    weeklyCopy: 'Train on non-consecutive days—Monday, Wednesday, Friday works beautifully.',
+    fuel: 'Fuel your strength', fuelTitle: 'Eat well. Train well. Feel well.',
+    progressTitle: 'Track how strong feels.', libraryTitle: 'Your exercise library.', mindsetTitle: 'You are building.',
+    backHome: 'Back to overview', next: 'Next', display: 'Display & preferences', english: 'English', arabic: 'العربية',
+  },
+  ar: {
+    overview: 'الرئيسية', nutrition: 'التغذية', progress: 'التقدم', library: 'مكتبة التمارين', mindset: 'التحفيز',
+    day: 'اليوم', settings: 'الإعدادات', language: 'اللغة', close: 'إغلاق', menu: 'القائمة',
+    plan: 'خطتي', exercises: 'تمارين', prescribed: 'تمارين محددة', focus: 'تركيز اليوم',
+    sets: 'المجموعات والتكرارات', rest: 'الراحة', technique: 'إرشادات الأداء', equipment: 'المعدات',
+    openDemo: 'فتح عرض الحركة', closeDemo: 'إغلاق العرض', all: 'الكل', lower: 'الجزء السفلي', upper: 'الجزء العلوي', core: 'البطن',
+    heroKicker: 'بداية رحلتك مع القوة', heroTitleA: 'القوة تبدو', heroTitleB: 'جميلة', heroTitleC: 'عليكِ.',
+    heroCopy: 'خطة متوازنة ومناسبة للمبتدئات، مصممة خصيصاً لمِنّة لتشعر بالقوة والنشاط والثقة كل أسبوع.',
+    viewPlan: 'عرض خطتي', start: 'ابدئي باليوم A', welcome: 'مرحباً مِنّة!',
+    weekly: 'إيقاعك الأسبوعي', weeklyTitle: 'ثلاثة أيام. جسم كامل. تقدم حقيقي.',
+    weeklyCopy: 'تمرني في أيام غير متتالية—الاثنين والأربعاء والجمعة اختيار ممتاز.',
+    fuel: 'غذّي قوتك', fuelTitle: 'كلي جيداً. تمرني جيداً. اشعري بالراحة.',
+    progressTitle: 'تابعي شعور القوة.', libraryTitle: 'مكتبة تمارينك.', mindsetTitle: 'أنتِ تبنين قوتك.',
+    backHome: 'العودة للرئيسية', next: 'التالي', display: 'العرض والتفضيلات', english: 'English', arabic: 'العربية',
+  },
+} as const
+
+export const exerciseArabic: Record<string, string> = {
+  squat:'سكوات', chestPress:'ضغط الصدر', pulldown:'سحب أمامي', hipThrust:'دفع الورك', lateralRaise:'رفع جانبي للكتف',
+  bicepsCurl:'بايسبس كيرل', plank:'بلانك', rdl:'رفعة رومانية', seatedRow:'سحب جالس', shoulderPress:'ضغط الكتف',
+  walkingLunge:'لانجز المشي', tricepsPushdown:'دفع الترايسبس', calfRaise:'رفع السمانة', legRaise:'رفع الرجلين',
+  legPress:'ضغط الأرجل', inclinePress:'ضغط صدر مائل', rowOrPulldown:'سحب جالس أو أمامي', rearDeltFly:'رفرفة كتف خلفي',
+  hammerCurl:'هامر كيرل', overheadTri:'تمديد ترايسبس فوق الرأس', deadBug:'ديد باغ',
+}
+
+export const dayArabic: Record<'A'|'B'|'C', { label:string; focus:string }> = {
+  A:{label:'الجسم كامل A',focus:'الأساس والتحكم'},
+  B:{label:'الجسم كامل B',focus:'السحب والتوازن'},
+  C:{label:'الجسم كامل C',focus:'القوة والثقة'},
+}
+
+export const exerciseDetailsArabic: Record<string, { muscles:string; equipment:string; cue:string }> = {
+  squat:{muscles:'الأفخاذ الأمامية · المؤخرة · البطن',equipment:'دمبل أو وزن الجسم',cue:'قفي باستقامة وثبّتي البطن، انزلي بالوركين بين الكعبين، ثم ادفعي الأرض بعيداً. اجعلي الركبتين في اتجاه أصابع القدم.'},
+  chestPress:{muscles:'الصدر · الترايسبس · الكتف الأمامي',equipment:'جهاز أو دمبل',cue:'ثبّتي الكتفين للخلف والأسفل. انزلي ببطء، حافظي على استقامة الرسغ، وادفعي دون قفل الكوع بقوة.'},
+  pulldown:{muscles:'عضلات الظهر الجانبية · أعلى الظهر · البايسبس',equipment:'جهاز الكابل',cue:'اجلسي باستقامة واسحبي الكوعين إلى أسفل. توقفي قرب أعلى الصدر وتجنبي التأرجح أو السحب خلف الرقبة.'},
+  hipThrust:{muscles:'المؤخرة · الفخذ الخلفي',equipment:'مقعد أو جهاز',cue:'اخفضي الذقن وثبّتي القفص الصدري. ادفعي بالكعبين واعصري عضلات المؤخرة في الأعلى دون تقويس أسفل الظهر.'},
+  lateralRaise:{muscles:'الكتف الجانبي',equipment:'دمبل خفيف',cue:'استخدمي وزناً خفيفاً. ارفعي بالكوعين حتى مستوى الكتف ثم انزلي ببطء دون تأرجح.'},
+  bicepsCurl:{muscles:'البايسبس · الساعد',equipment:'دمبل',cue:'ثبّتي الكوعين بجانب الجسم. ارفعي الوزن دون الميل للخلف، توقفي لحظة، ثم انزلي ببطء.'},
+  plank:{muscles:'البطن · المؤخرة · الكتف',equipment:'حصيرة',cue:'حافظي على خط مستقيم من الرأس إلى الكعبين. شدي المؤخرة وتنفسي طبيعياً وتوقفي إذا بدأ الورك بالهبوط.'},
+  rdl:{muscles:'الفخذ الخلفي · المؤخرة · الظهر',equipment:'دمبل أو بار',cue:'اثني الركبتين قليلاً وادفعي الوركين للخلف مع إبقاء الوزن قريباً من الساقين. قفي عند الشعور بتمدد قوي في الفخذ الخلفي.'},
+  seatedRow:{muscles:'منتصف الظهر · الظهر الجانبي · البايسبس',equipment:'جهاز الكابل',cue:'اجلسي باستقامة واسحبي المقبض نحو أسفل الأضلاع. اجمعي لوحي الكتف برفق ثم عودي دون تقويس الظهر.'},
+  shoulderPress:{muscles:'الكتف · الترايسبس',equipment:'جهاز أو دمبل',cue:'ثبّتي البطن واجعلي الكوعين للأمام قليلاً. ادفعي الوزن للأعلى بسلاسة دون إمالة الجسم للخلف.'},
+  walkingLunge:{muscles:'الأفخاذ الأمامية · المؤخرة · الفخذ الخلفي',equipment:'وزن الجسم أو دمبل',cue:'خذي خطوة مريحة واخفضي الركبتين، ثم ادفعي بكامل القدم الأمامية. استخدمي دعماً إذا احتجتِ للتوازن.'},
+  tricepsPushdown:{muscles:'الترايسبس',equipment:'جهاز الكابل',cue:'ثبّتي الكوعين بجانب الجسم. افردي الذراعين بالكامل وافتحي الحبل ثم عودي دون تحريك الكتفين للأمام.'},
+  calfRaise:{muscles:'السمانة',equipment:'جهاز أو درجة',cue:'استخدمي دعماً للتوازن. انزلي حتى تمدد مريح ثم ارتفعي لأقصى مدى وتوقفي لحظة دون ارتداد.'},
+  legRaise:{muscles:'البطن · مثنيات الورك',equipment:'حصيرة',cue:'اضغطي أسفل الظهر نحو الحصيرة. اخفضي الرجلين فقط للمدى الذي يسمح ببقاء الظهر ثابتاً.'},
+  legPress:{muscles:'الأفخاذ الأمامية · المؤخرة · الفخذ الخلفي',equipment:'جهاز ضغط الأرجل',cue:'ضعي القدمين بعرض الكتفين. انزلي بمدى مريح مع بقاء الورك على المقعد، ثم ادفعي بكامل القدم.'},
+  inclinePress:{muscles:'أعلى الصدر · الترايسبس · الكتف الأمامي',equipment:'جهاز أو دمبل',cue:'استخدمي ميلاً بسيطاً وثبّتي لوحي الكتف. انزلي ببطء ثم ادفعي في نفس المسار.'},
+  rowOrPulldown:{muscles:'الظهر · الظهر الجانبي · البايسبس',equipment:'جهاز الكابل',cue:'اختاري الحركة الأكثر راحة اليوم. ثبّتي الجذع وفكري في تحريك الكوعين بدلاً من اليدين.'},
+  rearDeltFly:{muscles:'الكتف الخلفي · أعلى الظهر',equipment:'جهاز أو دمبل',cue:'استخدمي وزناً خفيفاً مع ثني بسيط للكوع. افتحي الذراعين دون رفع الكتفين ثم عودي بتحكم.'},
+  hammerCurl:{muscles:'البايسبس · العضلة العضدية · الساعد',equipment:'دمبل',cue:'اجعلي راحتي اليدين للداخل وثبّتي الكوعين. ارفعي بسلاسة وتوقفي لحظة ثم انزلي بالكامل دون تأرجح.'},
+  overheadTri:{muscles:'الترايسبس',equipment:'دمبل أو كابل',cue:'ثبّتي القفص الصدري ووجهي الكوعين للأمام. اخفضي الوزن خلف الرأس لتمدد مريح ثم افردي الذراعين.'},
+  deadBug:{muscles:'عضلات البطن العميقة · مثنيات الورك',equipment:'حصيرة',cue:'اضغطي أسفل الظهر نحو الحصيرة. مدّي الذراع والرجل المتعاكسين ببطء وقللي المدى إذا ارتفع الظهر.'},
+}
+
+export const mealsArabic = [
+  {time:'الصباح',title:'الإفطار',items:['البيض','خبز القمح الكامل','الخضروات']},
+  {time:'وجبة خفيفة',title:'وجبة خفيفة',items:['الفاكهة','الزبادي اليوناني']},
+  {time:'منتصف اليوم',title:'الغداء',items:['الدجاج أو السمك أو اللحم قليل الدهون','الأرز أو البطاطس','سلطة كبيرة']},
+  {time:'قبل التمرين',title:'قبل التمرين',items:['موزة أو تمر']},
+  {time:'المساء',title:'العشاء',items:['زبادي يوناني أو جبن قريش أو تونة','الخضروات']},
+]
+
+export const nutritionGuide = {
+  en: {
+    eyebrow:'Nutrition & wellness', title:'Fuel strength. Support your gut.',
+    intro:'Practical guidance for training, recovery, and a sensitive digestive system—without rigid meal rules.',
+    flexible:'Flexible daily guide', flexibleNote:'A reference, not a restriction', protein:'Protein guide', proteinNote:'Spread across foods you tolerate',
+    foodsTitle:'Foods to build around', foodsIntro:'Mix and match based on appetite, training, and personal tolerance.',
+    foodGroups:[
+      {title:'Protein sources',items:['Chicken','Fish','Eggs','Greek yogurt (if tolerated)','Cottage cheese (if tolerated)','Lean meat']},
+      {title:'Smart carbs',items:['Rice','Potatoes','Oats','Whole grains (if tolerated)']},
+      {title:'Healthy fats',items:['Olive oil','Nuts','Nut butter','Avocado']},
+      {title:'Digestive-friendly choices',items:['Yogurt (if tolerated)','Bananas','Oats','Rice','Cooked vegetables']},
+    ],
+    digestionTitle:'Digestive Health Tips', digestionIntro:'Small habits can make meals feel calmer and more comfortable.',
+    digestionTips:['Eat slowly and chew thoroughly.','Avoid overeating in one sitting.','Monitor foods that trigger symptoms.','Stay hydrated throughout the day.','Prefer cooked vegetables if raw vegetables cause discomfort.','Reduce highly processed foods.','Limit excessive spicy foods if they trigger symptoms.','Spread meals throughout the day.','Prioritize sleep and stress management.'],
+    timingTitle:'Fuel around training',
+    timing:[
+      {title:'Before training',text:'Choose a familiar, easy-to-digest carb such as a banana, dates, oats, rice, or potatoes. Keep heavy, fatty meals away from training if they feel uncomfortable.'},
+      {title:'After training',text:'Pair a protein source with a tolerated carbohydrate and fluids. Keep it simple: recovery matters more than a “perfect” meal.'},
+      {title:'Snack ideas',text:'Fruit, Greek yogurt if tolerated, oats, toast with nut butter, eggs, or a small rice-based snack.'},
+    ],
+    limitTitle:'Foods to enjoy more mindfully', limitIntro:'These foods are not “bad.” Simply notice frequency, portion, and how your body responds.',
+    limitItems:['Excessive fried foods','Excessive sugary drinks','Highly processed foods','Foods that personally trigger IBS symptoms','Excessive fast food'],
+    hydrationTitle:'Hydration that feels effortless', hydrationTarget:'2–2.5 L daily', hydrationTips:['Sip regularly instead of drinking a lot at once.','Keep a bottle visible during the day.','Drink a little more around training and hot weather.'],
+    lifestyleTitle:'Recovery & lifestyle',
+    lifestyle:[
+      {title:'Water',value:'2–2.5 L',text:'Supports training, digestion, and normal hydration.'},
+      {title:'Sleep',value:'7–9 hrs',text:'Supports recovery, energy, appetite, and stress regulation.'},
+      {title:'Recovery',value:'Stay gentle',text:'Rest, light movement, and stress management can support both training and digestion.'},
+    ],
+    cardioTitle:'Finish with easy cardio', cardioLead:'After every workout, perform 10–15 minutes of light to moderate cardio.',
+    cardioExamples:['Incline walking','Treadmill walking','Stationary bike','Elliptical'],
+    cardioBenefits:['Supports active recovery','Adds gentle calorie expenditure','Builds cardiovascular health'],
+    cardioNote:'Keep the effort comfortable—you should still be able to talk. Reduce or skip it if you feel unwell.',
+    coachNote:'IBS triggers are personal. Introduce changes gradually and keep a simple food-and-symptom note. If symptoms persist or you need to avoid many foods, speak with a clinician or registered dietitian.',
+  },
+  ar: {
+    eyebrow:'التغذية والعافية', title:'غذّي قوتك واهتمي براحة جهازك الهضمي.',
+    intro:'إرشادات عملية للتمرين والاستشفاء والقولون الحساس، بدون جدول صارم أو قواعد مقيدة.',
+    flexible:'دليل يومي مرن', flexibleNote:'مرجع يساعدك وليس قيداً', protein:'دليل البروتين', proteinNote:'وزّعيه بين الأطعمة التي تناسبك',
+    foodsTitle:'اختيارات نبني حولها يومك', foodsIntro:'اختاري وبدّلي حسب شهيتك وتمرينك ومدى تحمّل جسمك.',
+    foodGroups:[
+      {title:'مصادر البروتين',items:['الدجاج','السمك','البيض','الزبادي اليوناني إذا كان مناسباً','الجبن القريش إذا كان مناسباً','اللحم قليل الدهون']},
+      {title:'كربوهيدرات ذكية',items:['الأرز','البطاطس','الشوفان','الحبوب الكاملة إذا كانت مناسبة']},
+      {title:'دهون صحية',items:['زيت الزيتون','المكسرات','زبدة المكسرات','الأفوكادو']},
+      {title:'اختيارات لطيفة على الهضم',items:['الزبادي إذا كان مناسباً','الموز','الشوفان','الأرز','الخضروات المطهية']},
+    ],
+    digestionTitle:'نصائح لصحة الهضم', digestionIntro:'عادات صغيرة تجعل الوجبات أهدأ وأكثر راحة.',
+    digestionTips:['كلي ببطء وامضغي الطعام جيداً.','تجنبي الإفراط في الأكل في وجبة واحدة.','راقبي الأطعمة التي تحفز الأعراض لديك.','حافظي على شرب الماء طوال اليوم.','اختاري الخضروات المطهية إذا كانت النيئة تسبب لكِ انزعاجاً.','قللي الأطعمة عالية التصنيع.','قللي الأطعمة شديدة التوابل إذا كانت تحفز الأعراض.','وزّعي الوجبات على مدار اليوم.','أعطي النوم وإدارة التوتر أولوية.'],
+    timingTitle:'تغذية حول التمرين',
+    timing:[
+      {title:'قبل التمرين',text:'اختاري كربوهيدرات معتادة وسهلة الهضم مثل الموز أو التمر أو الشوفان أو الأرز أو البطاطس. أبعدي الوجبات الثقيلة والدسمة عن وقت التمرين إذا كانت تزعجك.'},
+      {title:'بعد التمرين',text:'اجمعي بين مصدر بروتين وكربوهيدرات مناسبة لكِ مع السوائل. البساطة والاستمرارية أهم من الوجبة “المثالية”.'},
+      {title:'أفكار لوجبات خفيفة',text:'فاكهة، زبادي يوناني إذا كان مناسباً، شوفان، خبز مع زبدة مكسرات، بيض، أو وجبة صغيرة أساسها الأرز.'},
+    ],
+    limitTitle:'أطعمة نتعامل معها بوعي', limitIntro:'هذه الأطعمة ليست “سيئة”. راقبي فقط التكرار والكمية واستجابة جسمك.',
+    limitItems:['الإفراط في الأطعمة المقلية','الإفراط في المشروبات السكرية','الأطعمة عالية التصنيع','الأطعمة التي تحفز أعراض القولون لديكِ شخصياً','الإفراط في الوجبات السريعة'],
+    hydrationTitle:'ترطيب بسيط خلال اليوم', hydrationTarget:'٢–٢٫٥ لتر يومياً', hydrationTips:['اشربي رشفات منتظمة بدلاً من كمية كبيرة مرة واحدة.','ضعي زجاجة الماء أمامك خلال اليوم.','زيدي الماء قليلاً مع التمرين والجو الحار.'],
+    lifestyleTitle:'الاستشفاء ونمط الحياة',
+    lifestyle:[
+      {title:'الماء',value:'٢–٢٫٥ لتر',text:'يدعم التمرين والهضم والترطيب الطبيعي.'},
+      {title:'النوم',value:'٧–٩ ساعات',text:'يدعم الاستشفاء والطاقة والشهية وتنظيم التوتر.'},
+      {title:'الاستشفاء',value:'بهدوء',text:'الراحة والحركة الخفيفة وإدارة التوتر تدعم التمرين والهضم معاً.'},
+    ],
+    cardioTitle:'أنهي التمرين بكارديو خفيف', cardioLead:'بعد كل تمرين، مارسي ١٠–١٥ دقيقة من الكارديو الخفيف إلى المتوسط.',
+    cardioExamples:['المشي على ميل','المشي على السير','الدراجة الثابتة','جهاز الإليبتكال'],
+    cardioBenefits:['يدعم الاستشفاء النشط','يضيف صرفاً لطيفاً للسعرات','يدعم صحة القلب واللياقة'],
+    cardioNote:'اجعلي الشدة مريحة بحيث يمكنك الكلام. قللي المدة أو تخطيها إذا شعرتِ بتعب غير طبيعي.',
+    coachNote:'محفزات القولون تختلف من شخص لآخر. أدخلي التغييرات تدريجياً وسجلي الطعام والأعراض ببساطة. إذا استمرت الأعراض أو احتجتِ لمنع أطعمة كثيرة، راجعي طبيباً أو أخصائي تغذية معتمداً.',
+  },
+} as const
