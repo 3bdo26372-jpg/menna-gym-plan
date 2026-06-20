@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Activity, Apple, BedDouble, Bike, Check, CircleAlert, Clock3, Droplets, Dumbbell, Flame, Heart, HeartPulse, Leaf, Maximize2, MoonStar, ShieldCheck, Soup, Target, Wheat, X } from 'lucide-react'
+import { Activity, Apple, BedDouble, Bike, Check, CircleAlert, Clock3, Droplets, Dumbbell, Flame, Heart, HeartPulse, Leaf, Maximize2, MoonStar, Soup, Target, Wheat, X } from 'lucide-react'
 import { exercises, workoutDays, type Exercise } from './data'
-import { dayArabic, exerciseArabic, exerciseDetailsArabic, nutritionGuide, ui, type Language } from './i18n'
+import { dayArabic, exerciseArabic, exerciseDetailsArabic, recompositionNutritionGuide as nutritionGuide, ui, type Language } from './i18n'
 
 type Page = 'A' | 'B' | 'C' | 'nutrition'
 const pages: Page[] = ['A','B','C','nutrition']
@@ -37,34 +37,32 @@ function ExerciseCard({ exercise,index,language,onOpen }: { exercise:Exercise; i
 function NutritionPage({ language }: { language:Language }) {
   const ar=language==='ar',g=nutritionGuide[language]
   const foodIcons=[Dumbbell,Wheat,Leaf,Soup]
-  const timingIcons=[Flame,HeartPulse,Apple]
+  const mealIcons=[Apple,Wheat,Soup,Flame,HeartPulse,MoonStar]
   const lifestyleIcons=[Droplets,BedDouble,MoonStar]
   return <section className="section focused-page nutrition-page-view">
     <SectionTitle eyebrow={g.eyebrow} title={g.title} copy={g.intro}/>
 
-    <div className="nutrition-summary">
-      <article className="guide-target-card"><div className="guide-card-icon"><Flame/></div><div><span>{g.flexible}</span><strong dir="ltr">{ar?'١٬٨٠٠–٢٬٠٠٠':'1,800–2,000'} <small>{ar?'سعرة':'kcal'}</small></strong><p>{g.flexibleNote}</p></div></article>
-      <article className="guide-target-card"><div className="guide-card-icon protein"><Dumbbell/></div><div><span>{g.protein}</span><strong dir="ltr">{ar?'١٠٠–١٢٠ غ':'100–120 g'}</strong><p>{g.proteinNote}</p></div></article>
-      <aside className="coach-note"><ShieldCheck/><p>{g.coachNote}</p></aside>
+    <div className="nutrition-summary progression-grid">
+      {g.progression.map((step,index)=><article className="guide-target-card" key={step.label}><div className={`guide-card-icon ${index===1?'protein':''}`}>{index===0?<Leaf/>:index===1?<Flame/>:<Dumbbell/>}</div><div><span>{step.label}</span><strong dir="ltr">{step.calories}</strong><p>{step.macros}</p><p>{step.meals} · {step.note}</p></div></article>)}
     </div>
 
     <div className="nutrition-content-section">
-      <SectionTitle eyebrow="01" title={g.foodsTitle} copy={g.foodsIntro}/>
+      <SectionTitle eyebrow="01" title={g.mealsTitle} copy={g.mealsIntro}/>
+      <div className="food-guide-grid meal-options-grid">{g.meals.map((meal,i)=>{const Icon=mealIcons[i];return <article key={meal.title}><div className="food-card-icon"><Icon/></div><span className="meal-time">{meal.time}</span><h3>{meal.title}</h3><strong className="meal-choice-note">{g.chooseOne}</strong><ul>{meal.options.map(option=><li key={option}><Check/>{option}</li>)}</ul></article>})}</div>
+    </div>
+
+    <div className="nutrition-content-section">
+      <SectionTitle eyebrow="02" title={g.foodsTitle} copy={g.foodsIntro}/>
       <div className="food-guide-grid">{g.foodGroups.map((group,i)=>{const Icon=foodIcons[i];return <article key={group.title}><div className="food-card-icon"><Icon/></div><h3>{group.title}</h3><ul>{group.items.map(item=><li key={item}><Check/>{item}</li>)}</ul></article>})}</div>
     </div>
 
-    <div className="nutrition-content-section">
-      <SectionTitle eyebrow="02" title={g.timingTitle} copy={ar?'اختيارات عملية تدعم الطاقة والاستشفاء بدون تعقيد.':'Practical choices that support energy and recovery without overcomplicating food.'}/>
-      <div className="timing-guide-grid">{g.timing.map((item,i)=>{const Icon=timingIcons[i];return <article key={item.title}><Icon/><h3>{item.title}</h3><p>{item.text}</p></article>})}</div>
-    </div>
-
     <div className="nutrition-content-section digestive-section">
-      <div className="digestive-panel"><div className="digestive-heading"><div className="digestive-icon"><HeartPulse/></div><div><span>03</span><h2>{g.digestionTitle}</h2><p>{g.digestionIntro}</p></div></div><div className="digestive-tips">{g.digestionTips.map(tip=><div key={tip}><Check/><span>{tip}</span></div>)}</div></div>
-      <aside className="limit-panel"><div><CircleAlert/><span>{g.limitTitle}</span></div><p>{g.limitIntro}</p><ul>{g.limitItems.map(item=><li key={item}>{item}</li>)}</ul></aside>
+      <div className="digestive-panel"><div className="digestive-heading"><div className="digestive-icon"><HeartPulse/></div><div><span>03</span><h2>{g.tipsTitle}</h2><p>{g.tipsIntro}</p></div></div><div className="digestive-tips">{g.practicalTips.map(tip=><div key={tip}><Check/><span>{tip}</span></div>)}</div></div>
+      <aside className="limit-panel"><div><CircleAlert/><span>{g.dailyNotesTitle}</span></div><p>{g.dailyNotesIntro}</p><ul>{g.dailyNotes.map(item=><li key={item}>{item}</li>)}</ul></aside>
     </div>
 
     <div className="nutrition-content-section">
-      <SectionTitle eyebrow="04" title={g.hydrationTitle} copy={ar?'ثبّتي عادة الشرب على مدار اليوم بدلاً من مطاردة رقم في آخره.':'Build a steady drinking habit instead of chasing the full target at the end of the day.'}/>
+      <SectionTitle eyebrow="04" title={g.hydrationTitle} copy={g.hydrationIntro}/>
       <div className="hydration-layout"><article className="hydration-feature"><Droplets/><span>{g.hydrationTarget}</span><ul>{g.hydrationTips.map(tip=><li key={tip}><Check/>{tip}</li>)}</ul></article><div className="lifestyle-guide"><h3>{g.lifestyleTitle}</h3><div>{g.lifestyle.map((item,i)=>{const Icon=lifestyleIcons[i];return <article key={item.title}><Icon/><div><span>{item.title}</span><strong>{item.value}</strong><p>{item.text}</p></div></article>})}</div></div></div>
     </div>
 
@@ -98,7 +96,7 @@ function App() {
     <AnimatePresence mode="wait"><motion.main key={`${page}-${language}`} className="page-stage" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:.26}}>
       {day&&<section className="section focused-page workout-section"><div className="focused-heading"><SectionTitle eyebrow={`${t.day} ${day.id}`} title={ar?dayArabic[day.id].label:day.label} copy={ar?dayArabic[day.id].focus:day.focus}/><div className="workout-count"><strong>{ar?arabicNumbers(String(day.exerciseIds.length)):day.exerciseIds.length}</strong><span>{t.exercises}</span></div></div><div className="exercise-grid">{day.exerciseIds.map((id,i)=><ExerciseCard key={`${day.id}-${id}`} exercise={exercises[id]} index={i} language={language} onOpen={setPreview}/>)}</div><div className="training-note"><Dumbbell/><div><strong>{ar?'اتركي بعض الطاقة في الاحتياط.':'Leave a little in the tank.'}</strong><p>{ar?'اختاري وزناً يسمح لك بإكمال كل التكرارات المحددة بأداء صحيح.':'Choose a weight that lets you finish every prescribed rep with clean form.'}</p></div></div></section>}
 
-      {page==='nutrition'&&<NutritionPage language={language}/>} 
+      {page==='nutrition'&&<NutritionPage language={language}/>}
     </motion.main></AnimatePresence>
 
     <AnimatePresence>{preview&&<motion.div className="image-lightbox" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setPreview(null)}><motion.div className="lightbox-dialog" initial={{scale:.96,y:15}} animate={{scale:1,y:0}} exit={{scale:.97}} role="dialog" aria-modal="true" aria-label={ar?exerciseArabic[preview.id]:preview.name} onClick={e=>e.stopPropagation()}><button className="lightbox-close" onClick={()=>setPreview(null)} aria-label={t.closeDemo}><X/></button>{preview.gif?<img src={`${import.meta.env.BASE_URL}${preview.gif.replace(/^\//,'')}`} alt={ar?`عرض حركة ${exerciseArabic[preview.id]}`:`${preview.name} movement demonstration`}/>:<div className="gif-placeholder"><Dumbbell/><span>{ar?'العرض قريباً':'GIF demo coming soon'}</span></div>}<div className="lightbox-caption"><div><span>{ar?exerciseDetailsArabic[preview.id].muscles:preview.muscles}</span><strong>{ar?exerciseArabic[preview.id]:preview.name}</strong></div><div><span>{t.sets}</span><strong>{ar?arabicNumbers(preview.sets):preview.sets}</strong></div><div><span>{t.rest}</span><strong>{ar?arabicNumbers(preview.rest):preview.rest}</strong></div></div></motion.div></motion.div>}</AnimatePresence>
