@@ -33,12 +33,95 @@ export const ui = {
   },
 } as const
 
+export const recompositionNutritionGuide = {
+  en: {
+    eyebrow:"Menna's nutrition plan", title:'Gentle fat loss. Steady energy. A calmer gut.',
+    intro:'A progressive, high-protein plan for sustainable body recomposition. Choose the options that feel best for your digestion—this is a flexible guide, not an extreme diet.',
+    progression:[
+      {label:'Stage 01 · Days 1–14',calories:'1,850 kcal',macros:'115 g protein · 215 g carbs · 59 g fat',meals:'4–5 meals',note:'Build consistency and note personal IBS triggers'},
+      {label:'Stage 02 · Days 15–30',calories:'1,750 kcal',macros:'120 g protein · 190 g carbs · 57 g fat',meals:'5 meals',note:'Use the pre-workout meal on training days'},
+      {label:'Stage 03 · Day 31+',calories:'1,700 kcal',macros:'120 g protein · 180 g carbs · 55 g fat',meals:'5 meals',note:'Maintain while energy, strength, and digestion stay steady'},
+    ],
+    mealsTitle:'Daily meals with flexible options', mealsIntro:'Choose one option for each meal you use that day. Portions are practical starting points and can be adjusted for hunger, training, and tolerance.', chooseOne:'Choose 1 of the 3 options',
+    meals:[
+      {time:'07:00–09:00',title:'Breakfast',options:['2 eggs + 150 g egg whites + 40 g oats + banana','200 g lactose-free Greek yogurt + 40 g oats + strawberries + 1 tsp peanut butter','Turkey slices + 2 eggs + small potato + cooked zucchini']},
+      {time:'10:30–11:30',title:'Morning snack',options:['Lactose-free yogurt + banana','80 g turkey + 2 rice cakes','Boiled egg + orange + small handful of walnuts']},
+      {time:'14:00–16:00',title:'Lunch',options:['140 g lean chicken + 1 cup rice + cooked carrots and zucchini + 1 tsp olive oil','160 g fish + medium potato + cooked green beans','140 g turkey + rice + cooked spinach or carrots']},
+      {time:'60–90 min before training',title:'Pre-workout meal',options:['Banana + lactose-free yogurt','30–40 g oats with lactose-free milk and cinnamon','2 rice cakes + turkey slices']},
+      {time:'After training or afternoon',title:'Afternoon snack',options:['Tuna in water + 2 rice cakes + peeled cucumber','Lactose-free Greek yogurt + strawberries','2 boiled eggs + small boiled potato']},
+      {time:'19:00–21:30',title:'Dinner',options:['150 g fish + ¾ cup rice + cooked zucchini','140 g chicken + mashed potato + cooked carrots','2-egg omelet with egg whites and turkey + cooked spinach']},
+    ],
+    foodsTitle:'Foods to keep in rotation', foodsIntro:'Build a simple grocery list from foods that are easy to find, protein-rich, and generally gentle on digestion.',
+    foodGroups:[
+      {title:'Protein sources',items:['Lean chicken','Turkey','Eggs and egg whites','Fish and tuna in water','Lactose-free Greek yogurt','Cottage cheese if tolerated']},
+      {title:'Main carbohydrates',items:['White or basmati rice','Potatoes','Oats','Rice cakes','Sourdough or simple bread if tolerated','Bananas']},
+      {title:'Healthy fats',items:['Olive oil','Walnuts','Peanut or almond butter','Pumpkin seeds','Small avocado portion if tolerated']},
+      {title:'Daily fruits & vegetables',items:['Bananas','Strawberries or blueberries','Oranges, kiwi, or grapes','Cooked carrots and zucchini','Cooked spinach or green beans','Peeled cucumber']},
+    ],
+    tipsTitle:'Practical nutrition habits', tipsIntro:'Small repeatable habits support fat loss, reduce bloating, and make the plan easier to maintain.',
+    practicalTips:['Keep meals roughly 3–4 hours apart without forcing a rigid clock.','Aim for 25–30 g of protein in each main meal.','Eat slowly, chew thoroughly, and stop at comfortable fullness.','Use moderate portions instead of one very large meal.','Prefer cooked vegetables when raw vegetables increase bloating.','Keep a simple food-and-symptom note to identify personal triggers.','Minimize excess onion, garlic, spicy food, legumes, fried food, and carbonated drinks.','Sip 2–2.5 L of water across the day instead of drinking large amounts at once.','Prepare one protein and one easy carbohydrate in advance for busy days.','Prioritize 7–9 hours of sleep and a calm routine around meals.'],
+    dailyNotesTitle:'Daily organization', dailyNotesIntro:'Use these flexible rules when real life changes the schedule.',
+    dailyNotes:['Busy day: pack a turkey-and-rice-cake snack, lactose-free yogurt, or boiled eggs.','Missed meal: use a small ready option and return to the normal schedule—do not double the next meal.','Eating out: choose grilled chicken or fish with rice or potatoes; request sauce, onion, and garlic separately.','Training day: use a familiar low-fat pre-workout option 60–90 minutes before training.','Rest day: keep protein the same and use the pre-workout option only if hungry.','IBS flare: choose smaller plain meals such as rice, potato, eggs, chicken, banana, and cooked vegetables; return gradually as symptoms settle.'],
+    hydrationTitle:'Hydration without bloating', hydrationIntro:'Spread fluids steadily from waking until evening and adjust gently around training.', hydrationTarget:'2–2.5 L daily', hydrationTips:['Start with one glass after waking and sip between meals.','Keep a bottle visible and avoid drinking the full target at once.','Add 300–500 ml around training and more in hot weather.'],
+    lifestyleTitle:'Recovery & consistency',
+    lifestyle:[
+      {title:'Water',value:'2–2.5 L',text:'Steady hydration supports training and comfortable digestion.'},
+      {title:'Sleep',value:'7–9 hrs',text:'Consistent sleep supports appetite, recovery, and stress control.'},
+      {title:'Protein',value:'115–120 g',text:'Distribute it across meals to help maintain muscle.'},
+    ],
+    cardioTitle:'Finish with easy cardio', cardioLead:'After every workout, perform 10–15 minutes of light to moderate cardio.',
+    cardioExamples:['Incline walking','Treadmill walking','Stationary bike','Elliptical'],
+    cardioBenefits:['Supports active recovery','Adds gentle calorie expenditure','Builds cardiovascular health'],
+    cardioNote:'Keep the effort comfortable—you should still be able to talk. Reduce or skip it if you feel unwell or your IBS symptoms are active.',
+  },
+  ar: {
+    eyebrow:'نظام مِنّة الغذائي', title:'خفض دهون هادئ. طاقة ثابتة. وهضم أكثر راحة.',
+    intro:'نظام تدريجي عالي البروتين لإعادة تشكيل الجسم بشكل مستدام. اختاري ما يناسب هضمك؛ هذه إرشادات مرنة وليست حمية قاسية.',
+    progression:[
+      {label:'المرحلة ٠١ · الأيام ١–١٤',calories:'١٬٨٥٠ سعرة',macros:'١١٥ غ بروتين · ٢١٥ غ كربوهيدرات · ٥٩ غ دهون',meals:'٤–٥ وجبات',note:'ثبّتي الروتين وراقبي محفزات القولون الشخصية'},
+      {label:'المرحلة ٠٢ · الأيام ١٥–٣٠',calories:'١٬٧٥٠ سعرة',macros:'١٢٠ غ بروتين · ١٩٠ غ كربوهيدرات · ٥٧ غ دهون',meals:'٥ وجبات',note:'استخدمي وجبة قبل التمرين في أيام التدريب'},
+      {label:'المرحلة ٠٣ · من اليوم ٣١',calories:'١٬٧٠٠ سعرة',macros:'١٢٠ غ بروتين · ١٨٠ غ كربوهيدرات · ٥٥ غ دهون',meals:'٥ وجبات',note:'استمري ما دامت الطاقة والقوة والهضم مستقرة'},
+    ],
+    mealsTitle:'وجبات يومية بخيارات مرنة', mealsIntro:'اختاري خياراً واحداً لكل وجبة تستخدمينها في يومك. الحصص نقطة بداية عملية ويمكن تعديلها حسب الجوع والتمرين ومدى التحمل.', chooseOne:'اختاري خيارًا واحدًا من الثلاثة',
+    meals:[
+      {time:'٠٧:٠٠–٠٩:٠٠',title:'الإفطار',options:['بيضتان + ١٥٠ غ بياض بيض + ٤٠ غ شوفان + موزة','٢٠٠ غ زبادي يوناني خالي اللاكتوز + ٤٠ غ شوفان + فراولة + ملعقة صغيرة زبدة فول سوداني','شرائح تركي + بيضتان + بطاطس صغيرة + كوسة مطهية']},
+      {time:'١٠:٣٠–١١:٣٠',title:'وجبة خفيفة صباحية',options:['زبادي خالي اللاكتوز + موزة','٨٠ غ تركي + قطعتان رايس كيك','بيضة مسلوقة + برتقالة + كمية صغيرة من الجوز']},
+      {time:'١٤:٠٠–١٦:٠٠',title:'الغداء',options:['١٤٠ غ دجاج قليل الدهون + كوب أرز + جزر وكوسة مطهيان + ملعقة صغيرة زيت زيتون','١٦٠ غ سمك + بطاطس متوسطة + فاصوليا خضراء مطهية','١٤٠ غ تركي + أرز + سبانخ أو جزر مطهي']},
+      {time:'قبل التمرين بـ ٦٠–٩٠ دقيقة',title:'وجبة قبل التمرين',options:['موزة + زبادي خالي اللاكتوز','٣٠–٤٠ غ شوفان بحليب خالي اللاكتوز وقرفة','قطعتان رايس كيك + شرائح تركي']},
+      {time:'بعد التمرين أو وقت العصر',title:'وجبة خفيفة بعد الظهر',options:['تونة بالماء + قطعتان رايس كيك + خيار مقشر','زبادي يوناني خالي اللاكتوز + فراولة','بيضتان مسلوقتان + بطاطس صغيرة مسلوقة']},
+      {time:'١٩:٠٠–٢١:٣٠',title:'العشاء',options:['١٥٠ غ سمك + ¾ كوب أرز + كوسة مطهية','١٤٠ غ دجاج + بطاطس مهروسة + جزر مطهي','أومليت من بيضتين وبياض بيض مع تركي + سبانخ مطهية']},
+    ],
+    foodsTitle:'أطعمة يفضّل تكرارها', foodsIntro:'ابني قائمة مشتريات بسيطة من أطعمة متوفرة وعالية البروتين ولطيفة على الهضم غالباً.',
+    foodGroups:[
+      {title:'مصادر البروتين',items:['الدجاج قليل الدهون','التركي','البيض وبياض البيض','السمك والتونة بالماء','الزبادي اليوناني خالي اللاكتوز','الجبن القريش إذا كان مناسباً']},
+      {title:'الكربوهيدرات الرئيسية',items:['الأرز الأبيض أو البسمتي','البطاطس','الشوفان','الرايس كيك','خبز بسيط أو ساوردو إذا كان مناسباً','الموز']},
+      {title:'الدهون الصحية',items:['زيت الزيتون','الجوز','زبدة الفول أو اللوز','بذور اليقطين','كمية صغيرة من الأفوكادو إذا كانت مناسبة']},
+      {title:'فاكهة وخضروات يومية',items:['الموز','الفراولة أو التوت','البرتقال أو الكيوي أو العنب','الجزر والكوسة المطهيان','السبانخ أو الفاصوليا الخضراء المطهية','الخيار المقشر']},
+    ],
+    tipsTitle:'عادات تغذية عملية', tipsIntro:'عادات صغيرة قابلة للتكرار تساعد على خفض الدهون وتقليل الانتفاخ والاستمرار.',
+    practicalTips:['اتركي بين الوجبات نحو ٣–٤ ساعات دون الالتزام بساعة صارمة.','استهدفي ٢٥–٣٠ غ بروتين في كل وجبة رئيسية.','كلي ببطء وامضغي جيداً وتوقفي عند الشبع المريح.','استخدمي حصصاً متوسطة بدلاً من وجبة واحدة كبيرة جداً.','اختاري الخضروات المطهية إذا زادت النيئة الانتفاخ.','سجّلي الطعام والأعراض ببساطة لاكتشاف المحفزات الشخصية.','قللي البصل والثوم والتوابل الحارة والبقوليات والمقليات والمشروبات الغازية الزائدة.','وزّعي ٢–٢٫٥ لتر ماء على اليوم بدلاً من شرب كمية كبيرة مرة واحدة.','حضّري مصدراً للبروتين وكربوهيدرات سهلة مسبقاً للأيام المزدحمة.','أعطي النوم ٧–٩ ساعات وروتيناً هادئاً حول الوجبات أولوية.'],
+    dailyNotesTitle:'تنظيم اليوم', dailyNotesIntro:'استخدمي هذه القواعد المرنة عندما يتغير جدول اليوم.',
+    dailyNotes:['يوم مزدحم: جهزي تركي مع رايس كيك أو زبادي خالي اللاكتوز أو بيضاً مسلوقاً.','وجبة فائتة: استخدمي خياراً صغيراً جاهزاً ثم عودي للجدول الطبيعي دون مضاعفة الوجبة التالية.','الأكل خارج المنزل: اختاري دجاجاً أو سمكاً مشوياً مع أرز أو بطاطس واطلبي الصوص والبصل والثوم منفصلين.','يوم التمرين: استخدمي وجبة مألوفة قليلة الدهون قبل التمرين بـ ٦٠–٩٠ دقيقة.','يوم الراحة: حافظي على البروتين واستخدمي خيار قبل التمرين فقط عند الجوع.','تهيج القولون: اختاري وجبات صغيرة وبسيطة مثل الأرز والبطاطس والبيض والدجاج والموز والخضروات المطهية، ثم عودي تدريجياً بعد هدوء الأعراض.'],
+    hydrationTitle:'ترطيب بدون انتفاخ', hydrationIntro:'وزّعي السوائل بهدوء من الاستيقاظ حتى المساء وعدّليها تدريجياً حول التمرين.', hydrationTarget:'٢–٢٫٥ لتر يومياً', hydrationTips:['ابدئي بكوب بعد الاستيقاظ واشربي رشفات بين الوجبات.','احتفظي بزجاجة أمامك وتجنبي شرب الهدف كاملاً دفعة واحدة.','أضيفي ٣٠٠–٥٠٠ مل حول التمرين وكمية أكبر في الجو الحار.'],
+    lifestyleTitle:'الاستشفاء والاستمرار',
+    lifestyle:[
+      {title:'الماء',value:'٢–٢٫٥ لتر',text:'الترطيب المنتظم يدعم التمرين والهضم المريح.'},
+      {title:'النوم',value:'٧–٩ ساعات',text:'النوم المنتظم يدعم الشهية والاستشفاء وإدارة التوتر.'},
+      {title:'البروتين',value:'١١٥–١٢٠ غ',text:'وزّعيه بين الوجبات للمساعدة في الحفاظ على العضلات.'},
+    ],
+    cardioTitle:'أنهي التمرين بكارديو خفيف', cardioLead:'بعد كل تمرين، مارسي ١٠–١٥ دقيقة من الكارديو الخفيف إلى المتوسط.',
+    cardioExamples:['المشي على ميل','المشي على السير','الدراجة الثابتة','جهاز الإليبتكال'],
+    cardioBenefits:['يدعم الاستشفاء النشط','يضيف صرفاً لطيفاً للسعرات','يدعم صحة القلب واللياقة'],
+    cardioNote:'اجعلي الشدة مريحة بحيث يمكنك الكلام. قللي المدة أو تخطيها إذا شعرتِ بتعب أو كانت أعراض القولون نشطة.',
+  },
+} as const
+
 export const exerciseArabic: Record<string, string> = {
   squat:'سكوات', chestPress:'ضغط الصدر', pulldown:'سحب أمامي', hipThrust:'دفع الورك', lateralRaise:'رفع جانبي للكتف',
   bicepsCurl:'بايسبس كيرل', plank:'بلانك', rdl:'رفعة رومانية', seatedRow:'سحب جالس', shoulderPress:'ضغط الكتف',
   walkingLunge:'لانجز المشي', tricepsPushdown:'دفع الترايسبس', calfRaise:'رفع السمانة', legRaise:'رفع الرجلين',
   legPress:'ضغط الأرجل', inclinePress:'ضغط صدر مائل', rowOrPulldown:'سحب جالس أو أمامي', rearDeltFly:'رفرفة كتف خلفي',
-  hammerCurl:'هامر كيرل', overheadTri:'تمديد ترايسبس فوق الرأس', deadBug:'ديد باغ',
+  hammerCurl:'هامر كيرل', overheadTri:'تمديد ترايسبس بالكابل فوق الرأس', deadBug:'ديد باغ',
 }
 
 export const dayArabic: Record<'A'|'B'|'C', { label:string; focus:string }> = {
@@ -67,7 +150,7 @@ export const exerciseDetailsArabic: Record<string, { muscles:string; equipment:s
   rowOrPulldown:{muscles:'الظهر · الظهر الجانبي · البايسبس',equipment:'جهاز الكابل',cue:'اختاري الحركة الأكثر راحة اليوم. ثبّتي الجذع وفكري في تحريك الكوعين بدلاً من اليدين.'},
   rearDeltFly:{muscles:'الكتف الخلفي · أعلى الظهر',equipment:'جهاز أو دمبل',cue:'استخدمي وزناً خفيفاً مع ثني بسيط للكوع. افتحي الذراعين دون رفع الكتفين ثم عودي بتحكم.'},
   hammerCurl:{muscles:'البايسبس · العضلة العضدية · الساعد',equipment:'دمبل',cue:'اجعلي راحتي اليدين للداخل وثبّتي الكوعين. ارفعي بسلاسة وتوقفي لحظة ثم انزلي بالكامل دون تأرجح.'},
-  overheadTri:{muscles:'الترايسبس',equipment:'دمبل أو كابل',cue:'ثبّتي القفص الصدري ووجهي الكوعين للأمام. اخفضي الوزن خلف الرأس لتمدد مريح ثم افردي الذراعين.'},
+  overheadTri:{muscles:'الترايسبس',equipment:'كابل بالحبل',cue:'قفي وظهرك لجهاز الكابل واجعلي الحبل خلف الرأس. ثبّتي القفص الصدري ووجهي الكوعين للأمام، ثم افردي الذراعين بالكامل دون فتح الكوعين للخارج.'},
   deadBug:{muscles:'عضلات البطن العميقة · مثنيات الورك',equipment:'حصيرة',cue:'اضغطي أسفل الظهر نحو الحصيرة. مدّي الذراع والرجل المتعاكسين ببطء وقللي المدى إذا ارتفع الظهر.'},
 }
 

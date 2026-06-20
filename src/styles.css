@@ -673,6 +673,9 @@ body { overflow-x:hidden; text-rendering:optimizeLegibility; }
 
 /* Nutrition guidance */
 .nutrition-summary { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.progression-grid { grid-template-columns:repeat(3,1fr); }
+.progression-grid .guide-target-card { align-items:flex-start; }
+.progression-grid .guide-target-card strong { font-size:22px; }
 .guide-target-card { min-height:150px; padding:24px; display:flex; align-items:center; gap:18px; border:1px solid var(--line); border-radius:var(--radius-lg); background:#fff; box-shadow:var(--shadow-card); transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease; }
 .guide-target-card:hover { transform:translateY(-3px); border-color:rgba(218,89,148,.3); box-shadow:var(--shadow-card-hover); }
 .guide-card-icon { width:54px; height:54px; flex:0 0 auto; display:grid; place-items:center; border-radius:18px; color:#c33b79; background:#fff0f7; }
@@ -702,6 +705,11 @@ body { overflow-x:hidden; text-rendering:optimizeLegibility; }
 .food-guide-grid ul { margin:0; padding:0; display:grid; gap:10px; list-style:none; }
 .food-guide-grid li { display:flex; align-items:flex-start; gap:8px; color:#7f6974; font-size:10px; line-height:1.45; }
 .food-guide-grid li svg { width:13px; height:13px; flex:0 0 auto; margin-top:1px; color:#d14584; }
+.meal-options-grid { grid-template-columns:repeat(3,1fr); }
+.meal-options-grid article { min-height:310px; }
+.meal-time { margin-top:17px; color:#bd3977; font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.meal-options-grid h3 { margin:5px 0 15px; }
+.meal-choice-note { width:max-content; max-width:100%; margin:-5px 0 14px; padding:6px 9px; border-radius:999px; color:#a62f68; background:#fff0f7; font-size:9px; font-weight:700; }
 
 .timing-guide-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
 .timing-guide-grid article { min-height:210px; padding:24px; border:1px solid var(--line); border-radius:var(--radius-lg); background:linear-gradient(145deg,#fff,#fff9fc); box-shadow:var(--shadow-card); }
@@ -765,6 +773,7 @@ body { overflow-x:hidden; text-rendering:optimizeLegibility; }
 .routed-app[dir='rtl'] .food-guide-grid li,.routed-app[dir='rtl'] .digestive-tips > div,.routed-app[dir='rtl'] .hydration-feature li { text-align:right; }
 
 @media (max-width:980px) {
+  .progression-grid { grid-template-columns:1fr; }
   .food-guide-grid { grid-template-columns:1fr 1fr; }
   .food-guide-grid article { min-height:250px; }
   .digestive-section { grid-template-columns:1fr; }
@@ -778,6 +787,7 @@ body { overflow-x:hidden; text-rendering:optimizeLegibility; }
   .nutrition-content-section { padding-top:48px; }
   .nutrition-content-section > .section-title h2 { font-size:29px; }
   .food-guide-grid article { min-height:0; padding:20px; }
+  .meal-options-grid { grid-template-columns:1fr; }
   .timing-guide-grid article { min-height:0; padding:20px; }
   .timing-guide-grid h3 { margin-top:18px; }
   .digestive-panel,.limit-panel { padding:22px; border-radius:24px; }
