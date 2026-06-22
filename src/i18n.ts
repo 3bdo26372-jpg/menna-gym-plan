@@ -117,7 +117,7 @@ export const recompositionNutritionGuide = {
 } as const
 
 export const exerciseArabic: Record<string, string> = {
-  squat:'سكوات', chestPress:'ضغط الصدر', pulldown:'سحب أمامي', hipThrust:'دفع الورك', lateralRaise:'رفع جانبي للكتف',
+  squat:'هاك سكوات', chestPress:'ضغط الصدر', pulldown:'سحب أمامي', hipThrust:'دفع الورك', lateralRaise:'رفع جانبي للكتف',
   bicepsCurl:'بايسبس كيرل', plank:'بلانك', rdl:'رفعة رومانية', seatedRow:'سحب جالس', shoulderPress:'ضغط الكتف',
   walkingLunge:'لانجز المشي', tricepsPushdown:'دفع الترايسبس', calfRaise:'رفع السمانة', legRaise:'رفع الرجلين',
   legPress:'ضغط الأرجل', inclinePress:'ضغط صدر مائل', rowOrPulldown:'سحب جالس أو أمامي', rearDeltFly:'رفرفة كتف خلفي',
@@ -131,7 +131,7 @@ export const dayArabic: Record<'A'|'B'|'C', { label:string; focus:string }> = {
 }
 
 export const exerciseDetailsArabic: Record<string, { muscles:string; equipment:string; cue:string }> = {
-  squat:{muscles:'الأفخاذ الأمامية · المؤخرة · البطن',equipment:'دمبل أو وزن الجسم',cue:'قفي باستقامة وثبّتي البطن، انزلي بالوركين بين الكعبين، ثم ادفعي الأرض بعيداً. اجعلي الركبتين في اتجاه أصابع القدم.'},
+  squat:{muscles:'الأفخاذ الأمامية · المؤخرة · البطن',equipment:'جهاز الهاك سكوات',cue:'ثبّتي ظهرك على الوسادة وشدّي البطن، انزلي بتحكم ثم ادفعي بقدميك. اجعلي الركبتين في اتجاه أصابع القدم.'},
   chestPress:{muscles:'الصدر · الترايسبس · الكتف الأمامي',equipment:'جهاز أو دمبل',cue:'ثبّتي الكتفين للخلف والأسفل. انزلي ببطء، حافظي على استقامة الرسغ، وادفعي دون قفل الكوع بقوة.'},
   pulldown:{muscles:'عضلات الظهر الجانبية · أعلى الظهر · البايسبس',equipment:'جهاز الكابل',cue:'اجلسي باستقامة واسحبي الكوعين إلى أسفل. توقفي قرب أعلى الصدر وتجنبي التأرجح أو السحب خلف الرقبة.'},
   hipThrust:{muscles:'المؤخرة · الفخذ الخلفي',equipment:'مقعد أو جهاز',cue:'اخفضي الذقن وثبّتي القفص الصدري. ادفعي بالكعبين واعصري عضلات المؤخرة في الأعلى دون تقويس أسفل الظهر.'},

@@ -8,7 +8,7 @@ export type WorkoutDay = {
 }
 
 export const exercises: Record<string, Exercise> = {
-  squat: { id:'squat', name:'Squat', muscles:'Quads · Glutes · Core', sets:'3 × 8–12', rest:'90 sec', equipment:'Dumbbell / bodyweight', cue:'Stand tall, brace gently, sit your hips between your heels, then push the floor away. Keep knees tracking over toes.', gif:'/exercises/squat.gif' },
+  squat: { id:'squat', name:'Hack Squat', muscles:'Quads · Glutes · Core', sets:'3 × 8–12', rest:'90 sec', equipment:'Hack squat machine', cue:'Place your back flat against the pad, brace your core, lower with control, then push through your feet. Keep knees tracking over toes.', gif:'/exercises/squat.gif' },
   chestPress: { id:'chestPress', name:'Chest Press', muscles:'Chest · Triceps · Front delts', sets:'3 × 8–12', rest:'90 sec', equipment:'Machine / dumbbells', cue:'Set shoulders down and back. Lower with control, keep wrists stacked, and press without locking your elbows hard.', gif:'/exercises/chest-press.gif' },
   pulldown: { id:'pulldown', name:'Lat Pulldown', muscles:'Lats · Upper back · Biceps', sets:'3 × 8–12', rest:'75–90 sec', equipment:'Cable machine', cue:'Sit tall and pull your elbows toward your pockets. Pause near your upper chest; avoid swinging or pulling behind your neck.', gif:'/exercises/lat-pulldown.gif' },
   hipThrust: { id:'hipThrust', name:'Hip Thrust', muscles:'Glutes · Hamstrings', sets:'3 × 10–12', rest:'90 sec', equipment:'Bench / machine', cue:'Keep chin tucked and ribs down. Drive through your heels, squeeze glutes at the top, and stop before your lower back arches.', gif:'/exercises/hip-thrust.gif' },
