@@ -123,7 +123,7 @@ export const exerciseArabic: Record<string, string> = {
   pallofPress:'بالوف برس', walkingCardio:'مشي أو مشي على ميل', rdl:'رومانيان ديدلفت', hipThrustB:'هيب ثرست',
   seatedLegCurl:'ليج كيرل جالس', walkingLunges:'لانجز مشي', cableKickback:'كيبل كيك باك', seatedCalfRaise:'رفع السمانة جالس',
   shoulderPressMachine:'جهاز ضغط الكتف', singleArmCableRow:'سحب كابل ذراع واحدة', inclineChestPress:'الفراشة',
-  latPulldownB:'سحب أمامي بقبضة مختلفة', ropeTricepsPushdown:'دفع ترايسبس بالحبل', lateralRaiseB:'رفرفة جانبي دمبل',
+  latPulldownB:'سحب أمامي V بار', ropeTricepsPushdown:'دفع ترايسبس بالحبل', lateralRaiseB:'رفرفة جانبي دمبل',
   plank:'بلانك', sidePlank:'سايد بلانك', deadBug:'ديد باغ', birdDog:'بيرد دوج', reverseCrunch:'ريفيرس كرانش',
   hollowHold:'هولو هولد / هولو تاك',
 }
@@ -160,7 +160,7 @@ export const exerciseDetailsArabic: Record<string, { muscles:string; equipment:s
   shoulderPressMachine:{muscles:'الكتف · الترايسبس',equipment:'جهاز ضغط الكتف',cue:'ثبتي ضهرك في الكرسي وادفعي لفوق من غير ما ترفعي كتفك ناحية ودنك.'},
   singleArmCableRow:{muscles:'الظهر الجانبي · منتصف الظهر · البايسبس',equipment:'جهاز كابل',cue:'اسحبي الكوع لورا جنب جسمك، وخلي جسمك ثابت من غير لف كتير.'},
   inclineChestPress:{muscles:'الصدر · الكتف الأمامي',equipment:'جهاز الفراشة',cue:'افتحي صدرك وخلي ضهرك لازق، ضمي الدراعين قدامك بهدوء من غير ما كتفك يطلع لفوق.'},
-  latPulldownB:{muscles:'الظهر الجانبي · أعلى الظهر · البايسبس',equipment:'جهاز كابل',cue:'استخدمي قبضة مختلفة ومريحة، واسحبي لتحت بالكوع من غير ما تميلي بجسمك.'},
+  latPulldownB:{muscles:'الظهر الجانبي · أعلى الظهر · البايسبس',equipment:'جهاز كابل بمقبض V',cue:'امسكي الـ V-bar واسحبيه ناحية أعلى صدرك بالكوع، من غير ما ترجعي بجسمك لورا.'},
   ropeTricepsPushdown:{muscles:'الترايسبس',equipment:'كابل بالحبل',cue:'كوعك ثابت جنب جسمك، افردي الحبل لتحت وافتحيه سنة في الآخر.'},
   lateralRaiseB:{muscles:'الكتف الجانبي',equipment:'دمبل خفيف',cue:'خلي الوزن خفيف والحركة ناعمة، ارفعي للجنب كأنك بتبعدي الدراع عن جسمك.'},
   plank:{muscles:'البطن · المؤخرة · الكتف',equipment:'حصيرة',cue:'جسمك خط واحد، بطنك ومؤخرتك مشدودين، ومتسيبيش وسطك يقع.'},
