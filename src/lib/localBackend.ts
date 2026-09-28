@@ -31,7 +31,7 @@ function freshDb(): LocalDb {
     programStartDate: null,
     measurements: [],
     logs: {},
-    rewards: DEFAULT_REWARDS.map((reward) => ({ ...reward, unlockedOn: null, celebratedAt: null })),
+    rewards: DEFAULT_REWARDS.map((reward) => ({ ...reward, hint: null, unlockedOn: null, celebratedAt: null })),
     reports: {},
   }
 }

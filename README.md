@@ -50,11 +50,12 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
+  - A reward can have an optional `hint` (a teaser such as "من المشير"), shown on the locked card as "💌 تلميحة".
   - The app has no way to edit rewards. Set them directly in D1, e.g. `UPDATE rewards SET title = '…', description = '…', emoji = '…' WHERE id = 'day-5'` (ids: `day-5`, `day-10`, `day-30`).
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints) creates these tables:
 
 | Table | Purpose |
 |---|---|
