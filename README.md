@@ -17,3 +17,12 @@ npm run preview
 ```
 
 The interface is front-end only and uses local exercise GIF assets.
+
+## Exercise library GIFs
+
+The animated demos in `public/exercises/library/` (one per exercise and one per lighter alternative) are drawn by a script. After changing a movement in `scripts/generate_library_gifs.py`, regenerate them with:
+
+```bash
+pip install pillow
+python3 scripts/generate_library_gifs.py
+```

@@ -144,15 +144,12 @@ export const library: LibraryExercise[] = [
 
 export const libraryById = Object.fromEntries(library.map((exercise) => [exercise.id, exercise])) as Record<string, LibraryExercise>
 
-export function youtubeThumb(id: string) {
-  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
-}
+export type Variant = 0 | 1 | 2
 
-export function youtubeEmbed(id: string, { autoplay = false, loop = false } = {}) {
-  const params = new URLSearchParams({ rel: '0', modestbranding: '1', playsinline: '1' })
-  if (autoplay) { params.set('autoplay', '1'); params.set('mute', '1') }
-  if (loop) { params.set('loop', '1'); params.set('playlist', id) }
-  return `https://www.youtube-nocookie.com/embed/${id}?${params}`
+export const variantLabels = ['الحركة الأساسية', 'بديل 1', 'بديل 2'] as const
+
+export function exerciseGif(id: string, variant: Variant = 0) {
+  return `/exercises/library/${id}${variant ? `-alt${variant}` : ''}.gif`
 }
 
 export function youtubeWatch(id: string) {
