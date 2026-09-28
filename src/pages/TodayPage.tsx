@@ -164,23 +164,6 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
 
       {plan.notes.map((note) => <Notice key={note} tone="info">{note}</Notice>)}
 
-      <ol className="block-list">
-        {plan.blocks.map((block) => (
-          <li key={block.id}><strong>{block.title}</strong><span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''}</span></li>
-        ))}
-      </ol>
-
-      {main && (
-        <div className="thumb-row" aria-label="تمارين الجزء الأساسي">
-          {main.exerciseIds.map((id) => (
-            <div key={id} className="thumb">
-              <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
-              <span>{EXERCISE_BY_ID[id].name}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="steps">
         <section className={`step ${checkin ? 'done' : 'current'}`}>
           <h3><span className="step-dot">{checkin ? <Check /> : 1}</span> إحساسك قبل التمرين <small>15 نقطة</small></h3>
@@ -197,7 +180,30 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
         </section>
 
         <section className={`step ${day?.workout ? 'done' : checkin ? 'current' : 'locked'}`}>
-          <h3><span className="step-dot">{day?.workout ? <Check /> : 2}</span> التمرين <small>60 + 10 نقاط</small></h3>
+          <h3><span className="step-dot">{day?.workout ? <Check /> : 2}</span> التمرين <small>70 نقطة</small></h3>
+          {!day?.workout && (
+            <>
+              <ol className="block-list" aria-label="أجزاء التمرين بالترتيب">
+                {plan.blocks.map((block, index) => (
+                  <li key={block.id}>
+                    <strong><span className="block-order">{index + 1}</span> {block.title}</strong>
+                    <span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="muted small">التمرين بيبدأ بالتسخين وبيخلص بالإطالة. التسخين 5 نقاط والإطالة 5 نقاط (لو عملتي 80% من وقتهم)، والجزء الأساسي 60 نقطة على قد اللي تعمليه.</p>
+              {main && (
+                <div className="thumb-row" aria-label="تمارين الجزء الأساسي">
+                  {main.exerciseIds.map((id) => (
+                    <div key={id} className="thumb">
+                      <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
+                      <span>{EXERCISE_BY_ID[id].name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
           {day?.workout ? (
             <p className="muted">
               {Math.round(day.workout.activeSeconds / 60)} دقيقة · {Math.round(day.workout.mainCompletion * 100)}% من التمرين
