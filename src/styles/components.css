@@ -186,6 +186,8 @@
 .reward-head { display: flex; align-items: center; gap: 12px; }
 .reward-head h2 { font-size: 18px; }
 .reward-emoji { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: #fff; font-size: 28px; box-shadow: var(--shadow); }
+.reward-hint { display: grid; gap: 2px; margin: 0; padding: 10px 12px; border: 1px dashed var(--rose-200); border-radius: 14px; color: var(--berry-dark); background: var(--rose-50); font-weight: 700; }
+.reward-hint span { color: var(--berry); font-size: 12px; font-weight: 800; }
 .reward-card.locked .reward-emoji { filter: grayscale(0.4); }
 .reward-state-icon { width: 22px; margin-inline-start: auto; color: var(--berry); }
 .celebration { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(41, 25, 34, 0.55); backdrop-filter: blur(6px); overflow: hidden; }

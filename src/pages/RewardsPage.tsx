@@ -34,6 +34,7 @@ function RewardCard({ reward, active }: { reward: RewardState; active: number })
         {unlocked ? <Trophy className="reward-state-icon" aria-label="مفتوحة" /> : <Lock className="reward-state-icon" aria-label="مقفولة" />}
       </div>
       <p>{reward.description}</p>
+      {!unlocked && reward.hint && <p className="reward-hint"><span>💌 تلميحة</span>{reward.hint}</p>}
       {unlocked
         ? <p className="muted small">اتفتحت يوم {formatDateFull(reward.unlockedOn!)}</p>
         : (

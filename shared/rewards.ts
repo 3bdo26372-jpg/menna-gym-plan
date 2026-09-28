@@ -3,7 +3,8 @@ import type { RewardState } from './types'
 /**
  * Reward milestones. Rewards are a surprise: the real titles and descriptions
  * live only in the database (set directly there, not from the app), and the
- * API hides them until the day each reward unlocks. `thresholdDays` counts
+ * API hides them until the day each reward unlocks. A reward can carry an
+ * optional `hint`, a teaser that is shown on the locked card. `thresholdDays` counts
  * active days: days where at least half of the workout was done.
  */
 export interface RewardDefinition {
@@ -24,7 +25,10 @@ export const DEFAULT_REWARDS: RewardDefinition[] = [
 /** A day counts toward rewards when at least half of its main workout was done. */
 export const ACTIVE_DAY_MIN_COMPLETION = 0.5
 
-/** Replace a locked reward's details with a generic surprise card, so they never leave the server early. */
+/**
+ * Replace a locked reward's details with a generic surprise card, so they
+ * never leave the server early. Only its optional `hint` stays visible.
+ */
 export function hideIfLocked(reward: RewardState): RewardState {
   if (reward.unlockedOn) return reward
   return {

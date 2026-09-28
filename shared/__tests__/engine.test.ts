@@ -75,9 +75,9 @@ describe('rewards and reports', () => {
     ],
     days,
     rewards: [
-      { id: 'day-5', thresholdDays: 5, title: 'A', description: '', emoji: '🎁', sortOrder: 1, unlockedOn: null, celebratedAt: null },
-      { id: 'day-10', thresholdDays: 10, title: 'B', description: '', emoji: '🎁', sortOrder: 2, unlockedOn: null, celebratedAt: null },
-      { id: 'day-30', thresholdDays: 30, title: 'C', description: '', emoji: '🏆', sortOrder: 3, unlockedOn: null, celebratedAt: null },
+      { id: 'day-5', thresholdDays: 5, title: 'A', description: '', emoji: '🎁', sortOrder: 1, hint: null, unlockedOn: null, celebratedAt: null },
+      { id: 'day-10', thresholdDays: 10, title: 'B', description: '', emoji: '🎁', sortOrder: 2, hint: null, unlockedOn: null, celebratedAt: null },
+      { id: 'day-30', thresholdDays: 30, title: 'C', description: '', emoji: '🏆', sortOrder: 3, hint: null, unlockedOn: null, celebratedAt: null },
     ],
     reports: [],
     foodEntries: [
@@ -95,10 +95,10 @@ describe('rewards and reports', () => {
   })
 
   it('keeps locked rewards a surprise until they unlock', () => {
-    const secret = { id: 'day-5', thresholdDays: 5, sortOrder: 1, emoji: '💐', title: 'Spa day', description: 'A day at the spa', celebratedAt: null }
+    const secret = { id: 'day-5', thresholdDays: 5, sortOrder: 1, emoji: '💐', title: 'Spa day', description: 'A day at the spa', hint: 'Relaxing', celebratedAt: null }
     const locked = hideIfLocked({ ...secret, unlockedOn: null })
     expect(JSON.stringify(locked)).not.toMatch(/Spa|💐/)
-    expect(locked).toMatchObject({ id: 'day-5', thresholdDays: 5, emoji: '🎁' })
+    expect(locked).toMatchObject({ id: 'day-5', thresholdDays: 5, emoji: '🎁', hint: 'Relaxing' })
     expect(hideIfLocked({ ...secret, unlockedOn: '2026-10-03' })).toMatchObject({ title: 'Spa day', emoji: '💐' })
   })
 

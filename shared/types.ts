@@ -93,6 +93,8 @@ export interface RewardState {
   description: string
   emoji: string
   sortOrder: number
+  /** Optional teaser shown on the card while the reward is still locked. */
+  hint: string | null
   unlockedOn: string | null
   celebratedAt: string | null
 }

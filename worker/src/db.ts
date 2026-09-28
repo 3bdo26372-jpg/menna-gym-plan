@@ -140,6 +140,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       description: String(row.description),
       emoji: String(row.emoji),
       sortOrder: Number(row.sort_order),
+      hint: row.hint ? String(row.hint) : null,
       unlockedOn: (unlockById.get(String(row.id))?.unlocked_on as string | undefined) ?? null,
       celebratedAt: (unlockById.get(String(row.id))?.celebrated_at as string | undefined) ?? null,
     })),
