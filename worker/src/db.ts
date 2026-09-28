@@ -15,6 +15,8 @@ import type {
   WorkoutResult,
 } from '../../shared/types'
 import type { ReportData } from '../../shared/report'
+import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
+import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
 const parse = <T>(value: unknown): T | null => (typeof value === 'string' && value ? (JSON.parse(value) as T) : null)
@@ -54,7 +56,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   const startDate = (profile?.program_start_date as string | null) ?? null
   if (startDate) await ensureDays(db, startDate, today)
 
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports] = await db.batch<Row>([
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food] = await db.batch<Row>([
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
@@ -63,7 +65,8 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT * FROM workout_exercises ORDER BY workout_id, position'),
     db.prepare('SELECT * FROM rewards ORDER BY sort_order'),
     db.prepare('SELECT * FROM reward_unlocks'),
-    db.prepare('SELECT period_index, start_date, end_date, generated_at FROM monthly_reports ORDER BY period_index'),
+    db.prepare('SELECT kind, period_index, start_date, end_date, generated_at FROM reports ORDER BY kind, period_index'),
+    db.prepare('SELECT id, log_date, eaten_at, category, item, quantity, ml, created_at FROM food_entries ORDER BY log_date, eaten_at, id'),
   ])
 
   const valuesByEntry = new Map<number, Record<string, number>>()
@@ -142,10 +145,21 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       celebratedAt: (unlockById.get(String(row.id))?.celebrated_at as string | undefined) ?? null,
     })),
     reports: reports.results.map((row) => ({
+      kind: row.kind as ReportKind,
       periodIndex: Number(row.period_index),
       startDate: String(row.start_date),
       endDate: String(row.end_date),
       generatedAt: String(row.generated_at),
+    })),
+    foodEntries: food.results.map((row): FoodEntry => ({
+      id: Number(row.id),
+      date: String(row.log_date),
+      time: String(row.eaten_at),
+      category: row.category as FoodCategory,
+      item: String(row.item),
+      quantity: (row.quantity as string | null) ?? null,
+      ml: row.ml === null || row.ml === undefined ? null : Number(row.ml),
+      createdAt: String(row.created_at),
     })),
   }
 }
@@ -235,13 +249,26 @@ export async function markCelebrated(db: D1Database, id: string) {
 
 export async function saveReport(db: D1Database, report: ReportData) {
   await db.prepare(`
-    INSERT INTO monthly_reports (period_index, start_date, end_date, generated_at, summary_json) VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT (period_index) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date,
+    INSERT INTO reports (kind, period_index, start_date, end_date, generated_at, summary_json) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT (kind, period_index) DO UPDATE SET start_date = excluded.start_date, end_date = excluded.end_date,
       generated_at = excluded.generated_at, summary_json = excluded.summary_json
-  `).bind(report.periodIndex, report.startDate, report.endDate, report.generatedAt, JSON.stringify(report)).run()
+  `).bind(report.kind, report.periodIndex, report.startDate, report.endDate, report.generatedAt, JSON.stringify(report)).run()
 }
 
-export async function loadReport(db: D1Database, periodIndex: number) {
-  const row = await db.prepare('SELECT summary_json FROM monthly_reports WHERE period_index = ?').bind(periodIndex).first<{ summary_json: string }>()
+export async function addFood(db: D1Database, date: string, food: Required<Pick<FoodInput, 'time' | 'category' | 'item'>> & { quantity: string | null; ml: number | null }) {
+  await db.prepare('INSERT INTO food_entries (log_date, eaten_at, category, item, quantity, ml) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(date, food.time, food.category, food.item, food.quantity, food.ml).run()
+}
+
+export async function deleteFood(db: D1Database, id: number) {
+  return (await db.prepare('DELETE FROM food_entries WHERE id = ?').bind(id).run()).meta.changes > 0
+}
+
+export async function foodDate(db: D1Database, id: number) {
+  return (await db.prepare('SELECT log_date FROM food_entries WHERE id = ?').bind(id).first<{ log_date: string }>())?.log_date ?? null
+}
+
+export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {
+  const row = await db.prepare('SELECT summary_json FROM reports WHERE kind = ? AND period_index = ?').bind(kind, periodIndex).first<{ summary_json: string }>()
   return row ? (JSON.parse(row.summary_json) as ReportData) : null
 }

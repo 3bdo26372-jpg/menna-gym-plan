@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { CalendarCheck, ChartLine, FileText, Gift, HeartPulse, KeyRound, RefreshCw, Ruler } from 'lucide-react'
+import { CalendarCheck, ChartLine, FileText, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
 import { Card, Spinner } from './components/ui'
 import { useRoute, type Route } from './lib/router'
@@ -8,6 +8,7 @@ import { AppDataProvider, useAppData } from './state/AppData'
 import { WorkoutPage } from './workout/WorkoutPage'
 
 const ProgressPage = lazy(() => import('./pages/ProgressPage').then((module) => ({ default: module.ProgressPage })))
+const FoodPage = lazy(() => import('./pages/FoodPage').then((module) => ({ default: module.FoodPage })))
 const MeasurementsPage = lazy(() => import('./pages/MeasurementsPage').then((module) => ({ default: module.MeasurementsPage })))
 const RewardsPage = lazy(() => import('./pages/RewardsPage').then((module) => ({ default: module.RewardsPage })))
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })))
@@ -15,6 +16,7 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({
 const NAV: { route: Exclude<Route, 'workout'>; label: string; icon: typeof CalendarCheck }[] = [
   { route: 'today', label: 'اليوم', icon: CalendarCheck },
   { route: 'progress', label: 'التقدم', icon: ChartLine },
+  { route: 'food', label: 'الأكل', icon: Utensils },
   { route: 'measurements', label: 'القياسات', icon: Ruler },
   { route: 'rewards', label: 'المكافآت', icon: Gift },
   { route: 'reports', label: 'التقارير', icon: FileText },
@@ -69,6 +71,7 @@ function Shell() {
           <Suspense fallback={<div className="page center"><Spinner /></div>}>
             {route === 'today' && <TodayPage />}
             {route === 'progress' && <ProgressPage />}
+            {route === 'food' && <FoodPage />}
             {route === 'measurements' && <MeasurementsPage />}
             {route === 'rewards' && <RewardsPage />}
             {route === 'reports' && <ReportsPage />}

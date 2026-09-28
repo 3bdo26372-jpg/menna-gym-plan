@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, Check, ChevronLeft, Flame, Gift, Play, Sparkles, Timer } from 'lucide-react'
+import { CalendarDays, Check, ChevronLeft, Droplets, Flame, Gift, Play, Sparkles, Timer, Utensils } from 'lucide-react'
+import { formatLitres, waterMl, WATER_TARGET_ML } from '../../shared/food'
 import { addDays, dayNumberFor, formatDateLong, periodBounds, periodForDay, PERIOD_DAYS } from '../../shared/date'
 import { measurementComparison, nextReward, summaryStats } from '../../shared/engine'
 import { EXERCISE_BY_ID } from '../../shared/exercises'
@@ -84,6 +85,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       <TodayWorkout state={state} day={today} plan={plan} />
 
       <ScoreBreakdown day={today} />
+
+      <FoodToday state={state} />
 
       <Card>
         <h2 className="card-title">ملخص سريع</h2>
@@ -221,6 +224,25 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
           ) : <p className="muted small">بعد ما تخلّصي التمرين.</p>}
         </section>
       </div>
+    </Card>
+  )
+}
+
+function FoodToday({ state }: { state: AppState }) {
+  const entries = state.foodEntries.filter((entry) => entry.date === state.today)
+  const water = waterMl(entries)
+  const meals = entries.filter((entry) => entry.category !== 'drink').length
+  return (
+    <Card>
+      <div className="food-today">
+        <h2 className="card-title"><Utensils /> أكلك وشربك النهارده</h2>
+        <a className="button secondary" href="#/food">سجّلي</a>
+      </div>
+      <div className="stat-grid">
+        <StatTile label="وجبات وسناكس" value={meals} />
+        <StatTile label="المية" value={formatLitres(water)} unit="لتر" hint={<><Droplets className="inline-icon" /> الهدف {WATER_TARGET_ML / 1000}–2.5 لتر</>} />
+      </div>
+      <ProgressBar value={water} max={WATER_TARGET_ML} label="المية من الهدف" />
     </Card>
   )
 }

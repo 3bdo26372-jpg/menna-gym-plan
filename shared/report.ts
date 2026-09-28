@@ -1,16 +1,18 @@
-import { dateRange, periodBounds, dayNumberFor } from './date'
+import { dateRange, periodBounds, dayNumberFor, PERIOD_DAYS, WEEK_DAYS } from './date'
 import { latestMeasurement, isActiveDay, round1 } from './engine'
 import { EXERCISE_BY_ID } from './exercises'
 import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
-import type { AppState, DayType, Energy } from './types'
+import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
+import type { AppState, DayType, Energy, ReportKind } from './types'
 
 /**
- * Everything the monthly (30-day) PDF shows. It is computed from the app
- * state so a saved snapshot can be re-rendered later exactly as it was.
+ * Everything the weekly (7-day) or monthly (30-day) PDF shows. It is computed
+ * from the app state so a saved snapshot can be re-rendered exactly as it was.
  */
 export interface ReportData {
   programName: string
+  kind: ReportKind
   periodIndex: number
   startDate: string
   endDate: string
@@ -31,6 +33,13 @@ export interface ReportData {
   favoriteExercises: { id: string; name: string; count: number }[]
   hardExercises: { id: string; name: string; count: number }[]
   rewardsUnlocked: { title: string; emoji: string; unlockedOn: string }[]
+  food: {
+    days: { date: string; entries: Pick<FoodEntry, 'time' | 'category' | 'item' | 'quantity' | 'ml'>[]; waterMl: number }[]
+    loggedDays: number
+    entries: number
+    averageWaterMl: number | null
+    waterTargetMl: number
+  }
   summary: string[]
   suggestions: string[]
 }
@@ -55,10 +64,13 @@ function countBy(ids: string[], limit = 5) {
     .map(([id, count]) => ({ id, name: EXERCISE_BY_ID[id]?.name ?? id, count }))
 }
 
-export function buildReport(state: AppState, periodIndex: number, generatedAt = new Date().toISOString()): ReportData {
+export const REPORT_LENGTH: Record<ReportKind, number> = { week: WEEK_DAYS, month: PERIOD_DAYS }
+export const REPORT_LABEL: Record<ReportKind, string> = { week: 'الأسبوع', month: 'الشهر' }
+
+export function buildReport(state: AppState, kind: ReportKind, periodIndex: number, generatedAt = new Date().toISOString()): ReportData {
   const programStartDate = state.profile.programStartDate
   if (!programStartDate) throw new Error('The program has not started yet')
-  const { start, end } = periodBounds(programStartDate, periodIndex)
+  const { start, end } = periodBounds(programStartDate, periodIndex, REPORT_LENGTH[kind])
   const lastRecorded = end < state.today ? end : state.today
   const byDate = new Map(state.days.map((day) => [day.date, day]))
 
@@ -116,9 +128,22 @@ export function buildReport(state: AppState, periodIndex: number, generatedAt = 
     .filter((reward) => reward.unlockedOn && reward.unlockedOn >= start && reward.unlockedOn <= end)
     .map((reward) => ({ title: reward.title, emoji: reward.emoji, unlockedOn: reward.unlockedOn! }))
 
+  const foodInPeriod = state.foodEntries.filter((entry) => entry.date >= start && entry.date <= lastRecorded)
+  const foodDays = dateRange(start, lastRecorded)
+    .map((date) => {
+      const entries = foodInPeriod
+        .filter((entry) => entry.date === date)
+        .sort((a, b) => a.time.localeCompare(b.time) || a.id - b.id)
+        .map(({ time, category, item, quantity, ml }) => ({ time, category, item, quantity, ml }))
+      return { date, entries, waterMl: waterMl(entries) }
+    })
+    .filter((day) => day.entries.length > 0)
+  const waterDays = foodDays.filter((day) => day.waterMl > 0)
+
   const activeDays = days.filter((day) => day.active).length
   const report: ReportData = {
     programName: 'Menna Flow',
+    kind,
     periodIndex,
     startDate: start,
     endDate: end,
@@ -139,6 +164,13 @@ export function buildReport(state: AppState, periodIndex: number, generatedAt = 
     favoriteExercises,
     hardExercises,
     rewardsUnlocked,
+    food: {
+      days: foodDays,
+      loggedDays: foodDays.length,
+      entries: foodInPeriod.length,
+      averageWaterMl: waterDays.length ? Math.round(waterDays.reduce((sum, day) => sum + day.waterMl, 0) / waterDays.length) : null,
+      waterTargetMl: WATER_TARGET_ML,
+    },
     summary: [],
     suggestions: [],
   }
@@ -163,6 +195,10 @@ function writeSummary(report: ReportData, recordedCount: number, dayTypes: DayTy
   else if (weight?.change) lines.push(`الوزن اتغير ${signed(weight.change, 'كجم')}؛ الوزن بيتذبذب طبيعي، والقياسات بتوضح الصورة أكتر.`)
   if (waist?.change !== null && waist?.change !== undefined && waist.change < 0) lines.push(`مقاس الوسط قلّ ${Math.abs(waist.change)} سم.`)
   if (report.favoriteExercises[0]) lines.push(`التمرين المفضّل: ${report.favoriteExercises[0].name}.`)
+  if (report.food.loggedDays) {
+    lines.push(`سجّلتي أكلك وشربك في ${report.food.loggedDays} يوم (${report.food.entries} تسجيل).`)
+    if (report.food.averageWaterMl !== null) lines.push(`متوسط شرب المية ${formatLitres(report.food.averageWaterMl)} لتر في اليوم.`)
+  }
   return lines
 }
 
@@ -177,6 +213,8 @@ function writeSuggestions(report: ReportData, recordedCount: number, painCount: 
   const entries = state.measurements.filter((entry) => entry.measuredOn >= start && entry.measuredOn <= end).length
   if (entries < 2) suggestions.push('سجلي القياسات كل أسبوعين تقريبًا في نفس الوقت من اليوم عشان المقارنة تبقى أدق.')
   if (painCount > 0) suggestions.push('لو الألم اتكرر في نفس المكان، خففي الحركة دي واستشيري مختص لو استمر.')
+  if (recordedCount && report.food.loggedDays < recordedCount * 0.5) suggestions.push('سجّلي أكلك وشربك كل يوم ولو باختصار؛ ده بيوضح إيه اللي بيساعدك.')
+  if (report.food.averageWaterMl !== null && report.food.averageWaterMl < report.food.waterTargetMl) suggestions.push('زوّدي المية تدريجيًا لحد ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.')
   suggestions.push('نوم كفاية ومية وأكل متوازن بيساعدوا جسمك يستفيد من كل تمرين.')
-  return suggestions.slice(0, 5)
+  return suggestions.slice(0, 6)
 }
