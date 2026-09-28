@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity,
   ArrowLeft,
+  ArrowRight,
+  BookOpen,
   Check,
   ChevronLeft,
   CirclePause,
@@ -15,16 +17,22 @@ import {
   Sparkles,
   TimerReset,
   Wind,
+  ExternalLink,
+  Play,
+  Search,
   X,
 } from 'lucide-react'
-
-type Exercise = {
-  name: string
-  cue: string
-  focus: string
-  video: string
-  videoNote?: string
-}
+import {
+  library,
+  libraryById,
+  libraryCategories,
+  youtubeEmbed,
+  youtubeSearch,
+  youtubeThumb,
+  youtubeWatch,
+  type LibraryCategory,
+  type LibraryExercise,
+} from './library'
 
 type Level = {
   id: 'easy' | 'steady' | 'active'
@@ -36,8 +44,10 @@ type Level = {
   rounds: number
   duration: string
   effort: string
-  exercises: Exercise[]
+  exercises: LibraryExercise[]
 }
+
+const pick = (...ids: string[]) => ids.map((id) => libraryById[id])
 
 const levels: Level[] = [
   {
@@ -50,14 +60,7 @@ const levels: Level[] = [
     rounds: 2,
     duration: '10–12 دقيقة',
     effort: 'خفيف',
-    exercises: [
-      { name: 'مشي في المكان', cue: 'ارفعي القدم بهدوء وحرّكي الذراعين طبيعي.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوة يمين وشمال', cue: 'خطوة جانبية ولمسة خفيفة بالقدم الثانية.', focus: 'الرجلين والوسط', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'رفع ركبة بالتبادل', cue: 'ارفعي الركبة براحة مع بطن مشدودة وظهر طويل.', focus: 'البطن والفخذ', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام بدل الخلف' },
-      { name: 'خطوة مع رفع الذراعين', cue: 'افتحي خطوة وارفعِي الذراعين من غير شد للرقبة.', focus: 'الكتف والدورة الدموية', video: '/exercises/warm-arm-circles.gif' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الكوع من الركبة في نفس الجانب من غير ميل للأمام.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'رفع الكعبين مع سحب الذراع', cue: 'اطلعي على أطراف القدم واسحبي الكوعين للخلف.', focus: 'السمانة وأعلى الظهر', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
-    ],
+    exercises: pick('march-in-place', 'side-step-touch', 'heel-tap', 'wall-push-up', 'shoulder-blade-squeeze', 'calf-raise'),
   },
   {
     id: 'steady',
@@ -69,15 +72,7 @@ const levels: Level[] = [
     rounds: 3,
     duration: '18–20 دقيقة',
     effort: 'متوسط مريح',
-    exercises: [
-      { name: 'مشي سريع في المكان', cue: 'زودي سرعة الخطوات مع كتف مرتاح ونَفَس منتظم.', focus: 'القلب والجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوتان جانبيتان مع سحب', cue: 'خطوتان لكل ناحية واسحبي الذراعين ناحية الضلوع.', focus: 'الظهر والوسط', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس حركة الذراع من غير استيك' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّي الجذع بهدوء وقرّبي الركبة للكوع المقابل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
-      { name: 'نصف سكوات مع مدّ الذراع', cue: 'انزلي مسافة صغيرة كأنك هتقعدي ثم ارفعي الذراعين.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif' },
-      { name: 'لكمات أمامية', cue: 'لكمات خفيفة بالتبادل مع ثبات الحوض وارتخاء الكتف.', focus: 'الذراعين والجذع', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات أمامية' },
-      { name: 'كرنش جانبي بالتبادل', cue: 'كوع ناحية ركبة جانبية ثم بدّلي من غير استعجال.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'سحب ركبة لأسفل', cue: 'الذراعان فوق ثم اسحبيهما لأسفل مع رفع ركبة.', focus: 'البطن والظهر', video: '/exercises/warm-wall-slide.gif', videoNote: 'اسحبي الذراعين من فوق مع رفع الركبة' },
-    ],
+    exercises: pick('march-in-place', 'low-knee-lift', 'back-toe-tap', 'standing-hamstring-curl', 'wall-push-up', 'palm-press', 'cross-body-reach'),
   },
   {
     id: 'active',
@@ -88,19 +83,12 @@ const levels: Level[] = [
     rest: 20,
     rounds: 3,
     duration: '24–26 دقيقة',
-    effort: 'نشيط ومتحكَّم فيه',
-    exercises: [
-      { name: 'مشي قوي مع سحب الذراعين', cue: 'خطوات نشيطة واسحبي الكوعين للخلف مع صدر مفتوح.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوة جانبية عريضة', cue: 'وسّعي الخطوة وادفعي الذراعين للأمام بالتبادل.', focus: 'الرجلين والكتف', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّة صغيرة من أعلى الجذع مع تحكم كامل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
-      { name: 'سكوات صغير مع ركبة', cue: 'نصف سكوات ثم ارفعي ركبة واحدة وبدّلي.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif', videoNote: 'بعد كل سكوات ارفعي ركبة' },
-      { name: 'لكمات جانبية متحكَّم فيها', cue: 'لفّي الصدر قليلًا مع بقاء الركبتين مرنتين.', focus: 'الوسط والذراعين', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات جانبية' },
-      { name: 'سحب قطري من فوق لتحت', cue: 'اسحبي اليدين قطريًا ناحية الفخذ ثم بدّلي.', focus: 'البطن المائلة والظهر', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس اتجاه السحب من غير استيك' },
-      { name: 'لمسة كعب أمامية', cue: 'مدّي كعبًا للأمام مع دفع الذراعين للخلف.', focus: 'الرجلين والدورة الدموية', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الضلوع من الحوض بالتبادل من غير ضغط على الرقبة.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-    ],
+    effort: 'نشيط ومتحكَّم فيه',
+    exercises: pick('arm-march', 'side-step-touch', 'low-knee-lift', 'standing-hip-abduction', 'standing-hip-extension', 'wall-push-up', 'standing-side-crunch', 'abdominal-brace'),
   },
 ]
+
+const cooldown = library.filter((exercise) => exercise.category === 'stretch')
 
 function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60)
@@ -108,7 +96,104 @@ function formatTime(seconds: number) {
   return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
 }
 
+function hideBrokenImage(event: SyntheticEvent<HTMLImageElement>) {
+  event.currentTarget.style.visibility = 'hidden'
+}
+
+function readHash() {
+  const match = window.location.hash.match(/^#\/library(?:\/([\w-]+))?/)
+  return match ? { page: 'library' as const, focusId: match[1] ?? null } : { page: 'home' as const, focusId: null }
+}
+
+function useHashRoute() {
+  const [route, setRoute] = useState(readHash)
+  useEffect(() => {
+    const onChange = () => setRoute(readHash())
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+  return route
+}
+
+function LibraryPage({ focusId }: { focusId: string | null }) {
+  const [category, setCategory] = useState<LibraryCategory | 'all'>('all')
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const groups = libraryCategories.filter((group) => category === 'all' || group.id === category)
+
+  useEffect(() => {
+    if (focusId) setCategory('all')
+    const target = focusId ? document.getElementById(`lib-${focusId}`) : null
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    else window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [focusId])
+
+  return (
+    <section className="library-section" id="library">
+      <a href="#/" className="library-back"><ArrowRight /> الرجوع للبرنامج</a>
+      <div className="section-heading">
+        <h1>المكتبة</h1>
+        <p>٢٠ تمرين هم أساس البرنامج كله: كلهم واقفين ومن غير معدات، ولكل واحد بديلين أخف لو جسمك محتاج هدوء أكتر.</p>
+      </div>
+
+      <div className="library-filter" role="group" aria-label="تصفية المكتبة">
+        <button type="button" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>الكل <small>{library.length}</small></button>
+        {libraryCategories.map((group) => (
+          <button type="button" key={group.id} aria-pressed={category === group.id} onClick={() => setCategory(group.id)}>
+            {group.title} <small>{library.filter((exercise) => exercise.category === group.id).length}</small>
+          </button>
+        ))}
+      </div>
+
+      {groups.map((group) => (
+        <div className="library-group" key={group.id}>
+          <div className="library-group-heading">
+            <h3>{group.title}</h3>
+            <p>{group.description}</p>
+          </div>
+          <div className="library-grid">
+            {library.filter((exercise) => exercise.category === group.id).map((exercise) => (
+              <article className={`library-card ${focusId === exercise.id ? 'is-focused' : ''}`} id={`lib-${exercise.id}`} key={exercise.id}>
+                <div className="library-video">
+                  {playingId === exercise.id ? (
+                    <iframe
+                      src={youtubeEmbed(exercise.youtubeId, { autoplay: true })}
+                      title={`فيديو تمرين ${exercise.name}`}
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <button type="button" onClick={() => setPlayingId(exercise.id)} aria-label={`تشغيل فيديو ${exercise.name}`}>
+                      <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
+                      <span className="play-badge"><Play /></span>
+                    </button>
+                  )}
+                </div>
+                <div className="library-body">
+                  <span className="library-number">{String(exercise.number).padStart(2, '0')}</span>
+                  <h4>{exercise.name}</h4>
+                  <small className="library-subtitle">{exercise.subtitle} · {exercise.focus}</small>
+                  <p>{exercise.cue}</p>
+                  <ol className="library-alts">
+                    {exercise.alternatives.map((alternative, index) => (
+                      <li key={alternative}><b>بديل {index + 1}</b>{alternative}</li>
+                    ))}
+                  </ol>
+                  <div className="library-links">
+                    <a href={youtubeWatch(exercise.youtubeId)} target="_blank" rel="noreferrer"><ExternalLink /> افتحي على يوتيوب</a>
+                    <a href={youtubeSearch(exercise.searchQuery)} target="_blank" rel="noreferrer"><Search /> فيديوهات تانية</a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  )
+}
+
 function App() {
+  const route = useHashRoute()
   const [selectedId, setSelectedId] = useState<Level['id']>('easy')
   const [isRunnerOpen, setRunnerOpen] = useState(false)
   const [isRunning, setRunning] = useState(false)
@@ -204,6 +289,24 @@ function App() {
     setSecondsLeft(selected.work)
   }
 
+  if (route.page === 'library') {
+    return (
+      <main className="home-workout" dir="rtl">
+        <header className="topbar">
+          <a href="#/" className="brand" aria-label="الرجوع للبرنامج">
+            <span className="brand-mark"><HeartPulse /></span>
+            <span><strong>Menna Flow</strong><small>حركة خفيفة في البيت</small></span>
+          </a>
+          <nav className="topbar-links">
+            <a href="#/" className="topbar-action">البرنامج <ChevronLeft /></a>
+          </nav>
+        </header>
+        <LibraryPage focusId={route.focusId} />
+        <footer><span>Menna Flow</span><small>اختاري الحركة اللي جسمك قادر عليها النهارده.</small></footer>
+      </main>
+    )
+  }
+
   return (
     <main className="home-workout" dir="rtl">
       <header className="topbar">
@@ -211,8 +314,12 @@ function App() {
           <span className="brand-mark"><HeartPulse /></span>
           <span><strong>Menna Flow</strong><small>حركة خفيفة في البيت</small></span>
         </a>
-        <a href="#levels" className="topbar-action">اختاري مستواكي <ChevronLeft /></a>
+        <nav className="topbar-links">
+          <a href="#/library" className="topbar-action"><BookOpen /> المكتبة</a>
+          <a href="#levels" className="topbar-action">اختاري مستواكي <ChevronLeft /></a>
+        </nav>
       </header>
+
 
       <section className="hero" id="top">
         <div className="hero-copy">
@@ -275,22 +382,45 @@ function App() {
 
         <ol className="exercise-list">
           {selected.exercises.map((exercise, index) => (
-            <li key={exercise.name}>
+            <li key={exercise.id}>
               <span className="exercise-index">{index + 1}</span>
-              <figure className="exercise-media">
-                <img src={exercise.video} alt={`شرح متحرك لتمرين ${exercise.name}`} loading="lazy" />
-                {exercise.videoNote && <figcaption>{exercise.videoNote}</figcaption>}
-              </figure>
-              <div className="exercise-copy"><strong>{exercise.name}</strong><p>{exercise.cue}</p></div>
+              <a className="exercise-media" href={`#/library/${exercise.id}`} aria-label={`فيديو تمرين ${exercise.name} في المكتبة`}>
+                <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
+                <span className="play-badge"><Play /></span>
+              </a>
+              <div className="exercise-copy">
+                <strong>{exercise.name}</strong>
+                <p>{exercise.cue}</p>
+                <p className="exercise-alts"><b>أخف:</b> {exercise.alternatives[0]} · {exercise.alternatives[1]}</p>
+              </div>
               <span className="focus-tag">{exercise.focus}</span>
             </li>
           ))}
         </ol>
 
+        <div className="cooldown">
+          <strong><Wind /> التهدئة بعد آخر جولة</strong>
+          <p>اثبتي في كل إطالة 20–30 ثانية بنفَس هادي، ومن غير أي ألم.</p>
+          <div className="cooldown-list">
+            {cooldown.map((exercise) => (
+              <a key={exercise.id} href={`#/library/${exercise.id}`}>
+                <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
+                <span>{exercise.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
         <div className="round-note">
           <RotateCcw />
           <div><strong>بعد آخر تمرين</strong><p>خدي راحة من 45 إلى 60 ثانية، اشربي رشفات مية، وابدئي الجولة من الأول. لو جسمك مكتفي، وقّفي عند الجولة الحالية.</p></div>
         </div>
+      </section>
+
+      <section className="library-teaser">
+        <BookOpen />
+        <div><strong>المكتبة</strong><p>الـ٢٠ تمرين اللي البرنامج مبني عليهم، بالفيديو ولكل تمرين بديلين أخف.</p></div>
+        <a href="#/library" className="primary-action">افتحي المكتبة <ArrowLeft /></a>
       </section>
 
       <section className="safety-section">
@@ -325,15 +455,23 @@ function App() {
                   <div className="runner-top"><span>الجولة {round} من {selected.rounds}</span><b>{phase === 'work' ? 'وقت الحركة' : 'راحة قصيرة'}</b></div>
                   <div className="runner-stage">
                     <figure className="runner-demo">
-                      <img src={runnerExercise.video} alt={`شرح متحرك لتمرين ${runnerExercise.name}`} />
-                      <figcaption>{runnerExercise.videoNote ?? 'اتبعي اتجاه الحركة بهدوء'}</figcaption>
+                      <iframe
+                        key={runnerExercise.id}
+                        src={youtubeEmbed(runnerExercise.youtubeId, { autoplay: true, loop: true })}
+                        title={`فيديو تمرين ${runnerExercise.name}`}
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                      />
                     </figure>
                     <div className={`timer-face ${phase === 'rest' ? 'is-rest' : ''}`}>
                       <span>{formatTime(secondsLeft)}</span>
                       <small>{phase === 'work' ? runnerExercise.name : `التالي: ${runnerExercise.name}`}</small>
                     </div>
                   </div>
-                  <p className="runner-cue">{phase === 'work' ? selected.exercises[exerciseIndex].cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}</p>
+                  <p className="runner-cue">
+                    {phase === 'work' ? selected.exercises[exerciseIndex].cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}
+                    {phase === 'work' && <small>لو تقيل: {selected.exercises[exerciseIndex].alternatives[0]} أو {selected.exercises[exerciseIndex].alternatives[1]}</small>}
+                  </p>
                   <div className="runner-controls">
                     <button type="button" className="runner-primary" onClick={() => setRunning((value) => !value)}>
                       {isRunning ? <><CirclePause /> إيقاف مؤقت</> : <><CirclePlay /> {secondsLeft === selected.work && exerciseIndex === 0 && round === 1 ? 'ابدئي' : 'كمّلي'}</>}
