@@ -92,28 +92,28 @@ Checks: `npm run check` runs lint, type checks (app + Worker), unit tests and th
 
 ## Backend setup (Cloudflare) and deployment
 
-One-time, from the repository root:
+Already done: the D1 database `menna-flow` exists (its id is in `worker/wrangler.toml`) and the schema is applied.
 
-```bash
-npm run api:install
-cd worker
-npx wrangler login
-npx wrangler d1 create menna-flow           # copy the printed database_id into worker/wrangler.toml
-npx wrangler secret put APP_PASSCODE        # the passcode Menna will type in the app
-npm run migrate:remote                      # create the tables in the real D1 database
-npm run deploy                              # prints https://menna-flow-api.<subdomain>.workers.dev
-```
+The Worker is deployed by the **Deploy API** GitHub workflow (`.github/workflows/deploy-api.yml`). One-time setup:
 
-Then:
+1. **Create a Cloudflare API token.** In Cloudflare → My Profile → API Tokens → Create Token, start from "Edit Cloudflare Workers" and add the permission **Account → D1 → Edit**.
+2. **Add three repository secrets** in GitHub → Settings → Secrets and variables → Actions:
+   - `CLOUDFLARE_API_TOKEN`: the token from step 1.
+   - `CLOUDFLARE_ACCOUNT_ID`: shown on the Cloudflare dashboard (Workers & Pages, right sidebar).
+   - `APP_PASSCODE`: the passcode Menna will type in the app.
+3. **Run the workflow.** Go to Actions → Deploy API → Run workflow.
 
-1. In `worker/wrangler.toml`, add the Vercel URL to `ALLOWED_ORIGINS` (comma-separated, e.g. `https://menna-gym-plan.vercel.app,http://localhost:5173`) and run `npm run deploy` again.
-2. In Vercel → the `menna-gym-plan` project → Settings → Environment Variables, set `VITE_API_URL` to the Worker URL (Production and Preview), then redeploy.
-3. Open the site, enter the passcode, and press **ابدئي اليوم الأول النهارده** to set Day 1. The profile, baseline and reward placeholders are created automatically on the first request.
+The workflow applies the migrations, deploys the Worker, sets the passcode, checks `/api/health`, and commits `public/api-config.json` with the Worker URL. That commit makes Vercel redeploy the app pointing at the API, so no Vercel variable is needed.
 
-| Variable | Where | Purpose |
+After that, open the site, enter the passcode, and press **ابدئي اليوم الأول النهارده**.
+
+| Setting | Where | Purpose |
 |---|---|---|
-| `VITE_API_URL` | Vercel env (and `.env.local`) | Worker URL. Not secret. |
-| `APP_PASSCODE` | `wrangler secret put` (and `worker/.dev.vars` locally) | Shared passcode checked by the API. Never in the frontend bundle. |
-| `ALLOWED_ORIGINS` | `worker/wrangler.toml` `[vars]` | Origins allowed by CORS. |
+| `public/api-config.json` | written by the workflow | Worker URL the app reads at runtime |
+| `VITE_API_URL` (optional) | Vercel env or `.env.local` | Build-time Worker URL. Overrides the file above. |
+| `APP_PASSCODE` | GitHub secret → Worker secret (`worker/.dev.vars` locally) | Passcode checked by the API. Never in the frontend bundle. |
+| `ALLOWED_ORIGINS` | `worker/wrangler.toml` `[vars]` | CORS allow-list. `*` covers Vercel preview URLs. |
+
+Manual alternative: from `worker/`, run `npx wrangler login`, `npx wrangler secret put APP_PASSCODE`, `npm run migrate:remote`, then `npm run deploy`, and set `VITE_API_URL` in Vercel.
 
 R2 is not needed: report snapshots are stored in D1 and the PDF is re-created from them on demand.
