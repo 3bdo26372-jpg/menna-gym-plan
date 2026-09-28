@@ -34,7 +34,7 @@ function Welcome() {
     <div className="page">
       <section className="welcome">
         <p className="eyebrow">Menna Flow</p>
-        <h1>كل يوم حركة،<br /><em>بطريقتك.</em></h1>
+        <h1>كل يوم تمرين،<br /><em>بطريقتك.</em></h1>
         <p>برنامج يومي واقف من غير أدوات: كارديو يرفع النبض، شد للجسم، وإطالة. كل يوم له تمرين ونقاط، والبرنامج بيتظبط على حسب إحساسك.</p>
         <button type="button" className="button primary large" disabled={busy} onClick={async () => { setBusy(true); try { await startProgram() } finally { setBusy(false) } }}>
           <Play /> ابدئي اليوم الأول النهارده
@@ -91,7 +91,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       <Card>
         <h2 className="card-title">ملخص سريع</h2>
         <div className="stat-grid">
-          <StatTile label="أيام الحركة" value={stats.activeDays} unit={`/ ${stats.recordedDays}`} tone="accent" />
+          <StatTile label="أيام التمرين" value={stats.activeDays} unit={`/ ${stats.recordedDays}`} tone="accent" />
           <StatTile label="متوسط النقاط" value={stats.averageScore} unit="/100" />
           <StatTile label="دقائق التمرين" value={stats.totalMinutes} unit="دقيقة" />
           <StatTile label="الوزن الحالي" value={formatNumber(weight.current)} unit="كجم" hint={weight.entries ? `${formatChange(weight.changeFromBaseline, 'كجم')} من البداية` : 'نقطة البداية'} />
@@ -108,7 +108,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
             <>
               <p className="reward-mini"><span>{rewards.next.emoji}</span> {rewards.next.title}</p>
               <ProgressBar value={rewards.active} max={rewards.next.thresholdDays} label="التقدم للمكافأة الجاية" />
-              <p className="muted small">{rewards.active} من {rewards.next.thresholdDays} يوم حركة</p>
+              <p className="muted small">{rewards.active} من {rewards.next.thresholdDays} يوم تمرين</p>
             </>
           ) : <p>فتحتي كل المكافآت 🎉</p>}
           <a className="text-link" href="#/rewards">كل المكافآت <ChevronLeft /></a>
@@ -157,7 +157,7 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
         </div>
         <div className="chips">
           <span className="chip"><Timer /> {minutes} دقيقة</span>
-          {plan.dayType === 'light' ? <span className="chip soft">حركة خفيفة</span> : <span className="chip"><Flame /> {plan.intensity === 'gentle' ? 'شدة أخف' : 'شدة عادية'}</span>}
+          {plan.dayType === 'light' ? <span className="chip soft">تمرين خفيف</span> : <span className="chip"><Flame /> {plan.intensity === 'gentle' ? 'شدة أخف' : 'شدة عادية'}</span>}
           {levelNote && <span className="chip soft"><Sparkles /> مستوى {plan.level}</span>}
         </div>
       </div>

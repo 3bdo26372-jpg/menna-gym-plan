@@ -67,7 +67,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
 
         <div className="report-kpis">
           <div><span>متوسط النقاط</span><strong>{report.averageScore}<small>/100</small></strong></div>
-          <div><span>أيام الحركة</span><strong>{report.activeDays}</strong></div>
+          <div><span>أيام التمرين</span><strong>{report.activeDays}</strong></div>
           <div><span>عدد التمارين</span><strong>{report.workoutCount}</strong></div>
           <div><span>دقائق التمرين</span><strong>{report.totalMinutes}</strong></div>
           <div><span>متوسط الصعوبة</span><strong>{report.averageDifficulty ?? '—'}<small>/10</small></strong></div>
@@ -130,7 +130,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
         <h2>المكافآت</h2>
         {report.rewardsUnlocked.length
           ? <ul className="report-bullets">{report.rewardsUnlocked.map((reward) => <li key={reward.title}>{reward.emoji} {reward.title} — {formatDateFull(reward.unlockedOn)}</li>)}</ul>
-          : <p className="report-note">المكافأة الجاية قربت؛ كل يوم حركة بيقرّبها.</p>}
+          : <p className="report-note">المكافأة الجاية قربت؛ كل يوم تمرين بيقرّبها.</p>}
 
         <h2>اقتراحات {kind === 'week' ? 'للأسبوع' : 'للشهر'} الجاي</h2>
         <ul className="report-bullets">

@@ -17,8 +17,8 @@ export interface RewardDefinition {
 }
 
 export const DEFAULT_REWARDS: RewardDefinition[] = [
-  { id: 'day-5', thresholdDays: 5, sortOrder: 1, emoji: '🎁', title: 'مكافأة اليوم الخامس', description: 'مكافأة بعد ٥ أيام حركة.' },
-  { id: 'day-10', thresholdDays: 10, sortOrder: 2, emoji: '🎁', title: 'مكافأة اليوم العاشر', description: 'مكافأة بعد ١٠ أيام حركة.' },
+  { id: 'day-5', thresholdDays: 5, sortOrder: 1, emoji: '🎁', title: 'مكافأة اليوم الخامس', description: 'مكافأة بعد ٥ أيام تمرين.' },
+  { id: 'day-10', thresholdDays: 10, sortOrder: 2, emoji: '🎁', title: 'مكافأة اليوم العاشر', description: 'مكافأة بعد ١٠ أيام تمرين.' },
   { id: 'day-30', thresholdDays: 30, sortOrder: 3, emoji: '🏆', title: 'مكافأة الشهر الأول', description: 'مكافأة الشهر الأول كامل.' },
 ]
 
@@ -35,6 +35,6 @@ export function hideIfLocked(reward: RewardState): RewardState {
     ...reward,
     emoji: '🎁',
     title: `مفاجأة يوم ${reward.thresholdDays}`,
-    description: `مفاجأة سرّية بتتفتح لما توصلي لـ ${reward.thresholdDays} يوم حركة 🤫`,
+    description: `مفاجأة سرّية بتتفتح لما توصلي لـ ${reward.thresholdDays} يوم تمرين 🤫`,
   }
 }
