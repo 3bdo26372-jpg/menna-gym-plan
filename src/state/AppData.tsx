@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { cairoDate } from '../../shared/date'
 import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
-import type { AppState, MeasurementInput, ReportKind, RewardPatch } from '../../shared/types'
+import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
 import { createLocalBackend } from '../lib/localBackend'
@@ -21,7 +21,6 @@ interface AppDataValue {
   saveWorkout(date: string, input: WorkoutInput): Promise<AppState>
   saveFeedback(date: string, input: FeedbackInput): Promise<void>
   addMeasurement(input: MeasurementInput): Promise<void>
-  updateReward(id: string, patch: RewardPatch): Promise<void>
   markRewardCelebrated(id: string): Promise<void>
   addFood(date: string, input: FoodInput): Promise<void>
   deleteFood(id: number): Promise<void>
@@ -65,7 +64,6 @@ function createBackend(): Backend {
     saveWorkout: forward('saveWorkout'),
     saveFeedback: forward('saveFeedback'),
     addMeasurement: forward('addMeasurement'),
-    updateReward: forward('updateReward'),
     markRewardCelebrated: forward('markRewardCelebrated'),
     addFood: forward('addFood'),
     deleteFood: forward('deleteFood'),
@@ -170,7 +168,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       saveWorkout: (date, input) => apply(backend.saveWorkout(date, input)),
       saveFeedback: async (date, input) => void (await apply(backend.saveFeedback(date, input))),
       addMeasurement: async (input) => void (await apply(backend.addMeasurement(input))),
-      updateReward: async (id, patch) => void (await apply(backend.updateReward(id, patch))),
       markRewardCelebrated: async (id) => void (await apply(backend.markRewardCelebrated(id))),
       addFood: async (date, input) => void (await apply(backend.addFood(date, input))),
       deleteFood: async (id) => void (await apply(backend.deleteFood(id))),
