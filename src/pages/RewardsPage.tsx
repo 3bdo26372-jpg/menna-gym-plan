@@ -11,7 +11,7 @@ export function RewardsPage() {
   return (
     <div className="page">
       <PageHeader eyebrow="المكافآت" title="استمرارك يستاهل احتفال">
-        <p>أي يوم تخلّصي فيه نص التمرين على الأقل بيتحسب يوم حركة، حتى أيام الحركة الخفيفة. لحد دلوقتي: <strong>{active}</strong> يوم.</p>
+        <p>أي يوم تخلّصي فيه نص التمرين على الأقل بيتحسب يوم تمرين، حتى أيام التمرين الخفيف. لحد دلوقتي: <strong>{active}</strong> يوم.</p>
       </PageHeader>
       <div className="reward-list">
         {[...state.rewards].sort((a, b) => a.sortOrder - b.sortOrder).map((reward) => <RewardCard key={reward.id} reward={reward} active={active} />)}
@@ -40,7 +40,7 @@ function RewardCard({ reward, active }: { reward: RewardState; active: number })
         : (
           <>
             <ProgressBar value={active} max={reward.thresholdDays} label={`التقدم لـ ${reward.title}`} />
-            <p className="muted small">{Math.min(active, reward.thresholdDays)} من {reward.thresholdDays} يوم حركة · فاضل {Math.max(0, reward.thresholdDays - active)}</p>
+            <p className="muted small">{Math.min(active, reward.thresholdDays)} من {reward.thresholdDays} يوم تمرين · فاضل {Math.max(0, reward.thresholdDays - active)}</p>
           </>
         )}
     </Card>

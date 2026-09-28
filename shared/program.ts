@@ -44,11 +44,11 @@ export interface LevelSettings {
 /** Each level changes exactly one variable from the previous one. */
 export const LEVELS: LevelSettings[] = [
   { workSeconds: 30, restSeconds: 20, cardioRounds: 2, coreRounds: 2, moreJumps: false, change: 'نقطة البداية' },
-  { workSeconds: 35, restSeconds: 20, cardioRounds: 2, coreRounds: 2, moreJumps: false, change: 'وقت الحركة زاد ٥ ثواني' },
+  { workSeconds: 35, restSeconds: 20, cardioRounds: 2, coreRounds: 2, moreJumps: false, change: 'وقت التمرين زاد ٥ ثواني' },
   { workSeconds: 35, restSeconds: 15, cardioRounds: 2, coreRounds: 2, moreJumps: false, change: 'الراحة بقت أقصر ٥ ثواني' },
   { workSeconds: 35, restSeconds: 15, cardioRounds: 3, coreRounds: 2, moreJumps: false, change: 'جولة كارديو زيادة' },
   { workSeconds: 35, restSeconds: 15, cardioRounds: 3, coreRounds: 2, moreJumps: true, change: 'تمارين أنشط في الكارديو' },
-  { workSeconds: 40, restSeconds: 15, cardioRounds: 3, coreRounds: 2, moreJumps: true, change: 'وقت الحركة زاد ٥ ثواني' },
+  { workSeconds: 40, restSeconds: 15, cardioRounds: 3, coreRounds: 2, moreJumps: true, change: 'وقت التمرين زاد ٥ ثواني' },
   { workSeconds: 40, restSeconds: 15, cardioRounds: 3, coreRounds: 3, moreJumps: true, change: 'جولة بطن زيادة' },
 ]
 export const MAX_LEVEL = LEVELS.length - 1
@@ -77,14 +77,14 @@ export const DAY_TYPE_LABEL: Record<DayType, string> = {
   'cardio-burn': 'حرق كارديو',
   'box-kick': 'ملاكمة وركلات',
   'sculpt-sweat': 'شد وتعريق',
-  light: 'يوم حركة خفيفة',
+  light: 'يوم تمرين خفيف',
 }
 
 export const BLOCK_LABEL: Record<BlockId, string> = {
   warmup: 'تسخين',
   cardio: 'كارديو للجسم كله',
   core: 'بطن وتحكم',
-  light: 'حركة خفيفة',
+  light: 'تمرين خفيف',
   cooldown: 'إطالة وتهدئة',
 }
 
@@ -161,7 +161,7 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
   let dayType = dayTypeFor(context.dayNumber)
   if (context.painReported && dayType !== 'light') {
     dayType = 'light'
-    notes.push('سجّلتي ألم في آخر تمرين، فالنهارده يوم حركة خفيفة. لو الألم لسه موجود، ريّحي الجزء ده ومتزوديش الشدة.')
+    notes.push('سجّلتي ألم في آخر تمرين، فالنهارده يوم تمرين خفيف. لو الألم لسه موجود، ريّحي الجزء ده ومتزوديش الشدة.')
   }
 
   const warmup: PlanBlock = {
@@ -177,7 +177,7 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
     }
     const cooldown: PlanBlock = { id: 'cooldown', title: BLOCK_LABEL.cooldown, rounds: 1, workSeconds: STRETCH_SECONDS, restSeconds: 0, exerciseIds: cooldownFor(seed * 2, 6) }
     blocks = [{ ...warmup, exerciseIds: warmup.exerciseIds.slice(0, 4), workSeconds: 40 }, light, cooldown]
-    notes.push('يوم حركة خفيفة: حركة هادية وإطالة، مش راحة كاملة.')
+    notes.push('يوم تمرين خفيف: حركة هادية وإطالة، مش راحة كاملة.')
   } else {
     const template = TEMPLATES.find((item) => item.type === dayType) ?? TEMPLATES[0]
     const slots = settings.moreJumps && dayType === 'cardio-burn'

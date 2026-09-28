@@ -38,7 +38,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - **Exercises**: all standing, bodyweight only; no floor, wall, chair, bench or equipment.
 - **Alternatives**: every jumping movement names a low-impact alternative, and the player's **صعب؟ أسهل** button switches to it mid-workout without resetting the timer.
 - **Session structure**: warm-up → full-body cardio → standing core/body control → standing stretches.
-- **Weekly shape**: a 4-day cycle of three active day types, then a **Light Movement Day** (يوم حركة خفيفة: easy movement plus stretching). There is never a "rest day".
+- **Weekly shape**: a 4-day cycle of three active day types, then a **Light Movement Day** (يوم تمرين خفيف: easy movement plus stretching). There is never a "rest day".
   - Exercises rotate daily so neighbouring days differ.
 - **Duration**: level 0 sessions are about 18 minutes (Light Movement Days about 15); the top level stays under 28 minutes.
 - **Adaptation**:

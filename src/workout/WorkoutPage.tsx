@@ -236,7 +236,7 @@ function FinishedView({ session, phase, error, onRetry, onFeedback }: {
           <motion.div className="done-view" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
             <ScoreRing score={day?.score.total ?? 0} size={150} />
             <h1>كده تمام يا منّة</h1>
-            <p>{Math.round(summary.done / 60)} دقيقة حركة النهارده. اشربي مية وخدي نفس هادي.</p>
+            <p>{Math.round(summary.done / 60)} دقيقة تمرين النهارده. اشربي مية وخدي نفس هادي.</p>
             {day?.feedback?.pain && <SafetyNote compact />}
             <button type="button" className="button primary" onClick={() => navigate('today')}>الرجوع للصفحة الرئيسية</button>
           </motion.div>
@@ -246,7 +246,7 @@ function FinishedView({ session, phase, error, onRetry, onFeedback }: {
               <span className="finished-icon"><CircleCheck /></span>
               <div>
                 <h1>{summary.ratio >= 0.99 ? 'خلّصتي التمرين!' : 'اتحفظ اللي عملتيه'}</h1>
-                <p>{Math.round(summary.done / 60)} دقيقة حركة · {Math.round(summary.ratio * 100)}% من التمرين</p>
+                <p>{Math.round(summary.done / 60)} دقيقة تمرين · {Math.round(summary.ratio * 100)}% من التمرين</p>
               </div>
             </header>
             {phase === 'saving' && (error

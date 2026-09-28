@@ -205,7 +205,7 @@ function writeSummary(report: ReportData, recordedCount: number, dayTypes: DayTy
 function writeSuggestions(report: ReportData, recordedCount: number, painCount: number, state: AppState, start: string, end: string) {
   const suggestions: string[] = []
   const ratio = recordedCount ? report.activeDays / recordedCount : 0
-  if (ratio < 0.6) suggestions.push('حطي ميعاد ثابت للتمرين في يومك؛ حتى ١٥ دقيقة أو يوم حركة خفيفة بيفرقوا.')
+  if (ratio < 0.6) suggestions.push('حطي ميعاد ثابت للتمرين في يومك؛ حتى ١٥ دقيقة أو يوم تمرين خفيف بيفرقوا.')
   else suggestions.push('استمري على نفس الإيقاع؛ الانتظام ده هو اللي بيعمل الفرق.')
   if (report.averageDifficulty !== null && report.averageDifficulty <= 4) suggestions.push('التمارين بقت أسهل عليكي؛ جرّبي الحركة الأساسية بدل البديل، والبرنامج هيزود الشدة تدريجيًا.')
   if (report.averageDifficulty !== null && report.averageDifficulty >= 8) suggestions.push('خدي البدائل الأخف براحتك في الأيام التقيلة، والبرنامج هيقلل الفترات تلقائيًا.')

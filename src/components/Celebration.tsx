@@ -32,7 +32,7 @@ export function Celebration({ reward, onClose }: { reward: RewardState | null; o
             <p className="eyebrow">🎉 Reward Unlocked</p>
             <h2 id="celebration-title">{reward.title}</h2>
             <p>{reward.description}</p>
-            {reward.unlockedOn && <p className="muted small">اتفتحت يوم {formatDateFull(reward.unlockedOn)} بعد {reward.thresholdDays} أيام حركة.</p>}
+            {reward.unlockedOn && <p className="muted small">اتفتحت يوم {formatDateFull(reward.unlockedOn)} بعد {reward.thresholdDays} أيام تمرين.</p>}
             <button type="button" className="button primary" onClick={onClose}>تستاهليها 💗</button>
           </motion.div>
         </motion.div>

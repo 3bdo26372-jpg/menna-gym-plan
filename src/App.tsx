@@ -43,7 +43,7 @@ function Shell() {
       <header className="topbar">
         <a href="#/today" className="brand" aria-label="Menna Flow — اليوم">
           <span className="brand-mark"><HeartPulse /></span>
-          <span><strong>Menna Flow</strong><small>حركة كل يوم</small></span>
+          <span><strong>Menna Flow</strong><small>تمرين كل يوم</small></span>
         </a>
         <nav className="nav" aria-label="الأقسام">
           {NAV.map(({ route: target, label, icon: Icon }) => (

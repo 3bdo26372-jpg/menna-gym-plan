@@ -24,7 +24,7 @@ export function ProgressPage() {
       </PageHeader>
 
       <div className="stat-grid">
-        <StatTile label="أيام الحركة" value={stats.activeDays} tone="accent" />
+        <StatTile label="أيام التمرين" value={stats.activeDays} tone="accent" />
         <StatTile label="متوسط النقاط" value={stats.averageScore} unit="/100" />
         <StatTile label="دقائق التمرين" value={stats.totalMinutes} />
       </div>
