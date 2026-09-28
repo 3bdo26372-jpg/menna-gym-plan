@@ -91,8 +91,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(159,45,100,.34);
 .circuit-stats b { font-size: 13px; font-variant-numeric: tabular-nums; }
 .circuit-stats small { color: var(--muted); font-size: 9px; }
 .exercise-list { margin: 0; padding: 0; list-style: none; }
-.exercise-list li { min-height: 106px; padding: 20px 8px; display: grid; grid-template-columns: 48px minmax(0,1fr) 150px; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); }
+.exercise-list li { min-height: 128px; padding: 18px 8px; display: grid; grid-template-columns: 40px 122px minmax(0,1fr) 150px; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); }
 .exercise-index { color: #a46081; font: 800 13px 'Manrope', sans-serif; }
+.exercise-media { width: 122px; height: 92px; margin: 0; position: relative; overflow: hidden; border-radius: 12px; background: #fff; }
+.exercise-media img { width: 100%; height: 100%; display: block; object-fit: contain; mix-blend-mode: multiply; }
+.exercise-media figcaption { position: absolute; inset-inline: 5px; bottom: 5px; padding: 4px 6px; border-radius: 7px; color: #fff; background: rgba(57,31,44,.82); text-align: center; font-size: 7px; line-height: 1.45; }
 .exercise-copy strong { color: var(--ink); font-size: 15px; }
 .exercise-copy p { max-width: 670px; margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.7; }
 .focus-tag { justify-self: end; padding: 7px 10px; border-radius: 999px; color: var(--berry); background: var(--rose-soft); font-size: 9px; font-weight: 700; }
@@ -112,14 +115,18 @@ footer span { color: #fff; font: 800 12px 'Manrope', sans-serif; }
 footer small { font-size: 9px; }
 
 .runner-backdrop { position: fixed; inset: 0; z-index: 50; padding: 24px; display: grid; place-items: center; background: rgba(37,19,29,.68); backdrop-filter: blur(10px); }
-.runner { width: min(540px,100%); min-height: 520px; padding: 38px; position: relative; overflow: hidden; border-radius: 16px; background: #fffafb; box-shadow: 0 34px 90px rgba(29,12,21,.36); }
+.runner { width: min(680px,100%); min-height: 520px; padding: 38px; position: relative; overflow: hidden; border-radius: 16px; background: #fffafb; box-shadow: 0 34px 90px rgba(29,12,21,.36); }
 .runner-close { width: 38px; height: 38px; position: absolute; top: 20px; left: 20px; z-index: 2; border: 0; display: grid; place-items: center; border-radius: 50%; color: var(--muted); background: #f7eaf0; cursor: pointer; }
 .runner-close svg { width: 17px; }
 .runner-progress { height: 5px; margin: 5px 50px 35px 0; overflow: hidden; border-radius: 6px; background: #f0dce6; }
 .runner-progress i { width: 100%; height: 100%; display: block; border-radius: inherit; background: var(--berry); transform-origin: right center; transition: transform .35s ease; }
 .runner-top { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
 .runner-top b { color: var(--berry); }
-.timer-face { width: 270px; height: 270px; margin: 28px auto 22px; display: grid; place-content: center; text-align: center; border: 1px solid #edcedd; border-radius: 50%; background: #fff1f7; box-shadow: 0 16px 44px rgba(114,39,74,.12); transition: background .25s ease; }
+.runner-stage { margin: 28px auto 22px; display: grid; grid-template-columns: 210px 230px; justify-content: center; align-items: center; gap: 30px; }
+.runner-demo { width: 210px; height: 210px; margin: 0; position: relative; overflow: hidden; border-radius: 14px; background: #fff; }
+.runner-demo img { width: 100%; height: 100%; display: block; object-fit: contain; mix-blend-mode: multiply; }
+.runner-demo figcaption { position: absolute; inset-inline: 8px; bottom: 8px; padding: 6px 8px; border-radius: 8px; color: #fff; background: rgba(57,31,44,.84); text-align: center; font-size: 8px; line-height: 1.5; }
+.timer-face { width: 230px; height: 230px; margin: 0; display: grid; place-content: center; text-align: center; border: 1px solid #edcedd; border-radius: 50%; background: #fff1f7; box-shadow: 0 16px 44px rgba(114,39,74,.12); transition: background .25s ease; }
 .timer-face.is-rest { background: #edf7f3; border-color: #cce4dc; }
 .timer-face span { color: var(--berry-dark); font: 800 58px 'Manrope', sans-serif; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .timer-face small { max-width: 190px; margin: 8px auto 0; color: var(--muted); font-size: 12px; font-weight: 700; }
@@ -142,8 +149,9 @@ footer small { font-size: 9px; }
   .hero-actions { justify-content: center; }
   .hero-panel { min-height: 390px; }
   .circuit-intro { align-items: flex-start; flex-direction: column; }
-  .exercise-list li { grid-template-columns: 38px minmax(0,1fr); }
-  .focus-tag { grid-column: 2; justify-self: start; }
+  .exercise-list li { grid-template-columns: 34px 108px minmax(0,1fr); }
+  .exercise-media { width: 108px; height: 86px; }
+  .focus-tag { grid-column: 3; justify-self: start; }
 }
 
 @media (max-width: 620px) {
@@ -168,7 +176,9 @@ footer small { font-size: 9px; }
   .circuit-intro p { font-size: 11px; }
   .circuit-stats { grid-template-columns: 1fr; }
   .circuit-stats > span + span { border-top: 1px solid var(--line); border-right: 0; }
-  .exercise-list li { padding-block: 19px; }
+  .exercise-list li { padding-block: 19px; grid-template-columns: 28px 82px minmax(0,1fr); gap: 10px; }
+  .exercise-media { width: 82px; height: 74px; }
+  .exercise-media figcaption { display: none; }
   .safety-section { padding: 75px 0 80px; }
   .safety-grid { grid-template-columns: 1fr; gap: 12px; }
   .safety-grid article { min-height: 0; padding: 18px 0; text-align: center; }
@@ -177,8 +187,12 @@ footer small { font-size: 9px; }
   .runner-backdrop { padding: 10px; }
   .runner { min-height: min(570px,calc(100vh - 20px)); padding: 30px 18px 22px; }
   .runner-progress { margin-right: 0; margin-left: 46px; }
-  .timer-face { width: 238px; height: 238px; }
-  .timer-face span { font-size: 50px; }
+  .runner-stage { grid-template-columns: 132px 168px; gap: 12px; }
+  .runner-demo { width: 132px; height: 132px; }
+  .runner-demo figcaption { inset-inline: 4px; bottom: 4px; padding: 4px; font-size: 6px; }
+  .timer-face { width: 168px; height: 168px; }
+  .timer-face span { font-size: 42px; }
+  .timer-face small { max-width: 125px; font-size: 10px; }
   .runner-controls { grid-template-columns: 1fr 1fr; }
   .runner-primary { grid-column: 1 / -1; }
 }

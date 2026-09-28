@@ -22,6 +22,8 @@ type Exercise = {
   name: string
   cue: string
   focus: string
+  video: string
+  videoNote?: string
 }
 
 type Level = {
@@ -49,12 +51,12 @@ const levels: Level[] = [
     duration: '10–12 دقيقة',
     effort: 'خفيف',
     exercises: [
-      { name: 'مشي في المكان', cue: 'ارفعي القدم بهدوء وحرّكي الذراعين طبيعي.', focus: 'الجسم كله' },
-      { name: 'خطوة يمين وشمال', cue: 'خطوة جانبية ولمسة خفيفة بالقدم الثانية.', focus: 'الرجلين والوسط' },
-      { name: 'رفع ركبة بالتبادل', cue: 'ارفعي الركبة براحة مع بطن مشدودة وظهر طويل.', focus: 'البطن والفخذ' },
-      { name: 'خطوة مع رفع الذراعين', cue: 'افتحي خطوة وارفعِي الذراعين من غير شد للرقبة.', focus: 'الكتف والدورة الدموية' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الكوع من الركبة في نفس الجانب من غير ميل للأمام.', focus: 'جانبي البطن' },
-      { name: 'رفع الكعبين مع سحب الذراع', cue: 'اطلعي على أطراف القدم واسحبي الكوعين للخلف.', focus: 'السمانة وأعلى الظهر' },
+      { name: 'مشي في المكان', cue: 'ارفعي القدم بهدوء وحرّكي الذراعين طبيعي.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
+      { name: 'خطوة يمين وشمال', cue: 'خطوة جانبية ولمسة خفيفة بالقدم الثانية.', focus: 'الرجلين والوسط', video: '/exercises/warm-hip-circles.gif' },
+      { name: 'رفع ركبة بالتبادل', cue: 'ارفعي الركبة براحة مع بطن مشدودة وظهر طويل.', focus: 'البطن والفخذ', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام بدل الخلف' },
+      { name: 'خطوة مع رفع الذراعين', cue: 'افتحي خطوة وارفعِي الذراعين من غير شد للرقبة.', focus: 'الكتف والدورة الدموية', video: '/exercises/warm-arm-circles.gif' },
+      { name: 'كرنش جانبي واقف', cue: 'قرّبي الكوع من الركبة في نفس الجانب من غير ميل للأمام.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
+      { name: 'رفع الكعبين مع سحب الذراع', cue: 'اطلعي على أطراف القدم واسحبي الكوعين للخلف.', focus: 'السمانة وأعلى الظهر', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
     ],
   },
   {
@@ -68,13 +70,13 @@ const levels: Level[] = [
     duration: '18–20 دقيقة',
     effort: 'متوسط مريح',
     exercises: [
-      { name: 'مشي سريع في المكان', cue: 'زودي سرعة الخطوات مع كتف مرتاح ونَفَس منتظم.', focus: 'القلب والجسم كله' },
-      { name: 'خطوتان جانبيتان مع سحب', cue: 'خطوتان لكل ناحية واسحبي الذراعين ناحية الضلوع.', focus: 'الظهر والوسط' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّي الجذع بهدوء وقرّبي الركبة للكوع المقابل.', focus: 'البطن والخصر' },
-      { name: 'نصف سكوات مع مدّ الذراع', cue: 'انزلي مسافة صغيرة كأنك هتقعدي ثم ارفعي الذراعين.', focus: 'الرجلين والبطن' },
-      { name: 'لكمات أمامية', cue: 'لكمات خفيفة بالتبادل مع ثبات الحوض وارتخاء الكتف.', focus: 'الذراعين والجذع' },
-      { name: 'كرنش جانبي بالتبادل', cue: 'كوع ناحية ركبة جانبية ثم بدّلي من غير استعجال.', focus: 'جانبي البطن' },
-      { name: 'سحب ركبة لأسفل', cue: 'الذراعان فوق ثم اسحبيهما لأسفل مع رفع ركبة.', focus: 'البطن والظهر' },
+      { name: 'مشي سريع في المكان', cue: 'زودي سرعة الخطوات مع كتف مرتاح ونَفَس منتظم.', focus: 'القلب والجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
+      { name: 'خطوتان جانبيتان مع سحب', cue: 'خطوتان لكل ناحية واسحبي الذراعين ناحية الضلوع.', focus: 'الظهر والوسط', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس حركة الذراع من غير استيك' },
+      { name: 'ركبة للكوع العكسي', cue: 'لفّي الجذع بهدوء وقرّبي الركبة للكوع المقابل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
+      { name: 'نصف سكوات مع مدّ الذراع', cue: 'انزلي مسافة صغيرة كأنك هتقعدي ثم ارفعي الذراعين.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif' },
+      { name: 'لكمات أمامية', cue: 'لكمات خفيفة بالتبادل مع ثبات الحوض وارتخاء الكتف.', focus: 'الذراعين والجذع', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات أمامية' },
+      { name: 'كرنش جانبي بالتبادل', cue: 'كوع ناحية ركبة جانبية ثم بدّلي من غير استعجال.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
+      { name: 'سحب ركبة لأسفل', cue: 'الذراعان فوق ثم اسحبيهما لأسفل مع رفع ركبة.', focus: 'البطن والظهر', video: '/exercises/warm-wall-slide.gif', videoNote: 'اسحبي الذراعين من فوق مع رفع الركبة' },
     ],
   },
   {
@@ -88,14 +90,14 @@ const levels: Level[] = [
     duration: '24–26 دقيقة',
     effort: 'نشيط ومتحكَّم فيه',
     exercises: [
-      { name: 'مشي قوي مع سحب الذراعين', cue: 'خطوات نشيطة واسحبي الكوعين للخلف مع صدر مفتوح.', focus: 'الجسم كله' },
-      { name: 'خطوة جانبية عريضة', cue: 'وسّعي الخطوة وادفعي الذراعين للأمام بالتبادل.', focus: 'الرجلين والكتف' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّة صغيرة من أعلى الجذع مع تحكم كامل.', focus: 'البطن والخصر' },
-      { name: 'سكوات صغير مع ركبة', cue: 'نصف سكوات ثم ارفعي ركبة واحدة وبدّلي.', focus: 'الرجلين والبطن' },
-      { name: 'لكمات جانبية متحكَّم فيها', cue: 'لفّي الصدر قليلًا مع بقاء الركبتين مرنتين.', focus: 'الوسط والذراعين' },
-      { name: 'سحب قطري من فوق لتحت', cue: 'اسحبي اليدين قطريًا ناحية الفخذ ثم بدّلي.', focus: 'البطن المائلة والظهر' },
-      { name: 'لمسة كعب أمامية', cue: 'مدّي كعبًا للأمام مع دفع الذراعين للخلف.', focus: 'الرجلين والدورة الدموية' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الضلوع من الحوض بالتبادل من غير ضغط على الرقبة.', focus: 'جانبي البطن' },
+      { name: 'مشي قوي مع سحب الذراعين', cue: 'خطوات نشيطة واسحبي الكوعين للخلف مع صدر مفتوح.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
+      { name: 'خطوة جانبية عريضة', cue: 'وسّعي الخطوة وادفعي الذراعين للأمام بالتبادل.', focus: 'الرجلين والكتف', video: '/exercises/warm-hip-circles.gif' },
+      { name: 'ركبة للكوع العكسي', cue: 'لفّة صغيرة من أعلى الجذع مع تحكم كامل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
+      { name: 'سكوات صغير مع ركبة', cue: 'نصف سكوات ثم ارفعي ركبة واحدة وبدّلي.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif', videoNote: 'بعد كل سكوات ارفعي ركبة' },
+      { name: 'لكمات جانبية متحكَّم فيها', cue: 'لفّي الصدر قليلًا مع بقاء الركبتين مرنتين.', focus: 'الوسط والذراعين', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات جانبية' },
+      { name: 'سحب قطري من فوق لتحت', cue: 'اسحبي اليدين قطريًا ناحية الفخذ ثم بدّلي.', focus: 'البطن المائلة والظهر', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس اتجاه السحب من غير استيك' },
+      { name: 'لمسة كعب أمامية', cue: 'مدّي كعبًا للأمام مع دفع الذراعين للخلف.', focus: 'الرجلين والدورة الدموية', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
+      { name: 'كرنش جانبي واقف', cue: 'قرّبي الضلوع من الحوض بالتبادل من غير ضغط على الرقبة.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
     ],
   },
 ]
@@ -125,6 +127,7 @@ function App() {
     if (round < selected.rounds) return selected.exercises[0]
     return null
   }, [exerciseIndex, round, selected])
+  const runnerExercise = phase === 'rest' && nextExercise ? nextExercise : selected.exercises[exerciseIndex]
 
   useEffect(() => {
     if (!isRunnerOpen || !isRunning || phase === 'done') return
@@ -274,6 +277,10 @@ function App() {
           {selected.exercises.map((exercise, index) => (
             <li key={exercise.name}>
               <span className="exercise-index">{index + 1}</span>
+              <figure className="exercise-media">
+                <img src={exercise.video} alt={`شرح متحرك لتمرين ${exercise.name}`} loading="lazy" />
+                {exercise.videoNote && <figcaption>{exercise.videoNote}</figcaption>}
+              </figure>
               <div className="exercise-copy"><strong>{exercise.name}</strong><p>{exercise.cue}</p></div>
               <span className="focus-tag">{exercise.focus}</span>
             </li>
@@ -316,9 +323,15 @@ function App() {
                 <>
                   <div className="runner-progress"><i style={{ transform: `scaleX(${progress / 100})` }} /></div>
                   <div className="runner-top"><span>الجولة {round} من {selected.rounds}</span><b>{phase === 'work' ? 'وقت الحركة' : 'راحة قصيرة'}</b></div>
-                  <div className={`timer-face ${phase === 'rest' ? 'is-rest' : ''}`}>
-                    <span>{formatTime(secondsLeft)}</span>
-                    <small>{phase === 'work' ? selected.exercises[exerciseIndex].name : 'خدي نفس واستعدّي'}</small>
+                  <div className="runner-stage">
+                    <figure className="runner-demo">
+                      <img src={runnerExercise.video} alt={`شرح متحرك لتمرين ${runnerExercise.name}`} />
+                      <figcaption>{runnerExercise.videoNote ?? 'اتبعي اتجاه الحركة بهدوء'}</figcaption>
+                    </figure>
+                    <div className={`timer-face ${phase === 'rest' ? 'is-rest' : ''}`}>
+                      <span>{formatTime(secondsLeft)}</span>
+                      <small>{phase === 'work' ? runnerExercise.name : `التالي: ${runnerExercise.name}`}</small>
+                    </div>
                   </div>
                   <p className="runner-cue">{phase === 'work' ? selected.exercises[exerciseIndex].cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}</p>
                   <div className="runner-controls">
