@@ -28,9 +28,45 @@ interface AppDataValue {
 
 const AppDataContext = createContext<AppDataValue | null>(null)
 
+/**
+ * The API URL comes from VITE_API_URL at build time or, failing that, from
+ * /api-config.json (written by the deploy-api GitHub workflow). Without
+ * either, the app uses the local development fallback.
+ */
+async function resolveBackend(): Promise<Backend> {
+  const built = import.meta.env.VITE_API_URL?.trim()
+  if (built) return createHttpBackend(built)
+  try {
+    const response = await fetch('/api-config.json', { cache: 'no-store' })
+    const config = response.ok ? ((await response.json()) as { apiUrl?: string }) : {}
+    if (config.apiUrl?.trim()) return createHttpBackend(config.apiUrl.trim())
+  } catch {
+    /* no runtime config: fall back to local mode */
+  }
+  return createLocalBackend()
+}
+
+/** A Backend that forwards every call once the real one is resolved. */
 function createBackend(): Backend {
-  const url = import.meta.env.VITE_API_URL?.trim()
-  return url ? createHttpBackend(url) : createLocalBackend()
+  let resolved: Backend | null = null
+  const ready = resolveBackend().then((backend) => (resolved = backend))
+  const forward = <K extends Exclude<keyof Backend, 'mode'>>(key: K) =>
+    ((...args: unknown[]) => ready.then((backend) => (backend[key] as (...a: unknown[]) => unknown)(...args))) as Backend[K]
+  return {
+    get mode() {
+      return resolved?.mode ?? 'remote'
+    },
+    getState: forward('getState'),
+    startProgram: forward('startProgram'),
+    saveCheckin: forward('saveCheckin'),
+    saveWorkout: forward('saveWorkout'),
+    saveFeedback: forward('saveFeedback'),
+    addMeasurement: forward('addMeasurement'),
+    updateReward: forward('updateReward'),
+    markRewardCelebrated: forward('markRewardCelebrated'),
+    generateReport: forward('generateReport'),
+    getReport: forward('getReport'),
+  }
 }
 
 export function AppDataProvider({ children }: { children: ReactNode }) {

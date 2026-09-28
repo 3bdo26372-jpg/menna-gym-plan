@@ -1,0 +1,105 @@
+# Deploys the Menna Flow API (Cloudflare Worker + D1) and tells the app where it is.
+#
+# One-time setup: add these repository secrets (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   token with "Workers Scripts: Edit" and "D1: Edit" permissions
+#   CLOUDFLARE_ACCOUNT_ID  shown on the Cloudflare dashboard (Workers & Pages → Account ID)
+#   APP_PASSCODE           the passcode Menna types in the app
+# Then run this workflow from the Actions tab (it also runs when worker/ or shared/ change).
+name: Deploy API
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['worker/**', 'shared/**', '.github/workflows/deploy-api.yml']
+
+permissions:
+  contents: write
+
+concurrency: deploy-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      APP_PASSCODE: ${{ secrets.APP_PASSCODE }}
+    steps:
+      - name: Check secrets
+        id: secrets
+        run: |
+          missing=""
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID APP_PASSCODE; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::warning::Skipping deploy. Add these repository secrets first:$missing"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: Install
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: worker
+        run: npm ci
+
+      - name: Apply database migrations
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: worker
+        run: npx wrangler d1 migrations apply menna-flow --remote
+
+      - name: Deploy Worker
+        id: deploy
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: worker
+        run: |
+          npx wrangler deploy 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          if [ -z "$url" ]; then
+            echo "::error::No workers.dev URL in the deploy output. Enable the workers.dev subdomain in the Cloudflare dashboard (Workers & Pages → your subdomain) and re-run."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Set passcode secret
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: worker
+        run: printf '%s' "$APP_PASSCODE" | npx wrangler secret put APP_PASSCODE
+
+      - name: Smoke test
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS "${{ steps.deploy.outputs.url }}/api/health"; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Point the app at the API
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          API_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          printf '{\n  "apiUrl": "%s"\n}\n' "$API_URL" > public/api-config.json
+          if git ls-files --error-unmatch public/api-config.json >/dev/null 2>&1 && git diff --quiet -- public/api-config.json; then
+            echo "The app already points at $API_URL"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/api-config.json
+          git commit -m "Point the app at the deployed API ($API_URL)"
+          git push
+          echo "Vercel will redeploy the app with the new API URL."

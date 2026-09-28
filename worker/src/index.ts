@@ -16,6 +16,7 @@ import {
   startProgram,
   updateReward,
 } from './db'
+import { originMatches } from './cors'
 
 export interface Env {
   DB: D1Database
@@ -36,7 +37,7 @@ const json = (body: unknown, status = 200, headers: HeadersInit = {}) =>
 function corsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('origin')
   const allowed = (env.ALLOWED_ORIGINS ?? '').split(',').map((item) => item.trim()).filter(Boolean)
-  if (!origin || !(allowed.includes('*') || allowed.includes(origin))) return {}
+  if (!origin || !allowed.some((pattern) => originMatches(pattern, origin))) return {}
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, PUT, PATCH, OPTIONS',
