@@ -124,8 +124,3 @@ export interface MeasurementInput {
   note?: string
 }
 
-export interface RewardPatch {
-  title?: string
-  description?: string
-  emoji?: string
-}

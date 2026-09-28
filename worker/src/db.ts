@@ -2,7 +2,7 @@ import { computeDailyScore } from '../../shared/scoring'
 import { dayNumberFor } from '../../shared/date'
 import { newRewardUnlocks } from '../../shared/engine'
 import { BASELINE_METRICS } from '../../shared/measurements'
-import { DEFAULT_REWARDS } from '../../shared/rewards'
+import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import type {
   AppState,
   CheckIn,
@@ -11,7 +11,6 @@ import type {
   Feedback,
   MeasurementEntry,
   MeasurementInput,
-  RewardPatch,
   WorkoutResult,
 } from '../../shared/types'
 import type { ReportData } from '../../shared/report'
@@ -134,7 +133,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     baseline: baseline.results.map((row) => ({ key: String(row.metric), value: Number(row.value), unit: String(row.unit) })),
     measurements,
     days,
-    rewards: rewards.results.map((row) => ({
+    rewards: rewards.results.map((row) => hideIfLocked({
       id: String(row.id),
       thresholdDays: Number(row.threshold_days),
       title: String(row.title),
@@ -234,13 +233,6 @@ export async function addMeasurement(db: D1Database, input: MeasurementInput) {
   if (!entry) throw new Error('could not save measurement')
   await db.batch(Object.entries(input.values).map(([metric, value]) =>
     db.prepare('INSERT INTO measurement_values (entry_id, metric, value) VALUES (?, ?, ?)').bind(entry.id, metric, value)))
-}
-
-export async function updateReward(db: D1Database, id: string, patch: RewardPatch) {
-  const result = await db.prepare(`
-    UPDATE rewards SET title = COALESCE(?, title), description = COALESCE(?, description), emoji = COALESCE(?, emoji) WHERE id = ?
-  `).bind(patch.title ?? null, patch.description ?? null, patch.emoji ?? null, id).run()
-  return result.meta.changes > 0
 }
 
 export async function markCelebrated(db: D1Database, id: string) {

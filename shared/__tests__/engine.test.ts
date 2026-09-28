@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { checkWritableDate, measurementComparison, newRewardUnlocks, validateCheckin, validateFeedback, validateWorkout } from '../engine'
 import { validateMeasurementValues } from '../measurements'
 import { buildReport } from '../report'
+import { hideIfLocked } from '../rewards'
 import { addDays } from '../date'
 import type { AppState } from '../types'
 import { checkin, day, feedback, workout } from './fixtures'
@@ -91,6 +92,14 @@ describe('rewards and reports', () => {
   it('unlocks rewards on the day the active-day threshold is reached', () => {
     // Active days skip index 2, 6 (no workout) and 8 (under half done).
     expect(newRewardUnlocks(days, state.rewards)).toEqual([{ id: 'day-5', unlockedOn: addDays(start, 5) }])
+  })
+
+  it('keeps locked rewards a surprise until they unlock', () => {
+    const secret = { id: 'day-5', thresholdDays: 5, sortOrder: 1, emoji: '💐', title: 'Spa day', description: 'A day at the spa', celebratedAt: null }
+    const locked = hideIfLocked({ ...secret, unlockedOn: null })
+    expect(JSON.stringify(locked)).not.toMatch(/Spa|💐/)
+    expect(locked).toMatchObject({ id: 'day-5', thresholdDays: 5, emoji: '🎁' })
+    expect(hideIfLocked({ ...secret, unlockedOn: '2026-10-03' })).toMatchObject({ title: 'Spa day', emoji: '💐' })
   })
 
   it('compares measurements with baseline and previous', () => {

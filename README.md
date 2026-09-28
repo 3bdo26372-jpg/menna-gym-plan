@@ -19,7 +19,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - scoring (`scoring.ts`)
   - validation and derived values (`engine.ts`)
   - measurement fields and the baseline (`measurements.ts`)
-  - reward defaults (`rewards.ts`)
+  - reward defaults and hiding locked rewards (`rewards.ts`)
   - the monthly report builder (`report.ts`)
 - **`worker/`**: the Cloudflare Worker API.
   - D1 schema in `worker/migrations/`, queries in `worker/src/db.ts`, routes in `worker/src/index.ts`.
@@ -48,7 +48,9 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
-- **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done). Titles and descriptions are placeholders you can edit on the Rewards page (they're stored in D1).
+- **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
+  - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
+  - The app has no way to edit rewards. Set them directly in D1, e.g. `UPDATE rewards SET title = '…', description = '…', emoji = '…' WHERE id = 'day-5'` (ids: `day-5`, `day-10`, `day-30`).
 
 ### Database (D1)
 

@@ -3,7 +3,7 @@ import { checkFoodDate, validateFood, type FoodEntry } from '../../shared/food'
 import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, validateFeedback, validateWorkout } from '../../shared/engine'
 import { BASELINE_METRICS, validateMeasurementValues } from '../../shared/measurements'
 import { buildReport, type ReportData } from '../../shared/report'
-import { DEFAULT_REWARDS } from '../../shared/rewards'
+import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore } from '../../shared/scoring'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
@@ -62,7 +62,7 @@ function toState(db: LocalDb): AppState {
     baseline: BASELINE_METRICS.map(({ key, value, unit }) => ({ key, value, unit })),
     measurements: db.measurements,
     days,
-    rewards: [...db.rewards].sort((a, b) => a.sortOrder - b.sortOrder),
+    rewards: [...db.rewards].sort((a, b) => a.sortOrder - b.sortOrder).map(hideIfLocked),
     reports: Object.values(db.reports).map((report) => ({
       kind: report.kind ?? 'month', periodIndex: report.periodIndex, startDate: report.startDate, endDate: report.endDate, generatedAt: report.generatedAt,
     })),
@@ -122,13 +122,6 @@ export function createLocalBackend(): Backend {
       const db = load()
       const id = db.measurements.reduce((max, entry) => Math.max(max, entry.id), 0) + 1
       db.measurements.push({ id, measuredOn: input.measuredOn, values, note: input.note?.trim() || null, createdAt: new Date().toISOString() })
-      save(db)
-      return toState(db)
-    }),
-    updateReward: (id, patch) => attempt(() => {
-      const db = load()
-      const reward = db.rewards.find((item) => item.id === id) ?? fail(404, 'reward not found')
-      Object.assign(reward, Object.fromEntries(Object.entries(patch).filter(([, value]) => typeof value === 'string' && value.trim())))
       save(db)
       return toState(db)
     }),

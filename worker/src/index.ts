@@ -3,7 +3,7 @@ import { checkFoodDate, validateFood } from '../../shared/food'
 import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, validateFeedback, validateWorkout } from '../../shared/engine'
 import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
-import type { AppState, ReportKind, RewardPatch } from '../../shared/types'
+import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
   addMeasurement,
@@ -18,7 +18,6 @@ import {
   saveReport,
   saveWorkout,
   startProgram,
-  updateReward,
 } from './db'
 import { originMatches } from './cors'
 
@@ -142,13 +141,6 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
 
   const reward = path.match(/^\/api\/rewards\/([\w-]+)(\/celebrated)?$/)
-  if (reward && method === 'PATCH' && !reward[2]) {
-    const input = await body<Record<string, unknown>>(request)
-    const text = (value: unknown, max: number) => (typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : undefined)
-    const patch: RewardPatch = { title: text(input.title, 80), description: text(input.description, 400), emoji: text(input.emoji, 8) }
-    if (!(await updateReward(env.DB, reward[1], patch))) throw new HttpError(404, 'reward not found')
-    return json(await afterWrite(env, today))
-  }
   if (reward && method === 'POST' && reward[2]) {
     await markCelebrated(env.DB, reward[1])
     return json(await afterWrite(env, today))
