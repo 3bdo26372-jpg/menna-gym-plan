@@ -1,16 +1,30 @@
 {
-  "name": "menna-fitness",
+  "name": "menna-flow",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc -b && npm --prefix worker run typecheck",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "api:dev": "npm --prefix worker run dev",
+    "api:migrate:local": "npm --prefix worker run migrate:local",
+    "api:migrate:remote": "npm --prefix worker run migrate:remote",
+    "api:deploy": "npm --prefix worker run deploy",
+    "media:build": "python3 scripts/build_exercise_media.py",
+    "api:install": "npm --prefix worker install"
   },
   "dependencies": {
+    "@fontsource/cairo": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
     "@vitejs/plugin-react": "latest",
     "framer-motion": "latest",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
@@ -18,11 +32,14 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "tailwindcss": "3.4.17",
-    "typescript": "latest"
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "typescript": "latest",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
   }
 }

@@ -1,0 +1,2 @@
+# Copy to worker/.dev.vars for `npm run api:dev`.
+APP_PASSCODE=change-me
