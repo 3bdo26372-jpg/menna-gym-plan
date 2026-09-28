@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity,
   ArrowLeft,
+  ArrowRight,
   BookOpen,
   Check,
   ChevronLeft,
@@ -99,15 +100,38 @@ function hideBrokenImage(event: SyntheticEvent<HTMLImageElement>) {
   event.currentTarget.style.visibility = 'hidden'
 }
 
-function LibrarySection() {
+function readHash() {
+  const match = window.location.hash.match(/^#\/library(?:\/([\w-]+))?/)
+  return match ? { page: 'library' as const, focusId: match[1] ?? null } : { page: 'home' as const, focusId: null }
+}
+
+function useHashRoute() {
+  const [route, setRoute] = useState(readHash)
+  useEffect(() => {
+    const onChange = () => setRoute(readHash())
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+  return route
+}
+
+function LibraryPage({ focusId }: { focusId: string | null }) {
   const [category, setCategory] = useState<LibraryCategory | 'all'>('all')
   const [playingId, setPlayingId] = useState<string | null>(null)
   const groups = libraryCategories.filter((group) => category === 'all' || group.id === category)
 
+  useEffect(() => {
+    if (focusId) setCategory('all')
+    const target = focusId ? document.getElementById(`lib-${focusId}`) : null
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    else window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [focusId])
+
   return (
     <section className="library-section" id="library">
+      <a href="#/" className="library-back"><ArrowRight /> الرجوع للبرنامج</a>
       <div className="section-heading">
-        <h2>مكتبة التمارين</h2>
+        <h1>المكتبة</h1>
         <p>٢٠ تمرين هم أساس البرنامج كله: كلهم واقفين ومن غير معدات، ولكل واحد بديلين أخف لو جسمك محتاج هدوء أكتر.</p>
       </div>
 
@@ -128,7 +152,7 @@ function LibrarySection() {
           </div>
           <div className="library-grid">
             {library.filter((exercise) => exercise.category === group.id).map((exercise) => (
-              <article className="library-card" id={`lib-${exercise.id}`} key={exercise.id}>
+              <article className={`library-card ${focusId === exercise.id ? 'is-focused' : ''}`} id={`lib-${exercise.id}`} key={exercise.id}>
                 <div className="library-video">
                   {playingId === exercise.id ? (
                     <iframe
@@ -169,6 +193,7 @@ function LibrarySection() {
 }
 
 function App() {
+  const route = useHashRoute()
   const [selectedId, setSelectedId] = useState<Level['id']>('easy')
   const [isRunnerOpen, setRunnerOpen] = useState(false)
   const [isRunning, setRunning] = useState(false)
@@ -264,6 +289,24 @@ function App() {
     setSecondsLeft(selected.work)
   }
 
+  if (route.page === 'library') {
+    return (
+      <main className="home-workout" dir="rtl">
+        <header className="topbar">
+          <a href="#/" className="brand" aria-label="الرجوع للبرنامج">
+            <span className="brand-mark"><HeartPulse /></span>
+            <span><strong>Menna Flow</strong><small>حركة خفيفة في البيت</small></span>
+          </a>
+          <nav className="topbar-links">
+            <a href="#/" className="topbar-action">البرنامج <ChevronLeft /></a>
+          </nav>
+        </header>
+        <LibraryPage focusId={route.focusId} />
+        <footer><span>Menna Flow</span><small>اختاري الحركة اللي جسمك قادر عليها النهارده.</small></footer>
+      </main>
+    )
+  }
+
   return (
     <main className="home-workout" dir="rtl">
       <header className="topbar">
@@ -272,10 +315,11 @@ function App() {
           <span><strong>Menna Flow</strong><small>حركة خفيفة في البيت</small></span>
         </a>
         <nav className="topbar-links">
-          <a href="#library" className="topbar-action"><BookOpen /> المكتبة</a>
+          <a href="#/library" className="topbar-action"><BookOpen /> المكتبة</a>
           <a href="#levels" className="topbar-action">اختاري مستواكي <ChevronLeft /></a>
         </nav>
       </header>
+
 
       <section className="hero" id="top">
         <div className="hero-copy">
@@ -340,7 +384,7 @@ function App() {
           {selected.exercises.map((exercise, index) => (
             <li key={exercise.id}>
               <span className="exercise-index">{index + 1}</span>
-              <a className="exercise-media" href={`#lib-${exercise.id}`} aria-label={`فيديو تمرين ${exercise.name} في المكتبة`}>
+              <a className="exercise-media" href={`#/library/${exercise.id}`} aria-label={`فيديو تمرين ${exercise.name} في المكتبة`}>
                 <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
                 <span className="play-badge"><Play /></span>
               </a>
@@ -359,7 +403,7 @@ function App() {
           <p>اثبتي في كل إطالة 20–30 ثانية بنفَس هادي، ومن غير أي ألم.</p>
           <div className="cooldown-list">
             {cooldown.map((exercise) => (
-              <a key={exercise.id} href={`#lib-${exercise.id}`}>
+              <a key={exercise.id} href={`#/library/${exercise.id}`}>
                 <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
                 <span>{exercise.name}</span>
               </a>
@@ -373,7 +417,11 @@ function App() {
         </div>
       </section>
 
-      <LibrarySection />
+      <section className="library-teaser">
+        <BookOpen />
+        <div><strong>المكتبة</strong><p>الـ٢٠ تمرين اللي البرنامج مبني عليهم، بالفيديو ولكل تمرين بديلين أخف.</p></div>
+        <a href="#/library" className="primary-action">افتحي المكتبة <ArrowLeft /></a>
+      </section>
 
       <section className="safety-section">
         <div className="section-heading">
