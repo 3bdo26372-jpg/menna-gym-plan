@@ -1,10 +1,41 @@
 import { forwardRef } from 'react'
 import { formatDateFull, formatDateShort } from '../../shared/date'
-import { energyLabel, type ReportData } from '../../shared/report'
+import { FOOD_CATEGORIES, formatLitres } from '../../shared/food'
+import { energyLabel, REPORT_LABEL, type ReportData } from '../../shared/report'
 import { formatChange, formatNumber } from '../lib/format'
 import { scoreLevel } from '../components/ScoreCalendar'
 
 const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly'])
+const FOOD_EMOJI = Object.fromEntries(FOOD_CATEGORIES.map((category) => [category.id, `${category.emoji} ${category.label}`]))
+/** Rows that fit on one food-log page (a day heading counts as two). */
+const FOOD_ROWS_PER_PAGE = 30
+
+type FoodDay = ReportData['food']['days'][number]
+
+/** Split the food log into pages, splitting a long day across pages if needed. */
+function paginateFood(days: FoodDay[]) {
+  const pages: { day: FoodDay; entries: FoodDay['entries']; continued: boolean }[][] = []
+  let page: (typeof pages)[number] = []
+  let used = 0
+  for (const day of days) {
+    let rest = day.entries
+    let continued = false
+    while (rest.length) {
+      if (used + 3 > FOOD_ROWS_PER_PAGE) {
+        pages.push(page)
+        page = []
+        used = 0
+      }
+      const take = Math.min(rest.length, FOOD_ROWS_PER_PAGE - used - 2)
+      page.push({ day, entries: rest.slice(0, take), continued })
+      used += take + 2
+      rest = rest.slice(take)
+      continued = true
+    }
+  }
+  if (page.length) pages.push(page)
+  return pages
+}
 
 /**
  * The monthly report as fixed-size A4 pages (794×1123 CSS px). They are
@@ -13,13 +44,19 @@ const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly'])
  */
 export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>(function ReportDocument({ report }, ref) {
   const period = `${formatDateFull(report.startDate)} – ${formatDateFull(report.endDate)}`
+  const kind = report.kind ?? 'month'
+  const label = REPORT_LABEL[kind]
+  const food = report.food ?? { days: [], loggedDays: 0, entries: 0, averageWaterMl: null, waterTargetMl: 2000 }
+  const foodPages = paginateFood(food.days)
+  const totalPages = 2 + Math.max(1, foodPages.length)
+  const footer = (page: number) => <footer className="report-footer">Menna Flow · تقرير شخصي للمتابعة، مش تقرير طبي · صفحة {page} من {totalPages}</footer>
   return (
     <div className="report-doc" ref={ref} dir="rtl" lang="ar">
       <section className="report-page">
         <header className="report-hero">
           <div>
             <p className="report-brand">Menna Flow</p>
-            <h1>التقرير الشهري · الشهر {report.periodIndex}</h1>
+            <h1>{kind === 'week' ? 'التقرير الأسبوعي' : 'التقرير الشهري'} · {label} {report.periodIndex}</h1>
             <p>{period}{report.inProgress ? ' · (الفترة لسه جارية)' : ''}</p>
           </div>
           <dl>
@@ -38,7 +75,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
         </div>
 
         <h2>تقويم النقاط اليومية</h2>
-        <div className="report-calendar">
+        <div className={`report-calendar ${kind === 'week' ? 'is-week' : ''}`}>
           {report.days.map((day) => (
             <div key={day.date} className={`cal-cell ${scoreLevel(day.score, day.recorded)}`}>
               <span className="cal-day">يوم {day.dayNumber}</span>
@@ -48,15 +85,15 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
           ))}
         </div>
 
-        <h2>ملخص الشهر</h2>
+        <h2>ملخص {label}</h2>
         <ul className="report-bullets">
           {report.summary.map((line) => <li key={line}>{line}</li>)}
         </ul>
-        <footer className="report-footer">Menna Flow · تقرير شخصي للمتابعة، مش تقرير طبي · صفحة 1 من 2</footer>
+        {footer(1)}
       </section>
 
       <section className="report-page">
-        <h2>القياسات: بداية الشهر ← نهايته</h2>
+        <h2>القياسات: بداية {label} ← نهايته</h2>
         <table className="report-table">
           <thead><tr><th>القياس</th><th>البداية</th><th>النهاية</th><th>الفرق</th></tr></thead>
           <tbody>
@@ -95,12 +132,44 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
           ? <ul className="report-bullets">{report.rewardsUnlocked.map((reward) => <li key={reward.title}>{reward.emoji} {reward.title} — {formatDateFull(reward.unlockedOn)}</li>)}</ul>
           : <p className="report-note">المكافأة الجاية قربت؛ كل يوم حركة بيقرّبها.</p>}
 
-        <h2>اقتراحات للشهر الجاي</h2>
+        <h2>اقتراحات {kind === 'week' ? 'للأسبوع' : 'للشهر'} الجاي</h2>
         <ul className="report-bullets">
           {report.suggestions.map((line) => <li key={line}>{line}</li>)}
         </ul>
-        <footer className="report-footer">Menna Flow · تقرير شخصي للمتابعة، مش تقرير طبي · صفحة 2 من 2</footer>
+        {footer(2)}
       </section>
+
+      {(foodPages.length ? foodPages : [[]]).map((page, index) => (
+        <section className="report-page" key={`food-${index}`}>
+          <h2>سجل الأكل والشرب{index > 0 ? ' (تكملة)' : ''}</h2>
+          {index === 0 && (
+            <div className="report-kpis report-food-kpis">
+              <div><span>أيام اتسجل فيها الأكل</span><strong>{food.loggedDays}</strong></div>
+              <div><span>عدد التسجيلات</span><strong>{food.entries}</strong></div>
+              <div><span>متوسط المية يوميًا</span><strong>{food.averageWaterMl === null ? '—' : formatLitres(food.averageWaterMl)}<small> لتر</small></strong></div>
+            </div>
+          )}
+          {page.length === 0 && <p className="report-note">مفيش أكل أو شرب مسجّل في الفترة دي. التسجيل من صفحة "الأكل" في التطبيق.</p>}
+          {page.map(({ day, entries, continued }) => (
+            <div className="report-food-day" key={`${day.date}-${continued}`}>
+              <h3>{formatDateFull(day.date)}{continued ? ' (تكملة)' : ''}{!continued && day.waterMl > 0 ? ` · مية ${formatLitres(day.waterMl)} لتر` : ''}</h3>
+              <table className="report-table report-food-table">
+                <tbody>
+                  {entries.map((entry, row) => (
+                    <tr key={row}>
+                      <td className="food-time-cell">{entry.time}</td>
+                      <td className="food-cat-cell">{FOOD_EMOJI[entry.category]}</td>
+                      <td>{entry.item}</td>
+                      <td className="food-qty-cell">{[entry.quantity, entry.ml ? `${entry.ml} مل` : null].filter(Boolean).join(' · ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          {footer(3 + index)}
+        </section>
+      ))}
     </div>
   )
 })

@@ -46,11 +46,13 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Two *Hard* ratings move down a level. After a *Hard* rating, or a low-energy / tired check-in, the jumps are swapped for their alternatives and the intervals get shorter.
   - Reporting pain holds the level and makes the next day light.
 - **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
+- **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
+- **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done). Titles and descriptions are placeholders you can edit on the Rewards page (they're stored in D1).
 
 ### Database (D1)
 
-`worker/migrations/0001_init.sql` creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -62,7 +64,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `exercise_feedback` | favourite and hardest exercise per day |
 | `daily_scores` | the stored score breakdown per day |
 | `rewards`, `reward_unlocks` | milestones and when they unlocked |
-| `monthly_reports` | saved report snapshots, so old PDFs can be re-created |
+| `food_entries` | food & drink log |
+| `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media
 

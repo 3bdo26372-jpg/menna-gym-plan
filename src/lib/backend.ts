@@ -1,5 +1,6 @@
 import type { ReportData } from '../../shared/report'
-import type { AppState, CheckIn, Feedback, MeasurementInput, RewardPatch, WorkoutResult } from '../../shared/types'
+import type { FoodInput } from '../../shared/food'
+import type { AppState, CheckIn, Feedback, MeasurementInput, ReportKind, RewardPatch, WorkoutResult } from '../../shared/types'
 
 export type CheckInInput = Pick<CheckIn, 'energy' | 'mood' | 'body'>
 export type FeedbackInput = Omit<Feedback, 'at'>
@@ -16,8 +17,10 @@ export interface Backend {
   addMeasurement(input: MeasurementInput): Promise<AppState>
   updateReward(id: string, patch: RewardPatch): Promise<AppState>
   markRewardCelebrated(id: string): Promise<AppState>
-  generateReport(periodIndex: number): Promise<{ report: ReportData; state: AppState }>
-  getReport(periodIndex: number): Promise<ReportData>
+  addFood(date: string, input: FoodInput): Promise<AppState>
+  deleteFood(id: number): Promise<AppState>
+  generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
+  getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }
 
 export class AuthRequiredError extends Error {

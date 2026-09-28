@@ -41,7 +41,9 @@ export function createHttpBackend(baseUrl: string): Backend {
     addMeasurement: (input) => request<AppState>('POST', '/api/measurements', input),
     updateReward: (id, patch) => request<AppState>('PATCH', `/api/rewards/${id}`, patch),
     markRewardCelebrated: (id) => request<AppState>('POST', `/api/rewards/${id}/celebrated`),
-    generateReport: (periodIndex) => request<{ report: ReportData; state: AppState }>('POST', `/api/reports/${periodIndex}`),
-    getReport: (periodIndex) => request<ReportData>('GET', `/api/reports/${periodIndex}`),
+    addFood: (date, input) => request<AppState>('POST', `/api/days/${date}/food`, input),
+    deleteFood: (id) => request<AppState>('DELETE', `/api/food/${id}`),
+    generateReport: (kind, periodIndex) => request<{ report: ReportData; state: AppState }>('POST', `/api/reports/${kind}/${periodIndex}`),
+    getReport: (kind, periodIndex) => request<ReportData>('GET', `/api/reports/${kind}/${periodIndex}`),
   }
 }

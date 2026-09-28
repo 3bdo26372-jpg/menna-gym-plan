@@ -1,3 +1,5 @@
+import type { FoodEntry } from './food'
+
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
 export type BodyFeeling = 'fresh' | 'normal' | 'tired'
@@ -95,7 +97,10 @@ export interface RewardState {
   celebratedAt: string | null
 }
 
+export type ReportKind = 'week' | 'month'
+
 export interface ReportMeta {
+  kind: ReportKind
   periodIndex: number
   startDate: string
   endDate: string
@@ -110,6 +115,7 @@ export interface AppState {
   days: DayRecord[]
   rewards: RewardState[]
   reports: ReportMeta[]
+  foodEntries: FoodEntry[]
 }
 
 export interface MeasurementInput {

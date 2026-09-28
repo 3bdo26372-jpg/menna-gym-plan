@@ -1,4 +1,5 @@
-import { cairoDate, dateRange, dayNumberFor, isIsoDate } from '../../shared/date'
+import { cairoDate, dateRange, dayNumberFor, diffDays, isIsoDate } from '../../shared/date'
+import { checkFoodDate, validateFood, type FoodEntry } from '../../shared/food'
 import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, validateFeedback, validateWorkout } from '../../shared/engine'
 import { BASELINE_METRICS, validateMeasurementValues } from '../../shared/measurements'
 import { buildReport, type ReportData } from '../../shared/report'
@@ -14,13 +15,15 @@ import { storage } from './storage'
  * browser's localStorage, so it is not the production data store.
  */
 const KEY = 'menna-flow:local-db:v1'
+const reportKey = (kind: string, periodIndex: number) => `${kind}:${periodIndex}`
 
 interface LocalDb {
   programStartDate: string | null
   measurements: MeasurementEntry[]
   logs: Record<string, { checkin: CheckIn | null; workout: WorkoutResult | null; feedback: Feedback | null }>
   rewards: RewardState[]
-  reports: Record<number, ReportData>
+  reports: Record<string, ReportData>
+  foodEntries?: FoodEntry[]
 }
 
 function freshDb(): LocalDb {
@@ -61,8 +64,9 @@ function toState(db: LocalDb): AppState {
     days,
     rewards: [...db.rewards].sort((a, b) => a.sortOrder - b.sortOrder),
     reports: Object.values(db.reports).map((report) => ({
-      periodIndex: report.periodIndex, startDate: report.startDate, endDate: report.endDate, generatedAt: report.generatedAt,
+      kind: report.kind ?? 'month', periodIndex: report.periodIndex, startDate: report.startDate, endDate: report.endDate, generatedAt: report.generatedAt,
     })),
+    foodEntries: [...(db.foodEntries ?? [])].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.id - b.id),
   }
 }
 
@@ -135,14 +139,35 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    generateReport: (periodIndex) => attempt(() => {
+    addFood: (date, input) => attempt(() => {
+      const db = load()
+      const problem = checkFoodDate(date, cairoDate(), db.programStartDate, diffDays)
+      if (problem) fail(400, problem)
+      const entry = validateFood(input)
+      if (typeof entry === 'string') return fail(400, entry)
+      const list = db.foodEntries ?? []
+      const id = list.reduce((max, item) => Math.max(max, item.id), 0) + 1
+      db.foodEntries = [...list, { id, date, ...entry, createdAt: new Date().toISOString() }]
+      save(db)
+      return toState(db)
+    }),
+    deleteFood: (id) => attempt(() => {
+      const db = load()
+      const entry = (db.foodEntries ?? []).find((item) => item.id === id) ?? fail(404, 'food entry not found')
+      const problem = checkFoodDate(entry.date, cairoDate(), db.programStartDate, diffDays)
+      if (problem) fail(400, problem)
+      db.foodEntries = (db.foodEntries ?? []).filter((item) => item.id !== id)
+      save(db)
+      return toState(db)
+    }),
+    generateReport: (kind, periodIndex) => attempt(() => {
       const db = load()
       const state = toState(db)
-      const report = buildReport(state, periodIndex)
-      db.reports[periodIndex] = report
+      const report = buildReport(state, kind, periodIndex)
+      db.reports[reportKey(kind, periodIndex)] = report
       save(db)
       return { report, state: toState(db) }
     }),
-    getReport: (periodIndex) => attempt(() => load().reports[periodIndex] ?? fail(404, 'report not found')),
+    getReport: (kind, periodIndex) => attempt(() => load().reports[reportKey(kind, periodIndex)] ?? fail(404, 'report not found')),
   }
 }

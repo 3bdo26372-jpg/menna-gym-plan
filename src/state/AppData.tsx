@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { cairoDate } from '../../shared/date'
 import type { ReportData } from '../../shared/report'
-import type { AppState, MeasurementInput, RewardPatch } from '../../shared/types'
+import type { FoodInput } from '../../shared/food'
+import type { AppState, MeasurementInput, ReportKind, RewardPatch } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
 import { createLocalBackend } from '../lib/localBackend'
@@ -22,8 +23,10 @@ interface AppDataValue {
   addMeasurement(input: MeasurementInput): Promise<void>
   updateReward(id: string, patch: RewardPatch): Promise<void>
   markRewardCelebrated(id: string): Promise<void>
-  generateReport(periodIndex: number): Promise<ReportData>
-  getReport(periodIndex: number): Promise<ReportData>
+  addFood(date: string, input: FoodInput): Promise<void>
+  deleteFood(id: number): Promise<void>
+  generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
+  getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }
 
 const AppDataContext = createContext<AppDataValue | null>(null)
@@ -64,6 +67,8 @@ function createBackend(): Backend {
     addMeasurement: forward('addMeasurement'),
     updateReward: forward('updateReward'),
     markRewardCelebrated: forward('markRewardCelebrated'),
+    addFood: forward('addFood'),
+    deleteFood: forward('deleteFood'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
   }
@@ -167,12 +172,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addMeasurement: async (input) => void (await apply(backend.addMeasurement(input))),
       updateReward: async (id, patch) => void (await apply(backend.updateReward(id, patch))),
       markRewardCelebrated: async (id) => void (await apply(backend.markRewardCelebrated(id))),
-      async generateReport(periodIndex) {
-        const result = await backend.generateReport(periodIndex)
+      addFood: async (date, input) => void (await apply(backend.addFood(date, input))),
+      deleteFood: async (id) => void (await apply(backend.deleteFood(id))),
+      async generateReport(kind, periodIndex) {
+        const result = await backend.generateReport(kind, periodIndex)
         setState(result.state)
         return result.report
       },
-      getReport: (periodIndex) => backend.getReport(periodIndex),
+      getReport: (kind, periodIndex) => backend.getReport(kind, periodIndex),
     }
   }, [backend, status, state, error, reload, handleError])
 

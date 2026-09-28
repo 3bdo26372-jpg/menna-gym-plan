@@ -79,6 +79,13 @@ describe('rewards and reports', () => {
       { id: 'day-30', thresholdDays: 30, title: 'C', description: '', emoji: '🏆', sortOrder: 3, unlockedOn: null, celebratedAt: null },
     ],
     reports: [],
+    foodEntries: [
+      { id: 1, date: addDays(start, 1), time: '08:30', category: 'breakfast', item: 'بيض وشوفان', quantity: 'طبق', ml: null, createdAt: '' },
+      { id: 2, date: addDays(start, 1), time: '10:00', category: 'drink', item: 'مية', quantity: null, ml: 500, createdAt: '' },
+      { id: 3, date: addDays(start, 1), time: '07:30', category: 'drink', item: 'مياه', quantity: null, ml: 250, createdAt: '' },
+      { id: 4, date: addDays(start, 3), time: '14:00', category: 'lunch', item: 'فراخ ورز', quantity: null, ml: null, createdAt: '' },
+      { id: 5, date: addDays(start, 3), time: '16:00', category: 'drink', item: 'قهوة', quantity: 'كوباية', ml: 200, createdAt: '' },
+    ],
   }
 
   it('unlocks rewards on the day the active-day threshold is reached', () => {
@@ -91,7 +98,7 @@ describe('rewards and reports', () => {
   })
 
   it('builds a supportive monthly report', () => {
-    const report = buildReport(state, 1)
+    const report = buildReport(state, 'month', 1)
     expect(report.days).toHaveLength(30)
     expect(report.activeDays).toBe(9)
     expect(report.workoutCount).toBe(10)
@@ -101,5 +108,29 @@ describe('rewards and reports', () => {
     const text = [...report.summary, ...report.suggestions].join(' ')
     expect(text).not.toMatch(/فشل|كسل|خسرتي/)
     expect(report.inProgress).toBe(true)
+    expect(report.food).toMatchObject({ loggedDays: 2, entries: 5, averageWaterMl: 750 })
+    expect(report.food.days[0].entries.map((entry) => entry.time)).toEqual(['07:30', '08:30', '10:00'])
+  })
+
+  it('builds a 7-day weekly report', () => {
+    const week2 = buildReport(state, 'week', 2)
+    expect(week2.days).toHaveLength(7)
+    expect(week2.startDate).toBe(addDays(start, 7))
+    expect(week2.food.loggedDays).toBe(0)
+    expect(buildReport(state, 'week', 1).food.loggedDays).toBe(2)
+  })
+})
+
+describe('food log', () => {
+  it('validates entries and totals only water', async () => {
+    const { validateFood, waterMl, checkFoodDate } = await import('../food')
+    const { diffDays } = await import('../date')
+    expect(validateFood({ category: 'drink', item: ' مية ', time: '09:15', ml: '250' })).toEqual({ category: 'drink', item: 'مية', time: '09:15', quantity: null, ml: 250 })
+    expect(typeof validateFood({ category: 'drink', item: '', time: '09:15' })).toBe('string')
+    expect(typeof validateFood({ category: 'brunch', item: 'x', time: '09:15' })).toBe('string')
+    expect(typeof validateFood({ category: 'snack', item: 'x', time: '25:00' })).toBe('string')
+    expect(waterMl([{ category: 'drink', item: 'مية', ml: 300 }, { category: 'drink', item: 'شاي', ml: 200 }, { category: 'snack', item: 'مية', ml: 100 }])).toBe(300)
+    expect(checkFoodDate('2026-09-22', '2026-09-28', '2026-09-01', diffDays)).toBeNull()
+    expect(checkFoodDate('2026-09-21', '2026-09-28', '2026-09-01', diffDays)).not.toBeNull()
   })
 })

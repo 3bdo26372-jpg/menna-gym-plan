@@ -49,15 +49,16 @@ export function dateRange(from: string, to: string): string[] {
 }
 
 export const PERIOD_DAYS = 30
+export const WEEK_DAYS = 7
 
-/** 1-based 30-day period ("month") a program day belongs to. */
-export function periodForDay(dayNumber: number): number {
-  return Math.max(1, Math.ceil(dayNumber / PERIOD_DAYS))
+/** 1-based period (30-day "month" by default, or 7-day week) a program day belongs to. */
+export function periodForDay(dayNumber: number, length = PERIOD_DAYS): number {
+  return Math.max(1, Math.ceil(dayNumber / length))
 }
 
-export function periodBounds(startDate: string, periodIndex: number) {
-  const start = addDays(startDate, (periodIndex - 1) * PERIOD_DAYS)
-  return { start, end: addDays(start, PERIOD_DAYS - 1) }
+export function periodBounds(startDate: string, periodIndex: number, length = PERIOD_DAYS) {
+  const start = addDays(startDate, (periodIndex - 1) * length)
+  return { start, end: addDays(start, length - 1) }
 }
 
 const arabicLong = new Intl.DateTimeFormat('ar-EG-u-nu-latn', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })
@@ -74,4 +75,11 @@ export function formatDateShort(date: string) {
 
 export function formatDateFull(date: string) {
   return arabicFull.format(new Date(`${date}T00:00:00Z`))
+}
+
+const cairoClock = new Intl.DateTimeFormat('en-GB', { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+
+/** Current Cairo wall-clock time as "HH:MM". */
+export function cairoTime(at: Date = new Date()): string {
+  return cairoClock.format(at)
 }

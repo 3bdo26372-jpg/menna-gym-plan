@@ -1,10 +1,14 @@
-import { cairoDate, isIsoDate } from '../../shared/date'
+import { cairoDate, diffDays, isIsoDate } from '../../shared/date'
+import { checkFoodDate, validateFood } from '../../shared/food'
 import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, validateFeedback, validateWorkout } from '../../shared/engine'
 import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
-import type { AppState, RewardPatch } from '../../shared/types'
+import type { AppState, ReportKind, RewardPatch } from '../../shared/types'
 import {
+  addFood,
   addMeasurement,
+  deleteFood,
+  foodDate,
   loadReport,
   loadState,
   markCelebrated,
@@ -40,7 +44,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   if (!origin || !allowed.some((pattern) => originMatches(pattern, origin))) return {}
   return {
     'access-control-allow-origin': origin,
-    'access-control-allow-methods': 'GET, POST, PUT, PATCH, OPTIONS',
+    'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'access-control-allow-headers': 'authorization, content-type',
     'access-control-max-age': '86400',
     vary: 'origin',
@@ -150,18 +154,41 @@ async function route(request: Request, env: Env): Promise<Response> {
     return json(await afterWrite(env, today))
   }
 
-  const report = path.match(/^\/api\/reports\/(\d+)$/)
+  const food = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/food$/)
+  if (food && method === 'POST') {
+    const state = await loadState(env.DB, today)
+    const problem = checkFoodDate(food[1], today, state.profile.programStartDate, diffDays)
+    if (problem) throw new HttpError(problem.includes('not started') ? 409 : 400, problem)
+    const entry = validateFood(await body(request))
+    if (typeof entry === 'string') throw new HttpError(400, entry)
+    await addFood(env.DB, food[1], entry)
+    return json(await loadState(env.DB, today))
+  }
+  const foodItem = path.match(/^\/api\/food\/(\d+)$/)
+  if (foodItem && method === 'DELETE') {
+    const date = await foodDate(env.DB, Number(foodItem[1]))
+    if (!date) throw new HttpError(404, 'food entry not found')
+    const state = await loadState(env.DB, today)
+    const problem = checkFoodDate(date, today, state.profile.programStartDate, diffDays)
+    if (problem) throw new HttpError(400, problem)
+    await deleteFood(env.DB, Number(foodItem[1]))
+    return json(await loadState(env.DB, today))
+  }
+
+  const report = path.match(/^\/api\/reports\/(week|month)\/(\d+)$/)
   if (report) {
-    const periodIndex = Number(report[1])
+    const kind = report[1] as ReportKind
+    const periodIndex = Number(report[2])
+    if (periodIndex < 1) throw new HttpError(400, 'invalid period')
     if (method === 'GET') {
-      const saved = await loadReport(env.DB, periodIndex)
+      const saved = await loadReport(env.DB, kind, periodIndex)
       if (!saved) throw new HttpError(404, 'report not found')
       return json(saved)
     }
     if (method === 'POST') {
       const state = await loadState(env.DB, today)
       if (!state.profile.programStartDate) throw new HttpError(409, 'the program has not started yet')
-      const data = buildReport(state, periodIndex)
+      const data = buildReport(state, kind, periodIndex)
       if (data.startDate > today) throw new HttpError(400, 'that period has not started yet')
       await saveReport(env.DB, data)
       return json({ report: data, state: await loadState(env.DB, today) })
