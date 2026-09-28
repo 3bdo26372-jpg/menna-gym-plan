@@ -109,6 +109,8 @@
 .block-list { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
 .block-list li { display: grid; padding: 10px 12px; border-radius: 14px; background: #faf5f7; font-size: 14px; }
 .block-list span { color: var(--muted); font-size: 12px; }
+.block-list strong { display: flex; align-items: center; gap: 6px; }
+.block-list .block-order { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; color: var(--berry-dark); background: var(--rose-100); font: 800 11px var(--font-num); }
 .thumb-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; }
 .thumb { flex: 0 0 96px; display: grid; gap: 4px; scroll-snap-align: start; font-size: 12px; font-weight: 700; text-align: center; }
 .steps { display: grid; gap: 10px; }
