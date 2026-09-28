@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity,
@@ -18,7 +18,6 @@ import {
   TimerReset,
   Wind,
   ExternalLink,
-  Play,
   Search,
   X,
 } from 'lucide-react'
@@ -26,12 +25,13 @@ import {
   library,
   libraryById,
   libraryCategories,
-  youtubeEmbed,
+  exerciseGif,
+  variantLabels,
   youtubeSearch,
-  youtubeThumb,
   youtubeWatch,
   type LibraryCategory,
   type LibraryExercise,
+  type Variant,
 } from './library'
 
 type Level = {
@@ -96,8 +96,64 @@ function formatTime(seconds: number) {
   return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
 }
 
-function hideBrokenImage(event: SyntheticEvent<HTMLImageElement>) {
-  event.currentTarget.style.visibility = 'hidden'
+function VariantButtons({ exercise, variant, onChange, compact = false }: {
+  exercise: LibraryExercise
+  variant: Variant
+  onChange: (variant: Variant) => void
+  compact?: boolean
+}) {
+  const options: [Variant, string][] = [[0, exercise.name], [1, exercise.alternatives[0]], [2, exercise.alternatives[1]]]
+  return (
+    <div className={`variant-buttons ${compact ? 'is-compact' : ''}`} role="group" aria-label={`اختاري نسخة ${exercise.name}`}>
+      {options.map(([value, text]) => (
+        <button type="button" key={value} aria-pressed={variant === value} onClick={() => onChange(value)}>
+          <b>{variantLabels[value]}</b>
+          {!compact && value > 0 && <span>{text}</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function LibraryCard({ exercise, focused }: { exercise: LibraryExercise; focused: boolean }) {
+  const [variant, setVariant] = useState<Variant>(0)
+  return (
+    <article className={`library-card ${focused ? 'is-focused' : ''}`} id={`lib-${exercise.id}`}>
+      <figure className="library-video">
+        <img src={exerciseGif(exercise.id, variant)} alt={`حركة ${variant ? exercise.alternatives[variant - 1] : exercise.name}`} loading="lazy" />
+        <figcaption>{variantLabels[variant]}</figcaption>
+      </figure>
+      <div className="library-body">
+        <span className="library-number">{String(exercise.number).padStart(2, '0')}</span>
+        <h4>{exercise.name}</h4>
+        <small className="library-subtitle">{exercise.subtitle} · {exercise.focus}</small>
+        <p>{exercise.cue}</p>
+        <VariantButtons exercise={exercise} variant={variant} onChange={setVariant} />
+        <div className="library-links">
+          <a href={youtubeWatch(exercise.youtubeId)} target="_blank" rel="noreferrer"><ExternalLink /> فيديو على يوتيوب</a>
+          <a href={youtubeSearch(exercise.searchQuery)} target="_blank" rel="noreferrer"><Search /> فيديوهات تانية</a>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function CircuitRow({ exercise, index }: { exercise: LibraryExercise; index: number }) {
+  const [variant, setVariant] = useState<Variant>(0)
+  return (
+    <li>
+      <span className="exercise-index">{index + 1}</span>
+      <a className="exercise-media" href={`#/library/${exercise.id}`} aria-label={`تمرين ${exercise.name} في المكتبة`}>
+        <img src={exerciseGif(exercise.id, variant)} alt="" loading="lazy" />
+      </a>
+      <div className="exercise-copy">
+        <strong>{variant ? exercise.alternatives[variant - 1] : exercise.name}</strong>
+        <p>{variant ? `بديل أخف لـ ${exercise.name}` : exercise.cue}</p>
+        <VariantButtons exercise={exercise} variant={variant} onChange={setVariant} compact />
+      </div>
+      <span className="focus-tag">{exercise.focus}</span>
+    </li>
+  )
 }
 
 function readHash() {
@@ -117,7 +173,6 @@ function useHashRoute() {
 
 function LibraryPage({ focusId }: { focusId: string | null }) {
   const [category, setCategory] = useState<LibraryCategory | 'all'>('all')
-  const [playingId, setPlayingId] = useState<string | null>(null)
   const groups = libraryCategories.filter((group) => category === 'all' || group.id === category)
 
   useEffect(() => {
@@ -152,38 +207,7 @@ function LibraryPage({ focusId }: { focusId: string | null }) {
           </div>
           <div className="library-grid">
             {library.filter((exercise) => exercise.category === group.id).map((exercise) => (
-              <article className={`library-card ${focusId === exercise.id ? 'is-focused' : ''}`} id={`lib-${exercise.id}`} key={exercise.id}>
-                <div className="library-video">
-                  {playingId === exercise.id ? (
-                    <iframe
-                      src={youtubeEmbed(exercise.youtubeId, { autoplay: true })}
-                      title={`فيديو تمرين ${exercise.name}`}
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <button type="button" onClick={() => setPlayingId(exercise.id)} aria-label={`تشغيل فيديو ${exercise.name}`}>
-                      <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
-                      <span className="play-badge"><Play /></span>
-                    </button>
-                  )}
-                </div>
-                <div className="library-body">
-                  <span className="library-number">{String(exercise.number).padStart(2, '0')}</span>
-                  <h4>{exercise.name}</h4>
-                  <small className="library-subtitle">{exercise.subtitle} · {exercise.focus}</small>
-                  <p>{exercise.cue}</p>
-                  <ol className="library-alts">
-                    {exercise.alternatives.map((alternative, index) => (
-                      <li key={alternative}><b>بديل {index + 1}</b>{alternative}</li>
-                    ))}
-                  </ol>
-                  <div className="library-links">
-                    <a href={youtubeWatch(exercise.youtubeId)} target="_blank" rel="noreferrer"><ExternalLink /> افتحي على يوتيوب</a>
-                    <a href={youtubeSearch(exercise.searchQuery)} target="_blank" rel="noreferrer"><Search /> فيديوهات تانية</a>
-                  </div>
-                </div>
-              </article>
+              <LibraryCard exercise={exercise} focused={focusId === exercise.id} key={exercise.id} />
             ))}
           </div>
         </div>
@@ -213,6 +237,8 @@ function App() {
     return null
   }, [exerciseIndex, round, selected])
   const runnerExercise = phase === 'rest' && nextExercise ? nextExercise : selected.exercises[exerciseIndex]
+  const [runnerVariant, setRunnerVariant] = useState<Variant>(0)
+  useEffect(() => setRunnerVariant(0), [runnerExercise.id])
 
   useEffect(() => {
     if (!isRunnerOpen || !isRunning || phase === 'done') return
@@ -382,19 +408,7 @@ function App() {
 
         <ol className="exercise-list">
           {selected.exercises.map((exercise, index) => (
-            <li key={exercise.id}>
-              <span className="exercise-index">{index + 1}</span>
-              <a className="exercise-media" href={`#/library/${exercise.id}`} aria-label={`فيديو تمرين ${exercise.name} في المكتبة`}>
-                <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
-                <span className="play-badge"><Play /></span>
-              </a>
-              <div className="exercise-copy">
-                <strong>{exercise.name}</strong>
-                <p>{exercise.cue}</p>
-                <p className="exercise-alts"><b>أخف:</b> {exercise.alternatives[0]} · {exercise.alternatives[1]}</p>
-              </div>
-              <span className="focus-tag">{exercise.focus}</span>
-            </li>
+            <CircuitRow exercise={exercise} index={index} key={exercise.id} />
           ))}
         </ol>
 
@@ -404,7 +418,7 @@ function App() {
           <div className="cooldown-list">
             {cooldown.map((exercise) => (
               <a key={exercise.id} href={`#/library/${exercise.id}`}>
-                <img src={youtubeThumb(exercise.youtubeId)} alt="" loading="lazy" onError={hideBrokenImage} />
+                <img src={exerciseGif(exercise.id)} alt="" loading="lazy" />
                 <span>{exercise.name}</span>
               </a>
             ))}
@@ -419,7 +433,7 @@ function App() {
 
       <section className="library-teaser">
         <BookOpen />
-        <div><strong>المكتبة</strong><p>الـ٢٠ تمرين اللي البرنامج مبني عليهم، بالفيديو ولكل تمرين بديلين أخف.</p></div>
+        <div><strong>المكتبة</strong><p>الـ٢٠ تمرين اللي البرنامج مبني عليهم، بالحركة المتحركة، ولكل تمرين بديلين أخف تقدري تشوفي حركتهم.</p></div>
         <a href="#/library" className="primary-action">افتحي المكتبة <ArrowLeft /></a>
       </section>
 
@@ -455,13 +469,8 @@ function App() {
                   <div className="runner-top"><span>الجولة {round} من {selected.rounds}</span><b>{phase === 'work' ? 'وقت الحركة' : 'راحة قصيرة'}</b></div>
                   <div className="runner-stage">
                     <figure className="runner-demo">
-                      <iframe
-                        key={runnerExercise.id}
-                        src={youtubeEmbed(runnerExercise.youtubeId, { autoplay: true, loop: true })}
-                        title={`فيديو تمرين ${runnerExercise.name}`}
-                        allow="autoplay; encrypted-media; picture-in-picture"
-                        allowFullScreen
-                      />
+                      <img src={exerciseGif(runnerExercise.id, runnerVariant)} alt={`حركة ${runnerExercise.name}`} />
+                      <figcaption>{variantLabels[runnerVariant]}</figcaption>
                     </figure>
                     <div className={`timer-face ${phase === 'rest' ? 'is-rest' : ''}`}>
                       <span>{formatTime(secondsLeft)}</span>
@@ -470,8 +479,9 @@ function App() {
                   </div>
                   <p className="runner-cue">
                     {phase === 'work' ? selected.exercises[exerciseIndex].cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}
-                    {phase === 'work' && <small>لو تقيل: {selected.exercises[exerciseIndex].alternatives[0]} أو {selected.exercises[exerciseIndex].alternatives[1]}</small>}
+                    {runnerVariant > 0 && <small>{runnerExercise.alternatives[runnerVariant - 1]}</small>}
                   </p>
+                  <VariantButtons exercise={runnerExercise} variant={runnerVariant} onChange={setRunnerVariant} compact />
                   <div className="runner-controls">
                     <button type="button" className="runner-primary" onClick={() => setRunning((value) => !value)}>
                       {isRunning ? <><CirclePause /> إيقاف مؤقت</> : <><CirclePlay /> {secondsLeft === selected.work && exerciseIndex === 0 && round === 1 ? 'ابدئي' : 'كمّلي'}</>}
