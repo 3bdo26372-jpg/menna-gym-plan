@@ -231,3 +231,14 @@
 .link-button.danger { color: #9b2c2c; }
 .food-today { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .inline-icon { width: 13px; vertical-align: -2px; }
+
+/* ---- water points */
+.water-points { background: linear-gradient(160deg, #fff, #eef6fb); }
+.spend-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.makeup-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.makeup-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+.makeup-list .button { min-height: 40px; }
+.spend-points { font: 800 14px var(--font-num); color: var(--berry-dark); white-space: nowrap; direction: ltr; }
+.food-list li.spend-cancelled { opacity: 0.6; }
+.food-list li.spend-cancelled .spend-points { text-decoration: line-through; }
+.water-points-line { margin: 0; font-size: 14px; font-weight: 700; color: var(--berry-dark); }

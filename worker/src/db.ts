@@ -15,6 +15,7 @@ import type {
 } from '../../shared/types'
 import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
+import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -55,7 +56,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   const startDate = (profile?.program_start_date as string | null) ?? null
   if (startDate) await ensureDays(db, startDate, today)
 
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food] = await db.batch<Row>([
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends] = await db.batch<Row>([
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
@@ -66,6 +67,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT * FROM reward_unlocks'),
     db.prepare('SELECT kind, period_index, start_date, end_date, generated_at FROM reports ORDER BY kind, period_index'),
     db.prepare('SELECT id, log_date, eaten_at, category, item, quantity, ml, created_at FROM food_entries ORDER BY log_date, eaten_at, id'),
+    db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
   ])
 
   const valuesByEntry = new Map<number, Record<string, number>>()
@@ -114,6 +116,18 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     })
   }
 
+  const waterSpends: WaterSpend[] = spends.results.map((row) => ({
+    id: Number(row.id),
+    kind: row.kind as WaterSpend['kind'],
+    points: Number(row.points),
+    note: (row.note as string | null) ?? null,
+    date: (row.log_date as string | null) ?? null,
+    status: row.status as WaterSpend['status'],
+    createdAt: String(row.created_at),
+    doneAt: (row.done_at as string | null) ?? null,
+  }))
+  const makeup = makeupByDate(waterSpends)
+
   const days: DayRecord[] = logs.results.map((row) => {
     const date = String(row.log_date)
     const parts = {
@@ -123,7 +137,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    return { date, dayNumber, ...parts, score: computeDailyScore(parts) }
+    return { date, dayNumber, ...parts, score: computeDailyScore(parts, makeup.get(date)) }
   })
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
@@ -161,6 +175,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       ml: row.ml === null || row.ml === undefined ? null : Number(row.ml),
       createdAt: String(row.created_at),
     })),
+    waterSpends,
   }
 }
 
@@ -170,12 +185,12 @@ export async function refreshDerived(db: D1Database, state: AppState, date: stri
   const statements: D1PreparedStatement[] = []
   if (day) {
     statements.push(db.prepare(`
-      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, total, computed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, makeup_points, total, computed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (log_date) DO UPDATE SET checkin_points = excluded.checkin_points, workout_points = excluded.workout_points,
         warmup_cooldown_points = excluded.warmup_cooldown_points, feedback_points = excluded.feedback_points,
-        total = excluded.total, computed_at = excluded.computed_at
-    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.total, now()))
+        makeup_points = excluded.makeup_points, total = excluded.total, computed_at = excluded.computed_at
+    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.makeup, day.score.total, now()))
   }
   for (const unlock of newRewardUnlocks(state.days, state.rewards)) {
     statements.push(db.prepare('INSERT OR IGNORE INTO reward_unlocks (reward_id, unlocked_on) VALUES (?, ?)').bind(unlock.id, unlock.unlockedOn))
@@ -259,6 +274,11 @@ export async function deleteFood(db: D1Database, id: number) {
 
 export async function foodDate(db: D1Database, id: number) {
   return (await db.prepare('SELECT log_date FROM food_entries WHERE id = ?').bind(id).first<{ log_date: string }>())?.log_date ?? null
+}
+
+export async function addWaterSpend(db: D1Database, spend: NewWaterSpend) {
+  await db.prepare('INSERT INTO water_point_spends (kind, points, note, log_date, status, done_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(spend.kind, spend.points, spend.note, spend.date, spend.status, spend.status === 'done' ? now() : null).run()
 }
 
 export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {

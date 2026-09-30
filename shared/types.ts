@@ -1,4 +1,5 @@
 import type { FoodEntry } from './food'
+import type { WaterSpend } from './waterPoints'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -60,6 +61,8 @@ export interface ScoreBreakdown {
   workout: number
   warmupCooldown: number
   feedback: number
+  /** Points made up with water points (finished days only). */
+  makeup: number
   total: number
 }
 
@@ -118,6 +121,7 @@ export interface AppState {
   rewards: RewardState[]
   reports: ReportMeta[]
   foodEntries: FoodEntry[]
+  waterSpends: WaterSpend[]
 }
 
 export interface MeasurementInput {

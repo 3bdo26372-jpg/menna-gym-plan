@@ -4,6 +4,7 @@ import { EXERCISE_BY_ID } from './exercises'
 import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
+import { waterPointsForMl } from './waterPoints'
 import type { AppState, DayType, Energy, ReportKind } from './types'
 
 /**
@@ -175,6 +176,10 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
     suggestions: [],
   }
   report.summary = writeSummary(report, recordedCount, withWorkout.map((day) => day.workout!.dayType))
+  const waterPoints = foodDays.reduce((sum, day) => sum + waterPointsForMl(day.waterMl), 0)
+  const madeUp = periodDays.filter((day) => day.score.makeup > 0)
+  if (waterPoints) report.summary.push(`كسبتي ${waterPoints} نقطة مية.`)
+  if (madeUp.length) report.summary.push(`عوّضتي ${madeUp.reduce((sum, day) => sum + day.score.makeup, 0)} نقطة من السكور بنقط المية في ${madeUp.length} يوم.`)
   report.suggestions = writeSuggestions(report, recordedCount, feedbacks.filter((feedback) => feedback.pain).length, state, start, lastRecorded)
   return report
 }

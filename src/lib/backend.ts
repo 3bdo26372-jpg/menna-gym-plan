@@ -1,5 +1,6 @@
 import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
+import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { AppState, CheckIn, Feedback, MeasurementInput, ReportKind, WorkoutResult } from '../../shared/types'
 
 export type CheckInInput = Pick<CheckIn, 'energy' | 'mood' | 'body'>
@@ -18,6 +19,7 @@ export interface Backend {
   markRewardCelebrated(id: string): Promise<AppState>
   addFood(date: string, input: FoodInput): Promise<AppState>
   deleteFood(id: number): Promise<AppState>
+  spendWaterPoints(input: WaterSpendInput): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }

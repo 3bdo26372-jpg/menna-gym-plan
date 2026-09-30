@@ -23,7 +23,7 @@ export function ScoreCalendar({ days, startDate, periodIndex, today }: { days: D
         return (
           <div
             role="listitem" key={date} className={`cal-cell ${scoreLevel(score, recorded)} ${date === today ? 'is-today' : ''}`}
-            title={`${formatDateShort(date)} — ${recorded ? `${score} نقطة` : 'لسه'}`}
+            title={`${formatDateShort(date)} — ${recorded ? `${score} نقطة${day?.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}` : 'لسه'}`}
           >
             <span className="cal-day">{index + 1 + (periodIndex - 1) * 30}</span>
             <span className="cal-score">{recorded ? score : ''}</span>
