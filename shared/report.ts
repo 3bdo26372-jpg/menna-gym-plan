@@ -3,7 +3,7 @@ import { latestMeasurement, isActiveDay, round1 } from './engine'
 import { EXERCISE_BY_ID } from './exercises'
 import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
-import { averageDailyCalories, roundCalories } from './calories'
+import { averageDailyCalories, calorieRange, roundCalories } from './calories'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
 import { waterPointsForMl } from './waterPoints'
 import type { AppState, DayType, Energy, ReportKind } from './types'
@@ -209,7 +209,10 @@ function writeSummary(report: ReportData, recordedCount: number, dayTypes: DayTy
   if (report.food.loggedDays) {
     lines.push(`سجّلتي أكلك وشربك في ${report.food.loggedDays} يوم (${report.food.entries} تسجيل).`)
     if (report.food.averageWaterMl !== null) lines.push(`متوسط شرب المية ${formatLitres(report.food.averageWaterMl)} لتر في اليوم.`)
-    if (report.food.averageCalories) lines.push(`متوسط السعرات تقريبًا ${report.food.averageCalories.toLocaleString('en-US')} سعرة في اليوم، من الأكل المتسجّل.`)
+    if (report.food.averageCalories) {
+      const range = calorieRange(report.days.filter((day) => day.recorded).at(-1)?.dayNumber ?? report.days[0].dayNumber)
+      lines.push(`متوسط السعرات تقريبًا ${report.food.averageCalories.toLocaleString('en-US')} سعرة في اليوم، من الأكل المتسجّل (المفروض من ${range.min.toLocaleString('en-US')} لـ ${range.max.toLocaleString('en-US')}).`)
+    }
   }
   return lines
 }

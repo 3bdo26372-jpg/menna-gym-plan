@@ -241,4 +241,7 @@
 .spend-points { font: 800 14px var(--font-num); color: var(--berry-dark); white-space: nowrap; direction: ltr; }
 .food-list li.spend-cancelled { opacity: 0.6; }
 .food-list li.spend-cancelled .spend-points { text-decoration: line-through; }
+.calorie-range { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.range-within { color: var(--green); background: var(--green-soft); }
+.chip.range-above, .chip.range-below { color: var(--amber); background: var(--amber-soft); }
 .water-points-line { margin: 0; font-size: 14px; font-weight: 700; color: var(--berry-dark); }

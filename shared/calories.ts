@@ -302,3 +302,29 @@ export function averageDailyCalories(entries: FoodEntry[], dates: string[]) {
 export const roundCalories = (kcal: number) => Math.round(kcal / 50) * 50
 
 export const formatCalories = (kcal: number) => roundCalories(kcal).toLocaleString('en-US')
+
+/**
+ * Daily targets from her nutrition plan ("a flexible guide, not an extreme
+ * diet"), by program day. The app shows each as a range, since the estimates
+ * are rough anyway.
+ */
+export const CALORIE_STAGES = [
+  { fromDay: 1, toDay: 14, target: 1850 },
+  { fromDay: 15, toDay: 30, target: 1750 },
+  { fromDay: 31, toDay: null, target: 1700 },
+] as const
+export const CALORIE_RANGE_MARGIN = 100
+
+export function calorieRange(dayNumber: number) {
+  const index = Math.max(0, CALORIE_STAGES.findIndex((stage) => stage.toDay === null || dayNumber <= stage.toDay))
+  const stage = CALORIE_STAGES[index]
+  return { stage: index + 1, untilDay: stage.toDay, target: stage.target, min: stage.target - CALORIE_RANGE_MARGIN, max: stage.target + CALORIE_RANGE_MARGIN }
+}
+
+export type RangeStatus = 'below' | 'within' | 'above'
+
+/** Compares the rounded estimate, so a borderline day reads as within. */
+export function rangeStatus(kcal: number, range: { min: number; max: number }): RangeStatus {
+  const rounded = roundCalories(kcal)
+  return rounded < range.min ? 'below' : rounded > range.max ? 'above' : 'within'
+}
