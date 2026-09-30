@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowDownUp, CircleCheck, HeartPulse, Pause, Play, SkipForward, Undo2, Volume2, VolumeX, X,
@@ -15,6 +15,8 @@ import { formatClock } from '../lib/format'
 import { navigate } from '../lib/router'
 import { useAppData, useAppState } from '../state/AppData'
 import { createSession, exerciseForStep, resumableSession, sessionStore, toWorkoutInput, workSummary, type Session } from './session'
+import { CheerBubble, FinishCelebration } from './CheerOverlays'
+import { currentCheer, finishStyle, hardestExerciseIds, planCheers } from './cheers'
 import { useSession } from './useSession'
 
 /** Resume a stored session (paused) for today or last night, otherwise plan a new one. */
@@ -60,6 +62,13 @@ function Player({ initial }: { initial: Session }) {
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const savingRef = useRef(false)
+  const hardest = useMemo(() => hardestExerciseIds(state?.days ?? []), [state?.days])
+  const cheers = useMemo(() => planCheers(session, hardest), [session, hardest])
+  const cheer = currentCheer(session, cheers, remaining)
+  // The big celebration plays once, when the whole workout is finished in this visit.
+  const [partyClosed, setPartyClosed] = useState(false)
+  const closeParty = useCallback(() => setPartyClosed(true), [])
+  const party = !initial.finished && session.finished && workSummary(session).ratio >= 0.99 && !partyClosed
 
   const step = session.steps[session.stepIndex]
   const exercise = getExercise(exerciseForStep(session, step))
@@ -104,17 +113,20 @@ function Player({ initial }: { initial: Session }) {
 
   if (view !== 'play') {
     return (
-      <FinishedView
-        session={session}
-        phase={view}
-        error={saveError}
-        onRetry={() => { setSaveError(null); void persist() }}
-        onFeedback={async (input) => {
-          await saveFeedback(session.date, input)
-          sessionStore.clear()
-          setPhase('done')
-        }}
-      />
+      <>
+        <FinishedView
+          session={session}
+          phase={view}
+          error={saveError}
+          onRetry={() => { setSaveError(null); void persist() }}
+          onFeedback={async (input) => {
+            await saveFeedback(session.date, input)
+            sessionStore.clear()
+            setPhase('done')
+          }}
+        />
+        <FinishCelebration open={party} variant={finishStyle(session.plan.dayNumber)} onClose={closeParty} />
+      </>
     )
   }
 
@@ -140,6 +152,7 @@ function Player({ initial }: { initial: Session }) {
             <ExerciseMedia exercise={exercise} size="lg" eager />
             {step.kind === 'rest' && <span className="rest-badge">راحة · استعدي</span>}
             {halfway && <span className="switch-side-badge">بدّلي الجهة</span>}
+            <CheerBubble cheer={cheer} />
           </div>
           <div className="player-info">
             <div className="player-name">
