@@ -65,6 +65,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - A dictionary of common (mostly Egyptian) foods gives typical portions, and simple amounts are read from the text ("2 توست", "رغيفين ونص", "نص معلقة عسل", "دبوسين").
   - Anything unrecognised counts as a typical meal size.
   - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
+  - The target range comes from her original nutrition plan (1,850 kcal for days 1–14, 1,750 for days 15–30, 1,700 from day 31), shown as ±100. A chip says whether the weekly average is within it (`CALORIE_STAGES` in `shared/calories.ts`).
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.

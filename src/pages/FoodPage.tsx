@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Droplets, Flame, Plus, Trash2, Utensils } from 'lucide-react'
-import { addDays, cairoTime, formatDateLong, formatDateShort } from '../../shared/date'
-import { averageDailyCalories, dayCalories, formatCalories, hasFoodLogged } from '../../shared/calories'
+import { addDays, cairoTime, dayNumberFor, formatDateLong, formatDateShort } from '../../shared/date'
+import { averageDailyCalories, calorieRange, dayCalories, formatCalories, hasFoodLogged, rangeStatus, type RangeStatus } from '../../shared/calories'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
 import { WATER_POINTS_DAILY_MAX, waterPointsBalance, waterPointsForMl } from '../../shared/waterPoints'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile } from '../components/ui'
@@ -79,11 +79,14 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
   )
 }
 
+const RANGE_STATUS: Record<RangeStatus, string> = { within: 'متوسطك في الرينج 👌', below: 'متوسطك أقل من الرينج', above: 'متوسطك أعلى من الرينج' }
+
 /** A rough daily total and weekly average, estimated from what she writes; nothing to count. */
 function CaloriesCard({ date, entries, start }: { date: string; entries: FoodEntry[]; start: string }) {
   const state = useAppState()
   const lastWeek = Array.from({ length: 7 }, (_, index) => addDays(state.today, -(index + 1))).filter((day) => day >= start)
   const { average } = averageDailyCalories(state.foodEntries, lastWeek)
+  const range = calorieRange(dayNumberFor(start, state.today))
   return (
     <Card>
       <h2 className="card-title"><Flame /> السعرات تقريبًا</h2>
@@ -94,8 +97,13 @@ function CaloriesCard({ date, entries, start }: { date: string; entries: FoodEnt
         />
         <StatTile label="متوسط اليوم" value={average === null ? '—' : formatCalories(average)} unit="سعرة" hint="آخر ٧ أيام" tone="accent" />
       </div>
+      <div className="calorie-range">
+        <span className="chip">🎯 المفروض من {formatCalories(range.min)} لـ {formatCalories(range.max)} في اليوم</span>
+        {average !== null && <span className={`chip range-${rangeStatus(average, range)}`}>{RANGE_STATUS[rangeStatus(average, range)]}</span>}
+      </div>
       <p className="muted small">
-        رقم تقريبي من اللي بتكتبيه، مش محتاجة تحسبي حاجة 🙂{average === null ? ' المتوسط بيظهر بعد أول يوم كامل.' : ''}
+        المرحلة {range.stage} من نظامك{range.untilDay ? ` لحد يوم ${range.untilDay}` : ''}. الأرقام تقريبية من اللي بتكتبيه، مش محتاجة تحسبي حاجة 🙂
+        {average === null ? ' المتوسط بيظهر بعد أول يوم كامل.' : ''}
       </p>
     </Card>
   )

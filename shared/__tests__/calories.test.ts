@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { averageDailyCalories, dayCalories, estimateCalories, formatCalories, normalizeFoodText } from '../calories'
+import { averageDailyCalories, calorieRange, dayCalories, estimateCalories, formatCalories, normalizeFoodText, rangeStatus } from '../calories'
 import type { FoodCategory, FoodEntry } from '../food'
 
 const kcal = (item: string, quantity: string | null = null, category: FoodCategory = 'lunch', ml: number | null = null) =>
@@ -72,5 +72,23 @@ describe('rough calories', () => {
     expect(formatCalories(average!)).toBe('650')
     expect(formatCalories(1785)).toBe('1,800')
     expect(averageDailyCalories(entries, ['2026-10-02']).average).toBeNull()
+  })
+})
+
+describe('calorie range from her plan', () => {
+  it('follows the plan stages by program day, as ±100 around each target', () => {
+    expect(calorieRange(1)).toEqual({ stage: 1, untilDay: 14, target: 1850, min: 1750, max: 1950 })
+    expect(calorieRange(14)).toMatchObject({ stage: 1, min: 1750 })
+    expect(calorieRange(15)).toEqual({ stage: 2, untilDay: 30, target: 1750, min: 1650, max: 1850 })
+    expect(calorieRange(31)).toEqual({ stage: 3, untilDay: null, target: 1700, min: 1600, max: 1800 })
+    expect(calorieRange(200)).toMatchObject({ stage: 3 })
+  })
+
+  it('says whether an estimate is within the range, using the rounded number', () => {
+    const range = calorieRange(3)
+    expect(rangeStatus(1800, range)).toBe('within')
+    expect(rangeStatus(1730, range)).toBe('within')
+    expect(rangeStatus(1700, range)).toBe('below')
+    expect(rangeStatus(2230, range)).toBe('above')
   })
 })
