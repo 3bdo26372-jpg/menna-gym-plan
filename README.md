@@ -61,6 +61,10 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Requests and gifts start as `pending`. The app has no screen for fulfilling them; update them directly in D1:
     - `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …` once fulfilled.
     - `status = 'cancelled'` gives the points back.
+- **Calories (rough)** (`shared/calories.ts`): estimated from the food log text, so she never counts anything.
+  - A dictionary of common (mostly Egyptian) foods gives typical portions, and simple amounts are read from the text ("2 توست", "رغيفين ونص", "نص معلقة عسل", "دبوسين").
+  - Anything unrecognised counts as a typical meal size.
+  - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
