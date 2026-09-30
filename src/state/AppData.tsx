@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { cairoDate } from '../../shared/date'
 import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
+import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
@@ -24,6 +25,7 @@ interface AppDataValue {
   markRewardCelebrated(id: string): Promise<void>
   addFood(date: string, input: FoodInput): Promise<void>
   deleteFood(id: number): Promise<void>
+  spendWaterPoints(input: WaterSpendInput): Promise<void>
   generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }
@@ -67,6 +69,7 @@ function createBackend(): Backend {
     markRewardCelebrated: forward('markRewardCelebrated'),
     addFood: forward('addFood'),
     deleteFood: forward('deleteFood'),
+    spendWaterPoints: forward('spendWaterPoints'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
   }
@@ -171,6 +174,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       markRewardCelebrated: async (id) => void (await apply(backend.markRewardCelebrated(id))),
       addFood: async (date, input) => void (await apply(backend.addFood(date, input))),
       deleteFood: async (id) => void (await apply(backend.deleteFood(id))),
+      spendWaterPoints: async (input) => void (await apply(backend.spendWaterPoints(input))),
       async generateReport(kind, periodIndex) {
         const result = await backend.generateReport(kind, periodIndex)
         setState(result.state)

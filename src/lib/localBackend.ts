@@ -5,6 +5,7 @@ import { BASELINE_METRICS, validateMeasurementValues } from '../../shared/measur
 import { buildReport, type ReportData } from '../../shared/report'
 import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore } from '../../shared/scoring'
+import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
@@ -24,6 +25,7 @@ interface LocalDb {
   rewards: RewardState[]
   reports: Record<string, ReportData>
   foodEntries?: FoodEntry[]
+  waterSpends?: WaterSpend[]
 }
 
 function freshDb(): LocalDb {
@@ -45,10 +47,11 @@ const fail = (status: number, message: string): never => {
 function toState(db: LocalDb): AppState {
   const today = cairoDate()
   const start = db.programStartDate
+  const makeup = makeupByDate(db.waterSpends ?? [])
   const days = start
     ? dateRange(start, today).map((date) => {
         const parts = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
-        return { date, dayNumber: dayNumberFor(start, date), ...parts, score: computeDailyScore(parts) }
+        return { date, dayNumber: dayNumberFor(start, date), ...parts, score: computeDailyScore(parts, makeup.get(date)) }
       })
     : []
   const unlocks = newRewardUnlocks(days, db.rewards)
@@ -67,6 +70,7 @@ function toState(db: LocalDb): AppState {
       kind: report.kind ?? 'month', periodIndex: report.periodIndex, startDate: report.startDate, endDate: report.endDate, generatedAt: report.generatedAt,
     })),
     foodEntries: [...(db.foodEntries ?? [])].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.id - b.id),
+    waterSpends: db.waterSpends ?? [],
   }
 }
 
@@ -150,6 +154,19 @@ export function createLocalBackend(): Backend {
       const problem = checkFoodDate(entry.date, cairoDate(), db.programStartDate, diffDays)
       if (problem) fail(400, problem)
       db.foodEntries = (db.foodEntries ?? []).filter((item) => item.id !== id)
+      save(db)
+      return toState(db)
+    }),
+    spendWaterPoints: (input) => attempt(() => {
+      const db = load()
+      const state = toState(db)
+      if (!state.profile.programStartDate) fail(409, 'the program has not started yet')
+      const spend = validateSpend(input, state)
+      if (typeof spend === 'string') return fail(400, spend)
+      const list = db.waterSpends ?? []
+      const id = list.reduce((max, item) => Math.max(max, item.id), 0) + 1
+      const createdAt = new Date().toISOString()
+      db.waterSpends = [...list, { id, ...spend, createdAt, doneAt: spend.status === 'done' ? createdAt : null }]
       save(db)
       return toState(db)
     }),

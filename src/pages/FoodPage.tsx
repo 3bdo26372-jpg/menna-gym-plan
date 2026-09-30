@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Droplets, Plus, Trash2, Utensils } from 'lucide-react'
 import { addDays, cairoTime, formatDateLong, formatDateShort } from '../../shared/date'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
+import { WATER_POINTS_DAILY_MAX, waterPointsBalance, waterPointsForMl } from '../../shared/waterPoints'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
@@ -47,9 +48,11 @@ export function FoodPage() {
 }
 
 function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
+  const state = useAppState()
   const { addFood } = useAppData()
   const [busy, setBusy] = useState(false)
   const total = waterMl(entries)
+  const { balance } = waterPointsBalance(state.foodEntries, state.waterSpends)
   const add = async (ml: number) => {
     setBusy(true)
     try {
@@ -63,6 +66,9 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
       <h2 className="card-title"><Droplets /> المية: {formatLitres(total)} لتر</h2>
       <ProgressBar value={total} max={WATER_TARGET_ML} label="المية من الهدف" />
       <p className="muted small">الهدف ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.</p>
+      <p className="water-points-line">
+        💧 {waterPointsForMl(total)} من {WATER_POINTS_DAILY_MAX} نقطة مية لليوم ده · رصيدك {balance} · <a href="#/rewards">تصرفيها إزاي؟</a>
+      </p>
       <div className="quick-water">
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(250)}><Plus /> كوباية 250 مل</button>
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(500)}><Plus /> زجاجة 500 مل</button>

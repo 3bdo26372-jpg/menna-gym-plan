@@ -87,6 +87,7 @@ describe('rewards and reports', () => {
       { id: 4, date: addDays(start, 3), time: '14:00', category: 'lunch', item: 'فراخ ورز', quantity: null, ml: null, createdAt: '' },
       { id: 5, date: addDays(start, 3), time: '16:00', category: 'drink', item: 'قهوة', quantity: 'كوباية', ml: 200, createdAt: '' },
     ],
+    waterSpends: [],
   }
 
   it('unlocks rewards on the day the active-day threshold is reached', () => {

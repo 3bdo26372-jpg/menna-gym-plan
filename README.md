@@ -20,6 +20,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - validation and derived values (`engine.ts`)
   - measurement fields and the baseline (`measurements.ts`)
   - reward defaults and hiding locked rewards (`rewards.ts`)
+  - water points: earning, spending and making up days (`waterPoints.ts`)
   - the monthly report builder (`report.ts`)
 - **`worker/`**: the Cloudflare Worker API.
   - D1 schema in `worker/migrations/`, queries in `worker/src/db.ts`, routes in `worker/src/index.ts`.
@@ -47,6 +48,15 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Reporting pain holds the level and makes the next day light.
 - **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
+- **Water points (نقط المية)**: 1 point per 250 ml of water, up to 2.5 L a day, plus a 5-point bonus at 2 L (max 15 a day).
+  - Points come from the food log, so deleting a water entry takes its points back. They show on the Food page and are spent on the Rewards page.
+  - **Request** (30 points): Menna writes what she wants.
+  - **Surprise gift** (75 points): she pays the points and can add an optional hint; the gift is chosen for her.
+  - **Make up a day**: each point adds 1 to the score of a finished day (not today or yesterday, which can still be logged), up to 100.
+    - It only changes the score. It never turns a day into an active day for the milestone rewards.
+  - Requests and gifts start as `pending`. The app has no screen for fulfilling them; update them directly in D1:
+    - `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …` once fulfilled.
+    - `status = 'cancelled'` gives the points back.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -55,7 +65,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -65,9 +75,10 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `daily_logs` | one row per calendar day, created automatically from the start date |
 | `workouts`, `workout_exercises` | each session and every exercise actually performed, including switched alternatives |
 | `exercise_feedback` | favourite and hardest exercise per day |
-| `daily_scores` | the stored score breakdown per day |
+| `daily_scores` | the stored score breakdown per day, including points made up with water points |
 | `rewards`, `reward_unlocks` | milestones and when they unlocked |
 | `food_entries` | food & drink log |
+| `water_point_spends` | water points spent on requests, surprise gifts and made-up days |
 | `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media
