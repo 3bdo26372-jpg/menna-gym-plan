@@ -3,6 +3,7 @@ import { latestMeasurement, isActiveDay, round1 } from './engine'
 import { EXERCISE_BY_ID } from './exercises'
 import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
+import { averageDailyCalories, roundCalories } from './calories'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
 import { waterPointsForMl } from './waterPoints'
 import type { AppState, DayType, Energy, ReportKind } from './types'
@@ -40,6 +41,8 @@ export interface ReportData {
     entries: number
     averageWaterMl: number | null
     waterTargetMl: number
+    /** Rough daily average from the food log, over finished days (missing in older saved reports). */
+    averageCalories?: number | null
   }
   summary: string[]
   suggestions: string[]
@@ -140,6 +143,8 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
     })
     .filter((day) => day.entries.length > 0)
   const waterDays = foodDays.filter((day) => day.waterMl > 0)
+  // Today is still going, so only finished days count toward the calorie average.
+  const calories = averageDailyCalories(state.foodEntries, dateRange(start, lastRecorded).filter((date) => date < state.today)).average
 
   const activeDays = days.filter((day) => day.active).length
   const report: ReportData = {
@@ -171,6 +176,7 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
       entries: foodInPeriod.length,
       averageWaterMl: waterDays.length ? Math.round(waterDays.reduce((sum, day) => sum + day.waterMl, 0) / waterDays.length) : null,
       waterTargetMl: WATER_TARGET_ML,
+      averageCalories: calories === null ? null : roundCalories(calories),
     },
     summary: [],
     suggestions: [],
@@ -203,6 +209,7 @@ function writeSummary(report: ReportData, recordedCount: number, dayTypes: DayTy
   if (report.food.loggedDays) {
     lines.push(`سجّلتي أكلك وشربك في ${report.food.loggedDays} يوم (${report.food.entries} تسجيل).`)
     if (report.food.averageWaterMl !== null) lines.push(`متوسط شرب المية ${formatLitres(report.food.averageWaterMl)} لتر في اليوم.`)
+    if (report.food.averageCalories) lines.push(`متوسط السعرات تقريبًا ${report.food.averageCalories.toLocaleString('en-US')} سعرة في اليوم، من الأكل المتسجّل.`)
   }
   return lines
 }

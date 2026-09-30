@@ -147,6 +147,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
               <div><span>أيام اتسجل فيها الأكل</span><strong>{food.loggedDays}</strong></div>
               <div><span>عدد التسجيلات</span><strong>{food.entries}</strong></div>
               <div><span>متوسط المية يوميًا</span><strong>{food.averageWaterMl === null ? '—' : formatLitres(food.averageWaterMl)}<small> لتر</small></strong></div>
+              <div><span>متوسط السعرات يوميًا</span><strong>{food.averageCalories ? food.averageCalories.toLocaleString('en-US') : '—'}<small> تقريبًا</small></strong></div>
             </div>
           )}
           {page.length === 0 && <p className="report-note">مفيش أكل أو شرب مسجّل في الفترة دي. التسجيل من صفحة "الأكل" في التطبيق.</p>}

@@ -34,7 +34,7 @@
 .report-exercises span { direction: ltr; }
 .report-footer { position: absolute; inset: auto 48px 22px 48px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--faint); font-size: 11px; }
 .report-calendar.is-week { grid-template-columns: repeat(7, 1fr); }
-.report-food-kpis { grid-template-columns: repeat(3, 1fr); }
+.report-food-kpis { grid-template-columns: repeat(4, 1fr); }
 .report-food-day h3 { margin: 4px 0 2px; font-size: 14px; }
 .report-food-table td { padding: 4px 6px; font-size: 13px; }
 .food-time-cell { width: 58px; direction: ltr; text-align: left !important; color: var(--muted); font-variant-numeric: tabular-nums; }

@@ -64,3 +64,21 @@
   .player-side { grid-area: side; align-self: center; margin-top: 0; gap: 14px; }
   .player.finished { display: flex; width: min(640px, 100%); }
 }
+
+/* Cheers: a short message over the demo, and the end-of-workout celebration. */
+.cheer-anchor { position: absolute; left: 50%; bottom: 14px; width: 0; display: flex; justify-content: center; pointer-events: none; z-index: 2; }
+.cheer-bubble { display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 10px 18px; border: 2px solid var(--rose-200); border-radius: 999px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 12px 30px rgba(99, 33, 63, 0.18); color: var(--berry-dark); font-size: 18px; font-weight: 800; white-space: nowrap; }
+.cheer-emoji { display: inline-block; font-size: 22px; line-height: 1; }
+.cheer-loading { display: inline-flex; align-items: center; gap: 6px; direction: ltr; }
+.cheer-loading-bar { width: 56px; height: 8px; overflow: hidden; border-radius: 999px; background: var(--rose-100); }
+.cheer-loading-bar i { display: block; height: 100%; border-radius: inherit; background: var(--berry); transform-origin: left center; }
+.cheer-loading small { font: 700 12px var(--font-num); color: var(--muted); }
+
+.finish-party { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; overflow: hidden; background: rgba(41, 25, 34, 0.45); backdrop-filter: blur(4px); }
+.party-bits { position: absolute; inset: 0; pointer-events: none; }
+.party-bit { position: absolute; bottom: -60px; line-height: 1; }
+.party-bit.pop { bottom: auto; }
+.finish-party-card { position: relative; z-index: 1; width: min(360px, 100%); display: grid; justify-items: center; gap: 6px; padding: 26px 22px; border-radius: 28px; background: #fff; text-align: center; box-shadow: 0 30px 80px rgba(29, 12, 21, 0.3); }
+.finish-party-emoji { font-size: 60px; line-height: 1; }
+.finish-party-card h2 { color: var(--berry-dark); font-size: 26px; line-height: 1.35; }
+.finish-party-card p { color: var(--muted); font-weight: 700; }

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Droplets, Plus, Trash2, Utensils } from 'lucide-react'
+import { Droplets, Flame, Plus, Trash2, Utensils } from 'lucide-react'
 import { addDays, cairoTime, formatDateLong, formatDateShort } from '../../shared/date'
+import { averageDailyCalories, dayCalories, formatCalories, hasFoodLogged } from '../../shared/calories'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
 import { WATER_POINTS_DAILY_MAX, waterPointsBalance, waterPointsForMl } from '../../shared/waterPoints'
-import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar } from '../components/ui'
+import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
 const CATEGORY_OPTIONS = FOOD_CATEGORIES.map((category) => ({ value: category.id, label: category.label, emoji: category.emoji }))
@@ -43,6 +44,7 @@ export function FoodPage() {
       <WaterCard date={date} entries={entries} />
       <FoodForm date={date} isToday={date === state.today} />
       <DayLog date={date} entries={entries} />
+      <CaloriesCard date={date} entries={entries} start={start} />
     </div>
   )
 }
@@ -73,6 +75,28 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(250)}><Plus /> كوباية 250 مل</button>
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(500)}><Plus /> زجاجة 500 مل</button>
       </div>
+    </Card>
+  )
+}
+
+/** A rough daily total and weekly average, estimated from what she writes; nothing to count. */
+function CaloriesCard({ date, entries, start }: { date: string; entries: FoodEntry[]; start: string }) {
+  const state = useAppState()
+  const lastWeek = Array.from({ length: 7 }, (_, index) => addDays(state.today, -(index + 1))).filter((day) => day >= start)
+  const { average } = averageDailyCalories(state.foodEntries, lastWeek)
+  return (
+    <Card>
+      <h2 className="card-title"><Flame /> السعرات تقريبًا</h2>
+      <div className="stat-grid">
+        <StatTile
+          label={date === state.today ? 'النهارده لحد دلوقتي' : date === addDays(state.today, -1) ? 'امبارح' : formatDateShort(date)}
+          value={hasFoodLogged(entries) ? formatCalories(dayCalories(entries)) : '—'} unit="سعرة"
+        />
+        <StatTile label="متوسط اليوم" value={average === null ? '—' : formatCalories(average)} unit="سعرة" hint="آخر ٧ أيام" tone="accent" />
+      </div>
+      <p className="muted small">
+        رقم تقريبي من اللي بتكتبيه، مش محتاجة تحسبي حاجة 🙂{average === null ? ' المتوسط بيظهر بعد أول يوم كامل.' : ''}
+      </p>
     </Card>
   )
 }

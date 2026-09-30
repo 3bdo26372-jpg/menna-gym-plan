@@ -46,6 +46,10 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Three workouts in a row rated *Easy* move up one level, and each level changes exactly one variable (work time, rest, rounds, more jumps, core rounds).
   - Two *Hard* ratings move down a level. After a *Hard* rating, or a low-energy / tired check-in, the jumps are swapped for their alternatives and the intervals get shorter.
   - Reporting pain holds the level and makes the next day light.
+- **Cheers** (`src/workout/cheers.ts`): short messages with her nicknames during the workout, kept sparse on purpose.
+  - One after every 5 finished exercises (skipped ones don't count), and one after a hard exercise (a jump, or one she once rated hardest) at most once a workout. That is about 4 a workout, never two close together and none during the cool-down.
+  - Each shows for about 3 seconds over the demo and never blocks a tap.
+  - Finishing the whole workout plays a celebration that rotates daily (hearts, rockets or clapping) and closes by itself.
 - **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
 - **Water points (نقط المية)**: 1 point per 250 ml of water, up to 2.5 L a day, plus a 5-point bonus at 2 L (max 15 a day).
@@ -57,6 +61,10 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Requests and gifts start as `pending`. The app has no screen for fulfilling them; update them directly in D1:
     - `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …` once fulfilled.
     - `status = 'cancelled'` gives the points back.
+- **Calories (rough)** (`shared/calories.ts`): estimated from the food log text, so she never counts anything.
+  - A dictionary of common (mostly Egyptian) foods gives typical portions, and simple amounts are read from the text ("2 توست", "رغيفين ونص", "نص معلقة عسل", "دبوسين").
+  - Anything unrecognised counts as a typical meal size.
+  - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
