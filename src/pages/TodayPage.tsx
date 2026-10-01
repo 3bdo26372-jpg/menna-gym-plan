@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { CalendarDays, Check, ChevronLeft, Droplets, Flame, Gift, Play, Sparkles, Timer, Utensils } from 'lucide-react'
 import { formatLitres, waterMl, WATER_TARGET_ML } from '../../shared/food'
 import { addDays, dayNumberFor, formatDateLong, periodBounds, periodForDay, PERIOD_DAYS } from '../../shared/date'
@@ -311,9 +311,9 @@ function RecentStrip({ days, today }: { days: DayRecord[]; today: string }) {
       {recent.map((date) => {
         const day = byDate.get(date)
         return (
-          <motion.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
+          <m.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
             <span className="cal-score">{day ? day.score.total : ''}</span>
-          </motion.span>
+          </m.span>
         )
       })}
     </div>

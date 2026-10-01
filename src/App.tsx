@@ -1,12 +1,13 @@
 import { lazy, Suspense, useState } from 'react'
+import { LazyMotion } from 'framer-motion'
 import { CalendarCheck, ChartLine, FileText, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
 import { Card, Spinner } from './components/ui'
 import { useRoute, type Route } from './lib/router'
 import { TodayPage } from './pages/TodayPage'
 import { AppDataProvider, useAppData } from './state/AppData'
-import { WorkoutPage } from './workout/WorkoutPage'
 
+const WorkoutPage = lazy(() => import('./workout/WorkoutPage').then((module) => ({ default: module.WorkoutPage })))
 const ProgressPage = lazy(() => import('./pages/ProgressPage').then((module) => ({ default: module.ProgressPage })))
 const FoodPage = lazy(() => import('./pages/FoodPage').then((module) => ({ default: module.FoodPage })))
 const MeasurementsPage = lazy(() => import('./pages/MeasurementsPage').then((module) => ({ default: module.MeasurementsPage })))
@@ -22,11 +23,15 @@ const NAV: { route: Exclude<Route, 'workout'>; label: string; icon: typeof Calen
   { route: 'reports', label: 'التقارير', icon: FileText },
 ]
 
+const loadMotion = () => import('./lib/motionFeatures').then((module) => module.default)
+
 export default function App() {
   return (
-    <AppDataProvider>
-      <Shell />
-    </AppDataProvider>
+    <LazyMotion features={loadMotion} strict>
+      <AppDataProvider>
+        <Shell />
+      </AppDataProvider>
+    </LazyMotion>
   )
 }
 
@@ -36,7 +41,7 @@ function Shell() {
   const pending = state?.rewards.find((reward) => reward.unlockedOn && !reward.celebratedAt) ?? null
 
   if (status === 'passcode') return <PasscodeScreen />
-  if (route === 'workout' && status === 'ready') return <WorkoutPage />
+  if (route === 'workout' && status === 'ready') return <Suspense fallback={<div className="page center"><Spinner /></div>}><WorkoutPage /></Suspense>
 
   return (
     <div className="app">

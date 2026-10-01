@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, m } from 'framer-motion'
 import {
   ArrowDownUp, CircleCheck, HeartPulse, Pause, Play, SkipForward, Undo2, Volume2, VolumeX, X,
 } from 'lucide-react'
@@ -199,8 +199,8 @@ function Player({ initial }: { initial: Session }) {
 
       <AnimatePresence>
         {(confirmFinish || safetyOpen) && (
-          <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="sheet" role="dialog" aria-modal="true" initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }}>
+          <m.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <m.div className="sheet" role="dialog" aria-modal="true" initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }}>
               {safetyOpen ? (
                 <>
                   <h2>خدي نفس، التمرين متوقف</h2>
@@ -223,8 +223,8 @@ function Player({ initial }: { initial: Session }) {
                   </div>
                 </>
               )}
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -246,13 +246,13 @@ function FinishedView({ session, phase, error, onRetry, onFeedback }: {
     <div className="player-shell">
       <div className="player finished">
         {phase === 'done' ? (
-          <motion.div className="done-view" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+          <m.div className="done-view" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
             <ScoreRing score={day?.score.total ?? 0} size={150} />
             <h1>كده تمام يا منّة</h1>
             <p>{Math.round(summary.done / 60)} دقيقة تمرين النهارده. اشربي مية وخدي نفس هادي.</p>
             {day?.feedback?.pain && <SafetyNote compact />}
             <button type="button" className="button primary" onClick={() => navigate('today')}>الرجوع للصفحة الرئيسية</button>
-          </motion.div>
+          </m.div>
         ) : (
           <>
             <header className="finished-head">

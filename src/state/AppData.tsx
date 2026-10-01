@@ -7,6 +7,7 @@ import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
 import { createLocalBackend } from '../lib/localBackend'
+import apiConfig from '../../public/api-config.json'
 
 type Status = 'loading' | 'ready' | 'error' | 'passcode'
 
@@ -34,12 +35,14 @@ interface AppDataValue {
 const AppDataContext = createContext<AppDataValue | null>(null)
 
 /**
- * The API URL comes from VITE_API_URL at build time or, failing that, from
- * /api-config.json (written by the deploy-api GitHub workflow). Without
- * either, the app uses the local development fallback.
+ * The API URL comes from VITE_API_URL or, in production builds, from
+ * public/api-config.json (written by the deploy-api GitHub workflow) baked in
+ * at build time, so the first load doesn't wait for an extra request. Dev
+ * builds still read /api-config.json at runtime. Without either, the app uses
+ * the local development fallback.
  */
 async function resolveBackend(): Promise<Backend> {
-  const built = import.meta.env.VITE_API_URL?.trim()
+  const built = import.meta.env.VITE_API_URL?.trim() || (import.meta.env.PROD ? apiConfig.apiUrl?.trim() : '')
   if (built) return createHttpBackend(built)
   try {
     const response = await fetch('/api-config.json', { cache: 'no-store' })

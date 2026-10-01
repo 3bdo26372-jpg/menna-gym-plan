@@ -40,24 +40,35 @@ export async function ensureSeed(db: D1Database) {
   ])
 }
 
-/** Make sure every calendar day from the start to today has a daily_logs row. */
-async function ensureDays(db: D1Database, startDate: string, today: string) {
+/** Makes sure every calendar day from the start to today has a daily_logs row. */
+function fillDays(db: D1Database, startDate: string, today: string) {
   const count = dayNumberFor(startDate, today)
-  if (count < 1) return
-  await db.prepare(`
+  if (count < 1) return null
+  return db.prepare(`
     WITH RECURSIVE days(n) AS (SELECT 0 UNION ALL SELECT n + 1 FROM days WHERE n + 1 < ?2)
     INSERT OR IGNORE INTO daily_logs (log_date, day_number)
     SELECT date(?1, '+' || n || ' days'), n + 1 FROM days
-  `).bind(startDate, count).run()
+  `).bind(startDate, count)
 }
 
-export async function loadState(db: D1Database, today: string): Promise<AppState> {
-  await ensureSeed(db)
-  const profile = await db.prepare('SELECT name, timezone, program_start_date FROM profile WHERE id = 1').first<Row>()
-  const startDate = (profile?.program_start_date as string | null) ?? null
-  if (startDate) await ensureDays(db, startDate, today)
+const readProfile = (db: D1Database) => db.prepare('SELECT name, timezone, program_start_date FROM profile WHERE id = 1').first<Row>()
 
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes] = await db.batch<Row>([
+/**
+ * Two round trips to the database: the profile, then one batch that fills in
+ * missing days and reads everything else (a batch runs in order, so the reads
+ * see the new days).
+ */
+export async function loadState(db: D1Database, today: string): Promise<AppState> {
+  let profile = await readProfile(db)
+  if (!profile) {
+    await ensureSeed(db)
+    profile = await readProfile(db)
+  }
+  const startDate = (profile?.program_start_date as string | null) ?? null
+  const fill = startDate ? fillDays(db, startDate, today) : null
+
+  const results = await db.batch<Row>([
+    ...(fill ? [fill] : []),
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
@@ -71,6 +82,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
     db.prepare('SELECT log_date, points, created_at FROM day_passes ORDER BY created_at'),
   ])
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {

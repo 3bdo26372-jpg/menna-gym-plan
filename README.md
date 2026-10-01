@@ -103,6 +103,14 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - The source mapping is in `scripts/exercise-media-sources.json`, and `scripts/build_exercise_media.py` rebuilds everything.
 - Review Gym visual's terms (https://gymvisual.com/content/3-terms-and-conditions-of-use) if the app ever becomes more than a private personal app.
 
+### Speed
+
+- **First screen:** the JS needed for it is about 107 kB gzipped. The animation engine (`LazyMotion`), the workout player and the other pages load after it.
+- **API connection:** production builds bake in the API URL from `public/api-config.json`, so there is no extra request before the first API call. `vite.config.ts` adds a `preconnect` to the API.
+- **Caching:** `vercel.json` caches hashed `/assets` for a year and exercise media and icons for a week.
+- **Server:** `loadState` makes two database round trips.
+- **Measurement:** Vercel Speed Insights (`@vercel/speed-insights/react` in `src/main.tsx`) reports real load times once it is enabled for the project.
+
 ### Installing on the phone
 
 The app is installable as a home-screen app (PWA), with `public/manifest.webmanifest`, the icons in `public/icons/` and the iOS meta tags in `index.html`:
