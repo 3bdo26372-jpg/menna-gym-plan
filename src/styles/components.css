@@ -245,3 +245,9 @@
 .chip.range-within { color: var(--green); background: var(--green-soft); }
 .chip.range-above, .chip.range-below { color: var(--amber); background: var(--amber-soft); }
 .water-points-line { margin: 0; font-size: 14px; font-weight: 700; color: var(--berry-dark); }
+.ways-title { font-size: 15px; color: var(--berry-dark); }
+.earn-ways { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.earn-ways li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+.earn-ways li > span { font-size: 20px; }
+.earn-ways b { font: 800 14px var(--font-num); color: var(--berry-dark); white-space: nowrap; direction: ltr; }
+.earn-ways b.rtl { direction: rtl; }

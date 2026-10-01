@@ -56,10 +56,12 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Calories (30): full points from 1,200 kcal up to the top of the day's range. Above it, 1 point is lost per 25 kcal. Below 1,200, points shrink.
   - A day pass fills the day up to 100. Adding or deleting food re-scores that day.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
-- **Points (نقطها)** (`shared/points.ts`): one balance, earned from water and calories, spent on requests, surprise gifts and day passes.
-  - Water: 1 point per 250 ml up to 2.5 L a day, plus 5 at 2 L (max 15 a day).
-  - Calories: 10 for each finished day whose rough estimate is between 1,200 and the top of that day's range.
-  - Earnings are derived from the food log, so deleting an entry takes its points back.
+- **Points (نقطها)** (`shared/points.ts`): one balance, spent on requests, surprise gifts and day passes. Points are earned by reaching goals, not for every step:
+  - 2.5 L of water in a day: 5. This counts as soon as she reaches it.
+  - A finished day eaten within the calorie range (1,200 up to the top): 5.
+  - A finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10. This is the score she earned herself; a day pass or makeup doesn't count.
+  - Every 7 workout days in a row: 15.
+  - A perfect day is worth about 20. Everything is derived from the log, so deleting an entry takes its points back.
   - **Request** (30 points): Menna writes what she wants. **Surprise gift** (75): she can add a hint and the gift is chosen for her.
   - Requests and gifts start as `pending`. Fulfil them in D1 with `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …`. Setting `status = 'cancelled'` gives the points back.
 - **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): complete a day that is short of 100 (today or earlier, once per day).

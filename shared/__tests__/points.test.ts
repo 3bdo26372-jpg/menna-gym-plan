@@ -3,58 +3,87 @@ import { addDays } from '../date'
 import { isActiveDay, newRewardUnlocks } from '../engine'
 import type { FoodCategory, FoodEntry } from '../food'
 import { PASS_PRICE, missedWorkout, passCandidates, passPrice, validatePass, type DayPass } from '../dayPasses'
-import { calorieDaysEarned, pointsBalance, waterPointsForMl } from '../points'
-import { computeDailyScore } from '../scoring'
+import { EARN, earnings, pointsBalance, scorePoints } from '../points'
+import { computeDailyScore, foodScoreInput } from '../scoring'
+import type { DayRecord } from '../types'
 import { makeupByDate, validateSpend, type WaterSpend } from '../waterPoints'
-import { checkin, day, feedback, workout } from './fixtures'
+import { checkin, feedback, workout } from './fixtures'
 
-const start = '2026-09-29'
-const today = addDays(start, 3)
+const start = '2026-09-01'
 let id = 1
 const food = (date: string, item: string, category: FoodCategory = 'lunch', ml: number | null = null): FoodEntry =>
   ({ id: id++, date, time: '12:00', category, item, quantity: null, ml, createdAt: '' })
 const water = (date: string, ml: number) => food(date, 'مية', 'drink', ml)
 const spend = (overrides: Partial<WaterSpend>): WaterSpend => ({ id: 1, kind: 'request', points: 30, note: 'x', date: null, status: 'pending', createdAt: '', doneAt: null, ...overrides })
 
-const days = [
-  day(start, 1, { checkin, workout: workout(), feedback: feedback() }),
-  day(addDays(start, 1), 2, { checkin, workout: workout({ mainCompletion: 0.4 }) }),
-  day(addDays(start, 2), 3),
-  day(today, 4),
-]
-function state({ foodEntries = [] as FoodEntry[], waterSpends = [] as WaterSpend[], dayPasses = [] as DayPass[], list = days } = {}) {
-  return { today, profile: { name: 'Menna', programStartDate: start, timezone: 'Africa/Cairo' }, days: list, foodEntries, waterSpends, dayPasses }
+/** A day as the app builds it: score from the workout parts plus that day's water and food. */
+function makeDay(dayNumber: number, foodEntries: FoodEntry[], parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused'>> = {}): DayRecord {
+  const date = addDays(start, dayNumber - 1)
+  const base = { checkin: null, workout: null, feedback: null, excused: false, ...parts }
+  return { date, dayNumber, ...base, score: computeDailyScore(base, 0, base.excused, foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber)) }
+}
+const full = { checkin, workout: workout(), feedback: feedback() }
+/** A perfect day: full workout, 2.5 L of water, food within the range (1,450). */
+const perfectFood = (dayNumber: number) => {
+  const date = addDays(start, dayNumber - 1)
+  return [water(date, 2500), food(date, 'كشري'), food(date, 'فول وطعمية وعيش بلدي', 'breakfast')]
 }
 
-describe('one points balance from water and calories', () => {
-  it('earns water points per 250 ml up to 2.5 L, plus a bonus at 2 L', () => {
-    expect([0, 240, 1000, 1750, 2000, 2500, 4000].map(waterPointsForMl)).toEqual([0, 0, 4, 7, 13, 15, 15])
+function state(days: DayRecord[], foodEntries: FoodEntry[], extra: { waterSpends?: WaterSpend[]; dayPasses?: DayPass[] } = {}) {
+  const today = addDays(start, days.length - 1)
+  return { today, profile: { name: 'Menna', programStartDate: start, timezone: 'Africa/Cairo' }, days, foodEntries, waterSpends: extra.waterSpends ?? [], dayPasses: extra.dayPasses ?? [] }
+}
+
+/** n perfect finished days, then today. */
+function perfect(n: number) {
+  const foodEntries = Array.from({ length: n }, (_, index) => perfectFood(index + 1)).flat()
+  const days = [...Array.from({ length: n }, (_, index) => makeDay(index + 1, foodEntries, full)), makeDay(n + 1, foodEntries)]
+  return { days, foodEntries }
+}
+
+describe('earning points by reaching goals', () => {
+  it('gives score points by tier: 60+, 80+ and 100', () => {
+    expect([59, 60, 79, 80, 99, 100].map(scorePoints)).toEqual([0, EARN.score60, EARN.score60, EARN.score80, EARN.score80, EARN.score100])
   })
 
-  it('earns calorie points on finished days within the allowance, never under the floor', () => {
-    const entries = [
-      food(start, 'كشري'), food(start, 'فول وطعمية وعيش بلدي', 'breakfast'), // 1,450: within
-      food(addDays(start, 1), 'كشري'), food(addDays(start, 1), 'بيتزا'), food(addDays(start, 1), 'كشري'), // 2,000: over 1,950
-      food(addDays(start, 2), 'سلطة'), // under the floor
-      food(today, 'كشري'), food(today, 'كشري'), // today isn't finished
-    ]
-    expect(calorieDaysEarned(state({ foodEntries: entries })).map((item) => item.dayNumber)).toEqual([1])
+  it('pays a perfect finished day 20: water 5, calories 5, score 10', () => {
+    const { days, foodEntries } = perfect(1)
+    expect(days[0].score.total).toBe(100)
+    expect(earnings(state(days, foodEntries)).map((item) => [item.kind, item.points])).toEqual([['water', 5], ['calories', 5], ['score', 10]])
   })
 
-  it('adds both into one balance, spent by requests, gifts and passes', () => {
-    const foodEntries = [water(start, 2500), water(addDays(start, 1), 2000), food(start, 'كشري'), food(start, 'فول وطعمية وعيش بلدي', 'breakfast')]
-    const waterSpends = [spend({ points: 30 }), spend({ kind: 'gift', points: 75, status: 'cancelled' })]
-    const dayPasses = [{ date: addDays(start, 2), points: 0, createdAt: '' }]
-    expect(pointsBalance(state({ foodEntries, waterSpends, dayPasses }))).toEqual({ water: 28, calories: 10, earned: 38, spent: 30, balance: 8 })
+  it('needs the full 2.5 L for water points, and counts it today already', () => {
+    const today = addDays(start, 1)
+    const entries = [water(start, 2250), water(today, 2500)]
+    const days = [makeDay(1, entries), makeDay(2, entries)]
+    expect(earnings(state(days, entries))).toEqual([{ date: today, kind: 'water', points: 5 }])
   })
 
-  it('lets requests and gifts spend the shared balance', () => {
-    const rich = { foodEntries: [water(start, 2500), water(addDays(start, 1), 2500), water(addDays(start, 2), 2500), water(today, 2500), water(addDays(start, -1), 2500), food(start, 'كشري'), food(start, 'فول وطعمية وعيش بلدي', 'breakfast')] }
-    expect(validateSpend({ kind: 'request', note: '  ' }, state(rich))).toBe('write what you would like')
-    expect(validateSpend({ kind: 'request', note: ' خروجة ' }, state(rich))).toEqual({ kind: 'request', points: 30, note: 'خروجة', date: null, status: 'pending' })
-    expect(validateSpend({ kind: 'gift' }, state(rich))).toEqual({ kind: 'gift', points: 75, note: null, date: null, status: 'pending' })
-    expect(validateSpend({ kind: 'gift' }, state({ foodEntries: [water(start, 2500)] }))).toBe('not enough points')
-    expect(validateSpend({ kind: 'makeup', date: start }, state(rich))).toBe('kind must be request or gift')
+  it('only scores finished days, and never counts a day pass toward the score tiers', () => {
+    const entries = perfectFood(1)
+    const excused = makeDay(1, entries, { excused: true })
+    expect(excused.score.total).toBe(100)
+    // Water 30 + calories 30 = 60 earned by her: 3 points, not the 10 of a full 100.
+    expect(earnings(state([excused, makeDay(2, entries)], entries)).find((item) => item.kind === 'score')?.points).toBe(EARN.score60)
+  })
+
+  it('adds a bonus for every 7 workout days in a row', () => {
+    const { days, foodEntries } = perfect(8)
+    expect(earnings(state(days, foodEntries)).filter((item) => item.kind === 'streak')).toEqual([{ date: addDays(start, 6), kind: 'streak', points: EARN.streak }])
+    expect(pointsBalance(state(days, foodEntries)).bySource).toEqual({ water: 40, calories: 40, score: 80, streak: 15 })
+  })
+})
+
+describe('spending the one balance', () => {
+  it('pays requests and gifts, and gives cancelled ones back', () => {
+    const { days, foodEntries } = perfect(4) // 80 points
+    const s = state(days, foodEntries, { waterSpends: [spend({ points: 30 }), spend({ kind: 'gift', points: 75, status: 'cancelled' })] })
+    expect(pointsBalance(s)).toMatchObject({ earned: 80, spent: 30, balance: 50 })
+    expect(validateSpend({ kind: 'request', note: '  ' }, s)).toBe('write what you would like')
+    expect(validateSpend({ kind: 'request', note: ' خروجة ' }, s)).toEqual({ kind: 'request', points: 30, note: 'خروجة', date: null, status: 'pending' })
+    expect(validateSpend({ kind: 'gift' }, s)).toBe('not enough points')
+    expect(validateSpend({ kind: 'gift' }, state(days, foodEntries))).toEqual({ kind: 'gift', points: 75, note: null, date: null, status: 'pending' })
+    expect(validateSpend({ kind: 'makeup', date: start }, s)).toBe('kind must be request or gift')
   })
 
   it('still counts older makeup spends', () => {
@@ -63,31 +92,31 @@ describe('one points balance from water and calories', () => {
 })
 
 describe('day passes', () => {
+  const empty = [makeDay(1, []), makeDay(2, []), makeDay(3, [])]
+
   it('fills the day to 100 and counts it as trained', () => {
-    const excused = day(addDays(start, 2), 3, { excused: true })
+    const excused = makeDay(1, [], { excused: true })
     expect(excused.score).toMatchObject({ pass: 100, total: 100 })
-    expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true, { waterMl: 2000, calories: 1800, calorieMax: 1950 })).toMatchObject({ water: 30, calories: 30, pass: 40, total: 100 })
     expect(isActiveDay(excused)).toBe(true)
-    expect(newRewardUnlocks([...days.slice(0, 2), excused], [{ id: 'r', thresholdDays: 2, unlockedOn: null }])).toEqual([{ id: 'r', unlockedOn: addDays(start, 2) }])
+    expect(newRewardUnlocks([excused], [{ id: 'r', thresholdDays: 1, unlockedOn: null }])).toEqual([{ id: 'r', unlockedOn: start }])
   })
 
-  it('makes the first pass free, then costs points from the shared balance', () => {
-    expect(passPrice(state())).toBe(0)
-    expect(validatePass({ date: addDays(start, 2) }, state())).toEqual({ date: addDays(start, 2), points: 0 })
-    const used = [{ date: addDays(start, 2), points: 0, createdAt: '' }]
-    expect(passPrice(state({ dayPasses: used }))).toBe(PASS_PRICE)
-    expect(validatePass({ date: addDays(start, 1) }, state({ dayPasses: used }))).toBe('not enough points')
-    const rich = [water(start, 2500), water(addDays(start, 1), 2500), water(addDays(start, 2), 2500), water(today, 2500)]
-    expect(validatePass({ date: addDays(start, 1) }, state({ dayPasses: used, foodEntries: rich }))).toEqual({ date: addDays(start, 1), points: 50 })
+  it('makes the first pass free, then costs points from the balance', () => {
+    expect(passPrice(state(empty, []))).toBe(0)
+    expect(validatePass({ date: start }, state(empty, []))).toEqual({ date: start, points: 0 })
+    const used = [{ date: start, points: 0, createdAt: '' }]
+    expect(passPrice(state(empty, [], { dayPasses: used }))).toBe(PASS_PRICE)
+    expect(validatePass({ date: addDays(start, 1) }, state(empty, [], { dayPasses: used }))).toBe('not enough points')
+    const { days, foodEntries } = perfect(3) // 60 points
+    const missed = [...days.slice(0, 3), makeDay(4, foodEntries)]
+    expect(validatePass({ date: addDays(start, 3) }, state(missed, foodEntries, { dayPasses: used }))).toEqual({ date: addDays(start, 3), points: 50 })
   })
 
-  it('works on any day short of 100, and only once a day', () => {
-    // Day 1 trained but logged no water or food, so it is short of 100 too.
-    expect(passCandidates(state()).map((item) => item.dayNumber)).toEqual([4, 3, 2, 1])
-    const full = day(start, 1, { excused: true })
-    expect(validatePass({ date: start }, state({ list: [full, ...days.slice(1)] }))).toBe('this day is already done')
-    expect(validatePass({ date: addDays(today, 1) }, state())).toBe('unknown day')
-    expect(missedWorkout(days[0])).toBe(false)
-    expect(missedWorkout(days[2])).toBe(true)
+  it('works on any day short of 100, once a day', () => {
+    expect(passCandidates(state(empty, [])).map((item) => item.dayNumber)).toEqual([3, 2, 1])
+    expect(validatePass({ date: start }, state([makeDay(1, [], { excused: true }), ...empty.slice(1)], []))).toBe('this day is already done')
+    expect(validatePass({ date: addDays(start, 5) }, state(empty, []))).toBe('unknown day')
+    expect(missedWorkout(makeDay(1, [], full))).toBe(false)
+    expect(missedWorkout(empty[0])).toBe(true)
   })
 })

@@ -3,7 +3,7 @@ import { Droplets, Flame, Plus, Trash2, Utensils } from 'lucide-react'
 import { addDays, cairoTime, dayNumberFor, formatDateLong, formatDateShort } from '../../shared/date'
 import { averageDailyCalories, calorieRange, dayCalories, formatCalories, hasFoodLogged, rangeStatus, type RangeStatus } from '../../shared/calories'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
-import { pointsBalance, WATER_POINTS_DAILY_MAX, waterPointsForMl } from '../../shared/points'
+import { EARN, pointsBalance, WATER_GOAL_ML } from '../../shared/points'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
@@ -69,7 +69,7 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
       <ProgressBar value={total} max={WATER_TARGET_ML} label="المية من الهدف" />
       <p className="muted small">الهدف ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.</p>
       <p className="water-points-line">
-        💧 {waterPointsForMl(total)} من {WATER_POINTS_DAILY_MAX} نقطة مية لليوم ده · رصيدك {balance} · <a href="#/rewards/points">تصرفيها إزاي؟</a>
+        💧 {total >= WATER_GOAL_ML ? `وصلتي 2.5 لتر: +${EARN.water} نقط ✓` : `وصلي 2.5 لتر = +${EARN.water} نقط (فاضل ${formatLitres(WATER_GOAL_ML - total)} لتر)`} · رصيدك {balance} · <a href="#/rewards/points">نقطك</a>
       </p>
       <div className="quick-water">
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(250)}><Plus /> كوباية 250 مل</button>

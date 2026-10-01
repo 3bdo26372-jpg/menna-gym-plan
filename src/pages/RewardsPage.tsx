@@ -4,7 +4,7 @@ import { cairoDate, dayNumberFor, formatDateFull, formatDateShort } from '../../
 import { nextReward } from '../../shared/engine'
 import type { RewardState } from '../../shared/types'
 import { CALORIE_FLOOR_KCAL, calorieRange, formatCalories } from '../../shared/calories'
-import { CALORIE_POINTS_PER_DAY, pointsBalance, WATER_GOAL_BONUS, WATER_POINTS_DAILY_MAX } from '../../shared/points'
+import { EARN, pointsBalance, STREAK_DAYS } from '../../shared/points'
 import { NOTE_MAX_LENGTH, SPEND_PRICE, type WaterSpend, type WaterSpendInput, type WaterSpendKind } from '../../shared/waterPoints'
 import { Card, ChoiceGroup, Notice, PageHeader, ProgressBar, StatTile, type ChoiceOption } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
@@ -59,25 +59,37 @@ const SPEND_OPTIONS: ChoiceOption<'request' | 'gift'>[] = [
   { value: 'gift', label: `هدية · ${SPEND_PRICE.gift}`, emoji: '🎁' },
 ]
 
-/** One balance from water and calories, spent on requests, gifts and passes. */
+/** One balance, earned by reaching goals and spent on requests, gifts and passes. */
 function Points() {
   const state = useAppState()
   const [kind, setKind] = useState<'request' | 'gift' | null>(null)
-  const { water, calories, spent, balance } = pointsBalance(state)
+  const { earned, spent, balance, bySource } = pointsBalance(state)
   const range = calorieRange(state.days.find((day) => day.date === state.today)?.dayNumber ?? 1)
+  const ways = [
+    { emoji: '💧', text: 'توصلي 2.5 لتر مية في اليوم', points: `+${EARN.water}`, earned: bySource.water },
+    { emoji: '🥗', text: `أكلك بين ${formatCalories(CALORIE_FLOOR_KCAL)} و${formatCalories(range.max)} سعرة`, points: `+${EARN.calories}`, earned: bySource.calories },
+    { emoji: '⭐', text: 'نقط اليوم: فوق 60 · فوق 80 · 100', points: `${EARN.score60} · ${EARN.score80} · ${EARN.score100}`, earned: bySource.score, rtl: true },
+    { emoji: '🏃‍♀️', text: `${STREAK_DAYS} أيام تمرين ورا بعض`, points: `+${EARN.streak}`, earned: bySource.streak },
+  ]
   return (
     <>
       <Card className="water-points" id="section-points">
         <h2 className="card-title"><Sparkles /> نقطك</h2>
         <div className="stat-grid">
-          <StatTile label="رصيدك" value={balance} unit="نقطة" tone="accent" hint={`صرفتي ${spent}`} />
-          <StatTile label="كسبتيها من" value={`${water} + ${calories}`} hint="💧 المية + 🔥 السعرات" />
+          <StatTile label="رصيدك" value={balance} unit="نقطة" tone="accent" />
+          <StatTile label="كسبتي · صرفتي" value={`${earned} · ${spent}`} />
         </div>
-        <p className="muted small">
-          💧 كل كوباية 250 مل = نقطة لحد 2.5 لتر في اليوم، و+{WATER_GOAL_BONUS} لما توصلي 2 لتر (لحد {WATER_POINTS_DAILY_MAX} في اليوم).
-          <br />🔥 كل يوم أكلك فيه بين {formatCalories(CALORIE_FLOOR_KCAL)} و{formatCalories(range.max)} سعرة = {CALORIE_POINTS_PER_DAY} نقط.
-          <br />تصرفيها على طلب أو هدية، أو على <a href="#/rewards/passes">إكسبشن</a>.
-        </p>
+        <h3 className="ways-title">تجمعي نقط إزاي؟</h3>
+        <ul className="earn-ways">
+          {ways.map((way) => (
+            <li key={way.text}>
+              <span aria-hidden="true">{way.emoji}</span>
+              <div className="food-copy"><strong>{way.text}</strong><small>كسبتي منها {way.earned}</small></div>
+              <b className={'rtl' in way ? 'rtl' : undefined}>{way.points}</b>
+            </li>
+          ))}
+        </ul>
+        <p className="muted small">نقط اليوم والسعرات بتتحسب لما اليوم يخلص. تصرفيها على طلب أو هدية، أو على <a href="#/rewards/passes">إكسبشن</a>.</p>
         <ChoiceGroup legend="تصرفيها في إيه؟" options={SPEND_OPTIONS} value={kind} onChange={setKind} />
         {kind === 'request' && (
           <NoteSpend key="request" kind="request" balance={balance} required label="عايزة إيه؟" placeholder="مثلًا: خروجة، أكلة معيّنة، فيلم من اختيارك…"

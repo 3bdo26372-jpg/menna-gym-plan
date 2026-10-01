@@ -7,7 +7,6 @@ import { pointsBalance, type PointsState } from './points'
  * Older "makeup" spends (filling a day's score with points) are still counted,
  * but new ones go through a day pass instead.
  */
-export { WATER_GOAL_BONUS, WATER_POINTS_DAILY_MAX, waterMlByDate, waterPointsForMl } from './points'
 export const SPEND_PRICE = { request: 30, gift: 75 } as const
 
 export type WaterSpendKind = 'request' | 'gift' | 'makeup'
