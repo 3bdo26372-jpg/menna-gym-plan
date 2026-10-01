@@ -6,6 +6,7 @@ import { buildReport, type ReportData } from '../../shared/report'
 import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
+import { validatePass, type DayPass } from '../../shared/dayPasses'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
@@ -26,6 +27,7 @@ interface LocalDb {
   reports: Record<string, ReportData>
   foodEntries?: FoodEntry[]
   waterSpends?: WaterSpend[]
+  dayPasses?: DayPass[]
 }
 
 function freshDb(): LocalDb {
@@ -48,10 +50,11 @@ function toState(db: LocalDb): AppState {
   const today = cairoDate()
   const start = db.programStartDate
   const makeup = makeupByDate(db.waterSpends ?? [])
+  const excused = new Set((db.dayPasses ?? []).map((pass) => pass.date))
   const days = start
     ? dateRange(start, today).map((date) => {
         const parts = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
-        return { date, dayNumber: dayNumberFor(start, date), ...parts, score: computeDailyScore(parts, makeup.get(date)) }
+        return { date, dayNumber: dayNumberFor(start, date), ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date)) }
       })
     : []
   const unlocks = newRewardUnlocks(days, db.rewards)
@@ -71,6 +74,7 @@ function toState(db: LocalDb): AppState {
     })),
     foodEntries: [...(db.foodEntries ?? [])].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.id - b.id),
     waterSpends: db.waterSpends ?? [],
+    dayPasses: db.dayPasses ?? [],
   }
 }
 
@@ -167,6 +171,14 @@ export function createLocalBackend(): Backend {
       const id = list.reduce((max, item) => Math.max(max, item.id), 0) + 1
       const createdAt = new Date().toISOString()
       db.waterSpends = [...list, { id, ...spend, createdAt, doneAt: spend.status === 'done' ? createdAt : null }]
+      save(db)
+      return toState(db)
+    }),
+    takeDayPass: (date) => attempt(() => {
+      const db = load()
+      const pass = validatePass({ date }, toState(db))
+      if (typeof pass === 'string') return fail(400, pass)
+      db.dayPasses = [...(db.dayPasses ?? []), { ...pass, createdAt: new Date().toISOString() }]
       save(db)
       return toState(db)
     }),

@@ -26,6 +26,7 @@ interface AppDataValue {
   addFood(date: string, input: FoodInput): Promise<void>
   deleteFood(id: number): Promise<void>
   spendWaterPoints(input: WaterSpendInput): Promise<void>
+  takeDayPass(date: string): Promise<void>
   generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }
@@ -70,6 +71,7 @@ function createBackend(): Backend {
     addFood: forward('addFood'),
     deleteFood: forward('deleteFood'),
     spendWaterPoints: forward('spendWaterPoints'),
+    takeDayPass: forward('takeDayPass'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
   }
@@ -175,6 +177,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addFood: async (date, input) => void (await apply(backend.addFood(date, input))),
       deleteFood: async (id) => void (await apply(backend.deleteFood(id))),
       spendWaterPoints: async (input) => void (await apply(backend.spendWaterPoints(input))),
+      takeDayPass: async (date) => void (await apply(backend.takeDayPass(date))),
       async generateReport(kind, periodIndex) {
         const result = await backend.generateReport(kind, periodIndex)
         setState(result.state)

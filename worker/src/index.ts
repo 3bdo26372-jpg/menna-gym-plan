@@ -4,10 +4,12 @@ import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, va
 import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
 import { validateSpend } from '../../shared/waterPoints'
+import { validatePass } from '../../shared/dayPasses'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
   addMeasurement,
+  addDayPass,
   addWaterSpend,
   deleteFood,
   foodDate,
@@ -176,6 +178,14 @@ async function route(request: Request, env: Env): Promise<Response> {
     if (typeof spend === 'string') throw new HttpError(400, spend)
     await addWaterSpend(env.DB, spend)
     return json(await afterWrite(env, today, spend.date ?? undefined))
+  }
+
+  if (method === 'POST' && path === '/api/day-passes') {
+    const state = await loadState(env.DB, today)
+    const pass = validatePass(await body(request), state)
+    if (typeof pass === 'string') throw new HttpError(pass.includes('not started') ? 409 : 400, pass)
+    await addDayPass(env.DB, pass)
+    return json(await afterWrite(env, today, pass.date))
   }
 
   const report = path.match(/^\/api\/reports\/(week|month)\/(\d+)$/)

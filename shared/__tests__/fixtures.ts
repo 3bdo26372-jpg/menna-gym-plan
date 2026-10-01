@@ -16,7 +16,7 @@ export function feedback(overrides: Partial<Feedback> = {}): Feedback {
   return { difficulty: 5, energyAfter: 'high', sweating: 'medium', overall: 'perfect', pain: false, at: '2026-09-28T08:30:00Z', ...overrides }
 }
 
-export function day(date: string, dayNumber: number, parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback'>> = {}): DayRecord {
-  const base = { checkin: null, workout: null, feedback: null, ...parts }
-  return { date, dayNumber, ...base, score: computeDailyScore(base) }
+export function day(date: string, dayNumber: number, parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused'>> = {}): DayRecord {
+  const base = { checkin: null, workout: null, feedback: null, excused: false, ...parts }
+  return { date, dayNumber, ...base, score: computeDailyScore(base, 0, base.excused) }
 }

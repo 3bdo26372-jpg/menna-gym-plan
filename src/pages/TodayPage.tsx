@@ -8,6 +8,7 @@ import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
+import { canTakePass, passBalance } from '../../shared/dayPasses'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -81,6 +82,13 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
+      {yesterday && canTakePass(yesterday) && passBalance(state).price <= passBalance(state).balance && (
+        <Card className="soft-card">
+          <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
+          <p className="muted">عندك إكسبشن{passBalance(state).price === 0 ? ' ببلاش' : ''} يحسب يوم {yesterday.dayNumber} متمرّن وياخد 100.</p>
+          <a className="button secondary" href="#/rewards">استخدمي الإكسبشن</a>
+        </Card>
+      )}
 
       <TodayWorkout state={state} day={today} plan={plan} />
 
@@ -300,7 +308,7 @@ function RecentStrip({ days, today }: { days: DayRecord[]; today: string }) {
       {recent.map((date) => {
         const day = byDate.get(date)
         return (
-          <motion.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
+          <motion.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
             <span className="cal-score">{day ? day.score.total : ''}</span>
           </motion.span>
         )

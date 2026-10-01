@@ -16,6 +16,7 @@ import type {
 import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
+import type { DayPass } from '../../shared/dayPasses'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -56,7 +57,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   const startDate = (profile?.program_start_date as string | null) ?? null
   if (startDate) await ensureDays(db, startDate, today)
 
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends] = await db.batch<Row>([
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes] = await db.batch<Row>([
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
@@ -68,6 +69,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT kind, period_index, start_date, end_date, generated_at FROM reports ORDER BY kind, period_index'),
     db.prepare('SELECT id, log_date, eaten_at, category, item, quantity, ml, created_at FROM food_entries ORDER BY log_date, eaten_at, id'),
     db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
+    db.prepare('SELECT log_date, points, created_at FROM day_passes ORDER BY created_at'),
   ])
 
   const valuesByEntry = new Map<number, Record<string, number>>()
@@ -127,6 +129,8 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     doneAt: (row.done_at as string | null) ?? null,
   }))
   const makeup = makeupByDate(waterSpends)
+  const dayPasses: DayPass[] = passes.results.map((row) => ({ date: String(row.log_date), points: Number(row.points), createdAt: String(row.created_at) }))
+  const excused = new Set(dayPasses.map((pass) => pass.date))
 
   const days: DayRecord[] = logs.results.map((row) => {
     const date = String(row.log_date)
@@ -137,7 +141,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    return { date, dayNumber, ...parts, score: computeDailyScore(parts, makeup.get(date)) }
+    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date)) }
   })
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
@@ -176,6 +180,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       createdAt: String(row.created_at),
     })),
     waterSpends,
+    dayPasses,
   }
 }
 
@@ -185,12 +190,12 @@ export async function refreshDerived(db: D1Database, state: AppState, date: stri
   const statements: D1PreparedStatement[] = []
   if (day) {
     statements.push(db.prepare(`
-      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, makeup_points, total, computed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, makeup_points, pass_points, total, computed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (log_date) DO UPDATE SET checkin_points = excluded.checkin_points, workout_points = excluded.workout_points,
         warmup_cooldown_points = excluded.warmup_cooldown_points, feedback_points = excluded.feedback_points,
-        makeup_points = excluded.makeup_points, total = excluded.total, computed_at = excluded.computed_at
-    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.makeup, day.score.total, now()))
+        makeup_points = excluded.makeup_points, pass_points = excluded.pass_points, total = excluded.total, computed_at = excluded.computed_at
+    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.makeup, day.score.pass, day.score.total, now()))
   }
   for (const unlock of newRewardUnlocks(state.days, state.rewards)) {
     statements.push(db.prepare('INSERT OR IGNORE INTO reward_unlocks (reward_id, unlocked_on) VALUES (?, ?)').bind(unlock.id, unlock.unlockedOn))
@@ -279,6 +284,10 @@ export async function foodDate(db: D1Database, id: number) {
 export async function addWaterSpend(db: D1Database, spend: NewWaterSpend) {
   await db.prepare('INSERT INTO water_point_spends (kind, points, note, log_date, status, done_at) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(spend.kind, spend.points, spend.note, spend.date, spend.status, spend.status === 'done' ? now() : null).run()
+}
+
+export async function addDayPass(db: D1Database, pass: Omit<DayPass, 'createdAt'>) {
+  await db.prepare('INSERT INTO day_passes (log_date, points) VALUES (?, ?)').bind(pass.date, pass.points).run()
 }
 
 export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {
