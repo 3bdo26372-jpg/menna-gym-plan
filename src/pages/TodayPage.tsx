@@ -8,7 +8,7 @@ import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canTakePass, passBalance } from '../../shared/dayPasses'
+import { canAffordPass, canTakePass, missedWorkout, passPrice } from '../../shared/dayPasses'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
@@ -83,10 +83,10 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      {yesterday && canTakePass(yesterday) && passBalance(state).price <= passBalance(state).balance && (
+      {yesterday && missedWorkout(yesterday) && canTakePass(yesterday) && canAffordPass(state) && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
-          <p className="muted">عندك إكسبشن{passBalance(state).price === 0 ? ' ببلاش' : ''} يحسب يوم {yesterday.dayNumber} متمرّن وياخد نقط التمرين كاملة.</p>
+          <p className="muted">عندك إكسبشن{passPrice(state) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
           <a className="button secondary" href="#/rewards/passes">استخدمي الإكسبشن</a>
         </Card>
       )}
@@ -279,12 +279,12 @@ function YesterdayFeedback({ day }: { day: DayRecord }) {
 
 function ScoreBreakdown({ day }: { day: DayRecord | undefined }) {
   const score = day?.score
-  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + (score?.pass ?? 0)
+  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0)
   const rows = [
-    { label: score?.pass ? 'التمرين (إكسبشن 🎟️)' : 'التمرين', value: workout, max: WORKOUT_SHARE, href: score?.pass ? '#/rewards/passes' : undefined },
+    { label: 'التمرين', value: workout, max: WORKOUT_SHARE, href: undefined as string | undefined },
     { label: 'المية', value: score?.water ?? 0, max: SCORE_POINTS.water, href: '#/food/water' },
     { label: 'السعرات في الرينج', value: score?.calories ?? 0, max: SCORE_POINTS.calories, href: '#/food/calories' },
-    ...(score?.makeup ? [{ label: 'تعويض بنقط المية', value: score.makeup, max: score.makeup, href: '#/rewards/water' }] : []),
+    ...(score?.pass || score?.makeup ? [{ label: 'إكسبشن 🎟️', value: (score.pass ?? 0) + (score.makeup ?? 0), max: (score.pass ?? 0) + (score.makeup ?? 0), href: '#/rewards/passes' }] : []),
   ]
   return (
     <Card>

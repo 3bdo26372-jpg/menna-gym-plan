@@ -48,8 +48,8 @@ describe('daily score: 40 workout + 30 water + 30 calories', () => {
     expect(computeDailyScore(half, 95)).toMatchObject({ makeup: 80, total: 100 })
   })
 
-  it('lets a day pass fill the workout share only', () => {
+  it('lets a day pass fill whatever is missing, up to 100', () => {
     expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true, goodFood)).toMatchObject({ pass: 40, water: 30, calories: 30, total: 100 })
-    expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true)).toMatchObject({ pass: 40, total: 40 })
+    expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true)).toMatchObject({ pass: 100, total: 100 })
   })
 })

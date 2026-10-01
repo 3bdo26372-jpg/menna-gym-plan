@@ -11,8 +11,8 @@ import type { CheckIn, Feedback, ScoreBreakdown, WorkoutResult } from './types'
  * - Calories (30): full points from 1,200 up to the top of the day's range;
  *   above it 1 point is lost per 25 kcal; below 1,200 points shrink so skipping
  *   meals isn't rewarded. Nothing logged earns nothing.
- * A day pass counts the workout as done (its full 40). Water points spent on a
- * finished day ("makeup") fill what is still missing, up to 100.
+ * A day pass completes the day: whatever is missing is filled up to 100.
+ * Older "makeup" spends do the same with their points.
  */
 export const SCORE_POINTS = { checkin: 6, workout: 24, warmup: 2, cooldown: 2, feedback: 6, water: 30, calories: 30 } as const
 export const MAX_DAILY_SCORE = 100
@@ -54,10 +54,10 @@ export function computeDailyScore(day: {
   const feedback = day.feedback ? SCORE_POINTS.feedback : 0
   const water = food ? waterScore(food.waterMl) : 0
   const calories = food ? calorieScore(food.calories, food.calorieMax) : 0
-  const pass = excused ? WORKOUT_SHARE - (checkin + workout + warmupCooldown + feedback) : 0
-  const earned = checkin + workout + warmupCooldown + feedback + pass + water + calories
+  const earned = checkin + workout + warmupCooldown + feedback + water + calories
   const makeup = Math.max(0, Math.min(makeupPoints, MAX_DAILY_SCORE - earned))
-  return { checkin, workout, warmupCooldown, feedback, water, calories, makeup, pass, total: earned + makeup }
+  const pass = excused ? MAX_DAILY_SCORE - earned - makeup : 0
+  return { checkin, workout, warmupCooldown, feedback, water, calories, makeup, pass, total: earned + makeup + pass }
 }
 
 export const EMPTY_SCORE: ScoreBreakdown = { checkin: 0, workout: 0, warmupCooldown: 0, feedback: 0, water: 0, calories: 0, makeup: 0, pass: 0, total: 0 }

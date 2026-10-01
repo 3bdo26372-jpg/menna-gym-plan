@@ -1,22 +1,12 @@
 import { useState } from 'react'
-import { Droplets, Lock, Trophy } from 'lucide-react'
+import { Lock, Sparkles, Trophy } from 'lucide-react'
 import { cairoDate, dayNumberFor, formatDateFull, formatDateShort } from '../../shared/date'
 import { nextReward } from '../../shared/engine'
 import type { RewardState } from '../../shared/types'
-import {
-  makeupCandidates,
-  NOTE_MAX_LENGTH,
-  SPEND_PRICE,
-  WATER_GOAL_BONUS,
-  WATER_POINTS_DAILY_MAX,
-  waterMlByDate,
-  waterPointsBalance,
-  waterPointsForMl,
-  type WaterSpend,
-  type WaterSpendInput,
-  type WaterSpendKind,
-} from '../../shared/waterPoints'
-import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile, type ChoiceOption } from '../components/ui'
+import { CALORIE_FLOOR_KCAL, calorieRange, formatCalories } from '../../shared/calories'
+import { CALORIE_POINTS_PER_DAY, pointsBalance, WATER_GOAL_BONUS, WATER_POINTS_DAILY_MAX } from '../../shared/points'
+import { NOTE_MAX_LENGTH, SPEND_PRICE, type WaterSpend, type WaterSpendInput, type WaterSpendKind } from '../../shared/waterPoints'
+import { Card, ChoiceGroup, Notice, PageHeader, ProgressBar, StatTile, type ChoiceOption } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 import { DayPasses } from './DayPasses'
 
@@ -33,7 +23,7 @@ export function RewardsPage() {
       </div>
       <p className="muted small">كل مكافأة مفاجأة، وبتعرفي هي إيه يوم ما تتفتح 🤫</p>
       {state.profile.programStartDate && <DayPasses />}
-      {state.profile.programStartDate && <WaterPoints />}
+      {state.profile.programStartDate && <Points />}
     </div>
   )
 }
@@ -64,26 +54,30 @@ function RewardCard({ reward, active }: { reward: RewardState; active: number })
   )
 }
 
-const SPEND_OPTIONS: ChoiceOption<WaterSpendKind>[] = [
+const SPEND_OPTIONS: ChoiceOption<'request' | 'gift'>[] = [
   { value: 'request', label: `طلب · ${SPEND_PRICE.request}`, emoji: '🙋‍♀️' },
   { value: 'gift', label: `هدية · ${SPEND_PRICE.gift}`, emoji: '🎁' },
-  { value: 'makeup', label: 'تعويض يوم', emoji: '🔁' },
 ]
 
-function WaterPoints() {
+/** One balance from water and calories, spent on requests, gifts and passes. */
+function Points() {
   const state = useAppState()
-  const [kind, setKind] = useState<WaterSpendKind | null>(null)
-  const { earned, spent, balance } = waterPointsBalance(state.foodEntries, state.waterSpends)
-  const today = waterPointsForMl(waterMlByDate(state.foodEntries).get(state.today) ?? 0)
+  const [kind, setKind] = useState<'request' | 'gift' | null>(null)
+  const { water, calories, spent, balance } = pointsBalance(state)
+  const range = calorieRange(state.days.find((day) => day.date === state.today)?.dayNumber ?? 1)
   return (
     <>
-      <Card className="water-points" id="section-water">
-        <h2 className="card-title"><Droplets /> نقط المية</h2>
+      <Card className="water-points" id="section-points">
+        <h2 className="card-title"><Sparkles /> نقطك</h2>
         <div className="stat-grid">
-          <StatTile label="رصيدك" value={balance} unit="نقطة" tone="accent" hint={`كسبتي ${earned} · صرفتي ${spent}`} />
-          <StatTile label="النهارده" value={today} unit={`من ${WATER_POINTS_DAILY_MAX}`} />
+          <StatTile label="رصيدك" value={balance} unit="نقطة" tone="accent" hint={`صرفتي ${spent}`} />
+          <StatTile label="كسبتيها من" value={`${water} + ${calories}`} hint="💧 المية + 🔥 السعرات" />
         </div>
-        <p className="muted small">كل كوباية 250 مل = نقطة لحد 2.5 لتر في اليوم، و+{WATER_GOAL_BONUS} بونص لما توصلي 2 لتر 💧</p>
+        <p className="muted small">
+          💧 كل كوباية 250 مل = نقطة لحد 2.5 لتر في اليوم، و+{WATER_GOAL_BONUS} لما توصلي 2 لتر (لحد {WATER_POINTS_DAILY_MAX} في اليوم).
+          <br />🔥 كل يوم أكلك فيه بين {formatCalories(CALORIE_FLOOR_KCAL)} و{formatCalories(range.max)} سعرة = {CALORIE_POINTS_PER_DAY} نقط.
+          <br />تصرفيها على طلب أو هدية، أو على <a href="#/rewards/passes">إكسبشن</a>.
+        </p>
         <ChoiceGroup legend="تصرفيها في إيه؟" options={SPEND_OPTIONS} value={kind} onChange={setKind} />
         {kind === 'request' && (
           <NoteSpend key="request" kind="request" balance={balance} required label="عايزة إيه؟" placeholder="مثلًا: خروجة، أكلة معيّنة، فيلم من اختيارك…"
@@ -93,7 +87,6 @@ function WaterPoints() {
           <NoteSpend key="gift" kind="gift" balance={balance} label="تلميحة (اختياري)" placeholder="مثلًا: حاجة للبيت، حاجة حلوة، لون بحبه…"
             help="الهدية مفاجأة: إنتي بتدفعي النقط، وهي بتتختار ليكي 🤫" />
         )}
-        {kind === 'makeup' && <MakeupDays balance={balance} />}
       </Card>
       {state.waterSpends.length > 0 && <SpendHistory spends={state.waterSpends} />}
     </>
@@ -161,49 +154,6 @@ function NoteSpend({ kind, balance, required = false, label, placeholder, help }
             </div>
           )
           : <button type="button" className="button primary" disabled={!ready} onClick={() => setConfirming(true)}>{kind === 'request' ? 'اطلبي' : 'اطلبي الهدية'} بـ {price} 💧</button>}
-    </div>
-  )
-}
-
-function MakeupDays({ balance }: { balance: number }) {
-  const state = useAppState()
-  const [confirming, setConfirming] = useState<string | null>(null)
-  const { busy, message, run } = useSpend()
-  const candidates = makeupCandidates(state)
-
-  if (!candidates.length) {
-    return <EmptyState icon={<Droplets />} title="مفيش أيام ناقصة تتعوّض 👏">النهارده وامبارح لسه مفتوحين للتسجيل، فمبيتعوّضوش غير بعد ما يخلصوا.</EmptyState>
-  }
-  return (
-    <div className="form-stack">
-      <p className="muted small">كل نقطة مية بتكمّل نقطة من سكور اليوم لحد 100. التعويض بيكمّل السكور بس، ومش بيحسب اليوم يوم تمرين في المكافآت.</p>
-      {message && <Notice tone={message.tone}>{message.text}</Notice>}
-      <ul className="makeup-list">
-        {candidates.map(({ day, gap }) => {
-          const points = Math.min(gap, balance)
-          return (
-            <li key={day.date}>
-              <div className="food-copy">
-                <strong>يوم {day.dayNumber} · {formatDateShort(day.date)}</strong>
-                <small>{day.score.total} من 100 · ناقص {gap}</small>
-              </div>
-              {confirming === day.date ? (
-                <span className="spend-confirm">
-                  <button type="button" className="button primary" disabled={busy} onClick={async () => {
-                    await run({ kind: 'makeup', date: day.date, points }, `يوم ${day.dayNumber} بقى ${day.score.total + points} من 100 ✓`)
-                    setConfirming(null)
-                  }}>{busy ? 'لحظة…' : `تأكيد (${points} 💧)`}</button>
-                  <button type="button" className="link-button" disabled={busy} onClick={() => setConfirming(null)}>إلغاء</button>
-                </span>
-              ) : (
-                <button type="button" className="button secondary" disabled={points < 1} onClick={() => setConfirming(day.date)}>
-                  {points < 1 ? 'مفيش رصيد' : `عوّضي ${points} 💧`}
-                </button>
-              )}
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }

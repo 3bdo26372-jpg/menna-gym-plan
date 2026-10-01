@@ -68,7 +68,7 @@ export interface ScoreBreakdown {
   calories: number
   /** Points made up with water points (finished days only). */
   makeup: number
-  /** Workout points a day pass filled in, up to the full 40. */
+  /** Points a day pass filled in, up to 100. */
   pass: number
   total: number
 }
