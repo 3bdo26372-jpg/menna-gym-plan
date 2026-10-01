@@ -158,7 +158,8 @@ async function route(request: Request, env: Env): Promise<Response> {
     const entry = validateFood(await body(request))
     if (typeof entry === 'string') throw new HttpError(400, entry)
     await addFood(env.DB, food[1], entry)
-    return json(await loadState(env.DB, today))
+    // Water and calories are part of the day's score.
+    return json(await afterWrite(env, today, food[1]))
   }
   const foodItem = path.match(/^\/api\/food\/(\d+)$/)
   if (foodItem && method === 'DELETE') {
@@ -168,7 +169,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const problem = checkFoodDate(date, today, state.profile.programStartDate, diffDays)
     if (problem) throw new HttpError(400, problem)
     await deleteFood(env.DB, Number(foodItem[1]))
-    return json(await loadState(env.DB, today))
+    return json(await afterWrite(env, today, date))
   }
 
   if (method === 'POST' && path === '/api/water-points/spend') {

@@ -1,10 +1,10 @@
-import { calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
+import { CALORIE_FLOOR_KCAL, calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
 import { isIsoDate } from './date'
 import type { AppState, DayRecord } from './types'
 
 /**
  * Day passes (الإكسبشن): mark a day she didn't train as trained. The day gets
- * 100 points and counts toward the milestone rewards. The first pass is free;
+ * the full workout share of its score (40) and counts toward the milestone rewards. The first pass is free;
  * after that each costs calorie points.
  *
  * Calorie points are earned on finished days whose rough calorie estimate is
@@ -13,7 +13,7 @@ import type { AppState, DayRecord } from './types'
  */
 export const PASS_PRICE = 50
 export const CALORIE_POINTS_PER_DAY = 10
-export const CALORIE_POINTS_FLOOR_KCAL = 1200
+export const CALORIE_POINTS_FLOOR_KCAL = CALORIE_FLOOR_KCAL
 
 export interface DayPass {
   date: string

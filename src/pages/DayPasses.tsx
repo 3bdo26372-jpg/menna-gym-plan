@@ -24,7 +24,7 @@ export function DayPasses() {
     setMessage(null)
     try {
       await takeDayPass(date)
-      setMessage({ tone: 'success', text: `يوم ${dayNumber} اتحسب متمرّن وخد 100 ✓` })
+      setMessage({ tone: 'success', text: `يوم ${dayNumber} اتحسب متمرّن وخد نقط التمرين كاملة ✓` })
     } catch (caught) {
       setMessage({ tone: 'care', text: caught instanceof Error ? caught.message : 'تعذّر الحفظ' })
     } finally {
@@ -34,9 +34,9 @@ export function DayPasses() {
   }
 
   return (
-    <Card className="day-passes">
+    <Card className="day-passes" id="section-passes">
       <h2 className="card-title"><Ticket /> الإكسبشن</h2>
-      <p className="muted small">يوم ماتمرنتيش فيه؟ الإكسبشن بيحسبه يوم تمرين وبياخد 100، ويتحسب في المكافآت كمان.</p>
+      <p className="muted small">يوم ماتمرنتيش فيه؟ الإكسبشن بيحسبه يوم تمرين وبياخد نقط التمرين كاملة (40)، ويتحسب في المكافآت كمان.</p>
       <div className="stat-grid">
         <StatTile label="الإكسبشن الجاي" value={price === 0 ? 'ببلاش' : price} unit={price === 0 ? '🎁' : 'نقطة'} tone="accent" />
         <StatTile label="نقط السعرات" value={balance} unit="نقطة" hint={`كسبتي ${earned}`} />

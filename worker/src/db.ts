@@ -1,4 +1,4 @@
-import { computeDailyScore } from '../../shared/scoring'
+import { computeDailyScore, foodScoreInput } from '../../shared/scoring'
 import { dayNumberFor } from '../../shared/date'
 import { newRewardUnlocks } from '../../shared/engine'
 import { BASELINE_METRICS } from '../../shared/measurements'
@@ -132,6 +132,16 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   const dayPasses: DayPass[] = passes.results.map((row) => ({ date: String(row.log_date), points: Number(row.points), createdAt: String(row.created_at) }))
   const excused = new Set(dayPasses.map((pass) => pass.date))
 
+  const foodEntries = food.results.map((row): FoodEntry => ({
+      id: Number(row.id),
+      date: String(row.log_date),
+      time: String(row.eaten_at),
+      category: row.category as FoodCategory,
+      item: String(row.item),
+      quantity: (row.quantity as string | null) ?? null,
+      ml: row.ml === null || row.ml === undefined ? null : Number(row.ml),
+      createdAt: String(row.created_at),
+  }))
   const days: DayRecord[] = logs.results.map((row) => {
     const date = String(row.log_date)
     const parts = {
@@ -141,7 +151,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date)) }
+    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber)) }
   })
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
@@ -169,16 +179,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       endDate: String(row.end_date),
       generatedAt: String(row.generated_at),
     })),
-    foodEntries: food.results.map((row): FoodEntry => ({
-      id: Number(row.id),
-      date: String(row.log_date),
-      time: String(row.eaten_at),
-      category: row.category as FoodCategory,
-      item: String(row.item),
-      quantity: (row.quantity as string | null) ?? null,
-      ml: row.ml === null || row.ml === undefined ? null : Number(row.ml),
-      createdAt: String(row.created_at),
-    })),
+    foodEntries,
     waterSpends,
     dayPasses,
   }
@@ -190,12 +191,12 @@ export async function refreshDerived(db: D1Database, state: AppState, date: stri
   const statements: D1PreparedStatement[] = []
   if (day) {
     statements.push(db.prepare(`
-      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, makeup_points, pass_points, total, computed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, water_points, calorie_points, makeup_points, pass_points, total, computed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (log_date) DO UPDATE SET checkin_points = excluded.checkin_points, workout_points = excluded.workout_points,
         warmup_cooldown_points = excluded.warmup_cooldown_points, feedback_points = excluded.feedback_points,
-        makeup_points = excluded.makeup_points, pass_points = excluded.pass_points, total = excluded.total, computed_at = excluded.computed_at
-    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.makeup, day.score.pass, day.score.total, now()))
+        water_points = excluded.water_points, calorie_points = excluded.calorie_points, makeup_points = excluded.makeup_points, pass_points = excluded.pass_points, total = excluded.total, computed_at = excluded.computed_at
+    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.water, day.score.calories, day.score.makeup, day.score.pass, day.score.total, now()))
   }
   for (const unlock of newRewardUnlocks(state.days, state.rewards)) {
     statements.push(db.prepare('INSERT OR IGNORE INTO reward_unlocks (reward_id, unlocked_on) VALUES (?, ?)').bind(unlock.id, unlock.unlockedOn))

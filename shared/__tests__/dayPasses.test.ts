@@ -20,19 +20,19 @@ const state = (foodEntries: FoodEntry[] = [], dayPasses: DayPass[] = []) =>
   ({ today, profile: { name: 'Menna', programStartDate: start, timezone: 'Africa/Cairo' }, days, foodEntries, dayPasses })
 
 describe('day passes', () => {
-  it('makes the first pass free, and counts the day as trained with 100', () => {
+  it('makes the first pass free, and counts the day as trained with the full workout share', () => {
     const s = state()
     expect(passBalance(s)).toEqual({ earned: 0, spent: 0, balance: 0, price: 0 })
     expect(passCandidates(s).map((item) => item.dayNumber)).toEqual([4, 3, 2])
     expect(validatePass({ date: addDays(start, 2) }, s)).toEqual({ date: addDays(start, 2), points: 0 })
     const excused = day(addDays(start, 2), 3, { excused: true })
-    expect(excused.score).toMatchObject({ pass: 100, total: 100 })
+    expect(excused.score).toMatchObject({ pass: 40, total: 40 })
     expect(isActiveDay(excused)).toBe(true)
     expect(newRewardUnlocks([...days.slice(0, 2), excused], [{ id: 'r', thresholdDays: 2, unlockedOn: null }])).toEqual([{ id: 'r', unlockedOn: addDays(start, 2) }])
   })
 
-  it('fills a partial day up to 100', () => {
-    expect(day(addDays(start, 1), 2, { checkin, workout: workout({ mainCompletion: 0.4 }), excused: true }).score).toMatchObject({ workout: 24, pass: 51, total: 100 })
+  it('fills a partial workout up to its 40', () => {
+    expect(day(addDays(start, 1), 2, { checkin, workout: workout({ mainCompletion: 0.4 }), excused: true }).score).toMatchObject({ workout: 10, pass: 20, total: 40 })
   })
 
   it('refuses days already trained or passed, and later passes without enough points', () => {

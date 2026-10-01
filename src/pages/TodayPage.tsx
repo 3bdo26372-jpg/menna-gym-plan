@@ -9,6 +9,7 @@ import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
 import { canTakePass, passBalance } from '../../shared/dayPasses'
+import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -85,8 +86,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       {yesterday && canTakePass(yesterday) && passBalance(state).price <= passBalance(state).balance && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
-          <p className="muted">عندك إكسبشن{passBalance(state).price === 0 ? ' ببلاش' : ''} يحسب يوم {yesterday.dayNumber} متمرّن وياخد 100.</p>
-          <a className="button secondary" href="#/rewards">استخدمي الإكسبشن</a>
+          <p className="muted">عندك إكسبشن{passBalance(state).price === 0 ? ' ببلاش' : ''} يحسب يوم {yesterday.dayNumber} متمرّن وياخد نقط التمرين كاملة.</p>
+          <a className="button secondary" href="#/rewards/passes">استخدمي الإكسبشن</a>
         </Card>
       )}
 
@@ -106,7 +107,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
           <ChangeTile label="الوسط" comparison={waist} />
           <ChangeTile label="البطن" comparison={belly} />
         </div>
-        <a className="text-link" href="#/measurements">سجّلي قياس جديد <ChevronLeft /></a>
+        <a className="text-link" href="#/measurements/new">سجّلي قياس جديد <ChevronLeft /></a>
       </Card>
 
       <div className="two-col">
@@ -119,7 +120,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
               <p className="muted small">{rewards.active} من {rewards.next.thresholdDays} يوم تمرين</p>
             </>
           ) : <p>فتحتي كل المكافآت 🎉</p>}
-          <a className="text-link" href="#/rewards">كل المكافآت <ChevronLeft /></a>
+          <a className="text-link" href="#/rewards/milestones">كل المكافآت <ChevronLeft /></a>
         </Card>
         <Card>
           <h2 className="card-title"><CalendarDays /> الشهر {period}</h2>
@@ -250,13 +251,14 @@ function FoodToday({ state }: { state: AppState }) {
     <Card>
       <div className="food-today">
         <h2 className="card-title"><Utensils /> أكلك وشربك النهارده</h2>
-        <a className="button secondary" href="#/food">سجّلي</a>
+        <a className="button secondary" href="#/food/add">سجّلي</a>
       </div>
       <div className="stat-grid">
         <StatTile label="وجبات وسناكس" value={meals} />
         <StatTile label="المية" value={formatLitres(water)} unit="لتر" hint={<><Droplets className="inline-icon" /> الهدف {WATER_TARGET_ML / 1000}–2.5 لتر</>} />
       </div>
       <ProgressBar value={water} max={WATER_TARGET_ML} label="المية من الهدف" />
+      <a className="text-link" href="#/food/water">سجّلي مية <ChevronLeft /></a>
     </Card>
   )
 }
@@ -277,11 +279,12 @@ function YesterdayFeedback({ day }: { day: DayRecord }) {
 
 function ScoreBreakdown({ day }: { day: DayRecord | undefined }) {
   const score = day?.score
+  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + (score?.pass ?? 0)
   const rows = [
-    { label: 'إحساسك قبل التمرين', value: score?.checkin ?? 0, max: 15 },
-    { label: 'التمرين', value: score?.workout ?? 0, max: 60 },
-    { label: 'التسخين والإطالة', value: score?.warmupCooldown ?? 0, max: 10 },
-    { label: 'التقييم بعد التمرين', value: score?.feedback ?? 0, max: 15 },
+    { label: score?.pass ? 'التمرين (إكسبشن 🎟️)' : 'التمرين', value: workout, max: WORKOUT_SHARE, href: score?.pass ? '#/rewards/passes' : undefined },
+    { label: 'المية', value: score?.water ?? 0, max: SCORE_POINTS.water, href: '#/food/water' },
+    { label: 'السعرات في الرينج', value: score?.calories ?? 0, max: SCORE_POINTS.calories, href: '#/food/calories' },
+    ...(score?.makeup ? [{ label: 'تعويض بنقط المية', value: score.makeup, max: score.makeup, href: '#/rewards/water' }] : []),
   ]
   return (
     <Card>
@@ -289,13 +292,13 @@ function ScoreBreakdown({ day }: { day: DayRecord | undefined }) {
       <ul className="score-rows">
         {rows.map((row) => (
           <li key={row.label}>
-            <span>{row.label}</span>
+            {row.href ? <a href={row.href}>{row.label}</a> : <span>{row.label}</span>}
             <ProgressBar value={row.value} max={row.max} label={row.label} />
             <b>{row.value}/{row.max}</b>
           </li>
         ))}
       </ul>
-      <p className="muted small">النقاط بتكافئ الاستمرار: التمرين الأصعب أو الأطول مش بيدي نقاط زيادة.</p>
+      <p className="muted small">٤٠ للتمرين، ٣٠ للمية، و٣٠ للأكل في رينج السعرات. التمرين الأصعب أو الأطول مش بيدي نقاط زيادة.</p>
     </Card>
   )
 }

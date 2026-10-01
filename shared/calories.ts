@@ -321,6 +321,8 @@ export const CALORIE_STAGES = [
   { fromDay: 31, toDay: null, target: 1700 },
 ] as const
 export const CALORIE_RANGE_MARGIN = 100
+/** Below this a day earns fewer calorie points, so skipping meals is never rewarded. */
+export const CALORIE_FLOOR_KCAL = 1200
 
 export function calorieRange(dayNumber: number) {
   const index = Math.max(0, CALORIE_STAGES.findIndex((stage) => stage.toDay === null || dayNumber <= stage.toDay))

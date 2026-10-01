@@ -4,7 +4,7 @@ import { checkWritableDate, newRewardUnlocks, preferWorkout, validateCheckin, va
 import { BASELINE_METRICS, validateMeasurementValues } from '../../shared/measurements'
 import { buildReport, type ReportData } from '../../shared/report'
 import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
-import { computeDailyScore } from '../../shared/scoring'
+import { computeDailyScore, foodScoreInput } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
 import { validatePass, type DayPass } from '../../shared/dayPasses'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
@@ -54,7 +54,7 @@ function toState(db: LocalDb): AppState {
   const days = start
     ? dateRange(start, today).map((date) => {
         const parts = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
-        return { date, dayNumber: dayNumberFor(start, date), ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date)) }
+        return { date, dayNumber: dayNumberFor(start, date), ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput((db.foodEntries ?? []).filter((entry) => entry.date === date), dayNumberFor(start, date))) }
       })
     : []
   const unlocks = newRewardUnlocks(days, db.rewards)

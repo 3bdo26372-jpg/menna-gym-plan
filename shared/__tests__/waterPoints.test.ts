@@ -83,11 +83,12 @@ describe('spending water points', () => {
     // Today and yesterday can still be logged.
     expect(validateSpend({ kind: 'makeup', date: today }, s)).toMatch(/can still be logged/)
     expect(validateSpend({ kind: 'makeup', date: addDays(today, -1) }, s)).toMatch(/can still be logged/)
-    expect(validateSpend({ kind: 'makeup', date: start }, s)).toBe('this day already has 100 points')
-    // Day 2 scored 15 + 30 + 10 = 55, so it is 45 short.
+    const full = days.map((item) => (item.date === start ? { ...item, score: computeDailyScore(item, 60) } : item))
+    expect(validateSpend({ kind: 'makeup', date: start }, state({ foodEntries: rich, days: full }))).toBe('this day already has 100 points')
+    // Day 2 scored 6 + 12 + 4 = 22 (no water or food logged that day), so it is 78 short; the balance is 75.
     expect(validateSpend({ kind: 'makeup', date: addDays(start, 1) }, s))
-      .toEqual({ kind: 'makeup', points: 45, note: null, date: addDays(start, 1), status: 'done' })
-    expect(validateSpend({ kind: 'makeup', date: addDays(start, 1), points: 46 }, s)).toBe('points must be between 1 and 45')
+      .toEqual({ kind: 'makeup', points: 75, note: null, date: addDays(start, 1), status: 'done' })
+    expect(validateSpend({ kind: 'makeup', date: addDays(start, 1), points: 79 }, s)).toBe('points must be between 1 and 78')
     expect(validateSpend({ kind: 'makeup', date: addDays(start, 1), points: 20 }, s)).toMatchObject({ points: 20 })
   })
 
@@ -100,7 +101,7 @@ describe('spending water points', () => {
 
   it('lists finished days that are short of 100, newest first', () => {
     const madeUp = days.map((item) => item.date === addDays(start, 2) ? { ...item, score: computeDailyScore(item, 100) } : item)
-    expect(makeupCandidates(state({ days: madeUp })).map(({ day: item, gap }) => [item.dayNumber, gap])).toEqual([[2, 45]])
-    expect(makeupCandidates(state({ days })).map(({ day: item }) => item.dayNumber)).toEqual([3, 2])
+    expect(makeupCandidates(state({ days: madeUp })).map(({ day: item, gap }) => [item.dayNumber, gap])).toEqual([[2, 78], [1, 60]])
+    expect(makeupCandidates(state({ days })).map(({ day: item }) => item.dayNumber)).toEqual([3, 2, 1])
   })
 })

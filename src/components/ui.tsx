@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { LoaderCircle } from 'lucide-react'
 
-export function Card({ children, className = '', as: Tag = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'article' | 'div' }) {
-  return <Tag className={`card ${className}`}>{children}</Tag>
+export function Card({ children, className = '', as: Tag = 'section', id }: { children: ReactNode; className?: string; as?: 'section' | 'article' | 'div'; id?: string }) {
+  return <Tag id={id} className={`card ${className}`}>{children}</Tag>
 }
 
 export function PageHeader({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {

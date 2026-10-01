@@ -84,3 +84,6 @@ svg { flex: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Sections opened from a dashboard link stop below the sticky top bar. */
+[id^='section-'] { scroll-margin-top: 88px; }

@@ -28,7 +28,7 @@ export function RewardsPage() {
       <PageHeader eyebrow="المكافآت" title="استمرارك يستاهل احتفال">
         <p>أي يوم تخلّصي فيه نص التمرين على الأقل بيتحسب يوم تمرين، حتى أيام التمرين الخفيف. لحد دلوقتي: <strong>{active}</strong> يوم.</p>
       </PageHeader>
-      <div className="reward-list">
+      <div className="reward-list" id="section-milestones">
         {[...state.rewards].sort((a, b) => a.sortOrder - b.sortOrder).map((reward) => <RewardCard key={reward.id} reward={reward} active={active} />)}
       </div>
       <p className="muted small">كل مكافأة مفاجأة، وبتعرفي هي إيه يوم ما تتفتح 🤫</p>
@@ -77,7 +77,7 @@ function WaterPoints() {
   const today = waterPointsForMl(waterMlByDate(state.foodEntries).get(state.today) ?? 0)
   return (
     <>
-      <Card className="water-points">
+      <Card className="water-points" id="section-water">
         <h2 className="card-title"><Droplets /> نقط المية</h2>
         <div className="stat-grid">
           <StatTile label="رصيدك" value={balance} unit="نقطة" tone="accent" hint={`كسبتي ${earned} · صرفتي ${spent}`} />

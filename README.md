@@ -50,7 +50,11 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - One after every 5 finished exercises (skipped ones don't count), and one after a hard exercise (a jump, or one she once rated hardest) at most once a workout. That is about 4 a workout, never two close together and none during the cool-down.
   - Each shows for about 3 seconds over the demo and never blocks a tap.
   - Finishing the whole workout plays a celebration that rotates daily (hearts, rockets or clapping) and closes by itself.
-- **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
+- **Daily score** (max 100, `shared/scoring.ts`): 40 workout + 30 water + 30 calories.
+  - Workout (40): check-in 6, main work 24 (proportional to what was done), warm-up 2, cooldown 2, feedback 6. Harder or longer sessions never earn extra points.
+  - Water (30): proportional to the 2 L target.
+  - Calories (30): full points from 1,200 kcal up to the top of the day's range. Above it, 1 point is lost per 25 kcal. Below 1,200, points shrink.
+  - A day pass fills the workout share (40). Adding or deleting food re-scores that day.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
 - **Water points (نقط المية)**: 1 point per 250 ml of water, up to 2.5 L a day, plus a 5-point bonus at 2 L (max 15 a day).
   - Points come from the food log, so deleting a water entry takes its points back. They show on the Food page and are spent on the Rewards page.
@@ -66,11 +70,12 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Anything unrecognised counts as a typical meal size.
   - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
   - The target range comes from her original nutrition plan (1,850 kcal for days 1–14, 1,750 for days 15–30, 1,700 from day 31), shown as ±100. A chip says whether the weekly average is within it (`CALORIE_STAGES` in `shared/calories.ts`).
-- **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): mark a day she didn't train (today or earlier) as trained. It scores 100 and counts as an active day for the milestone rewards.
+- **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): mark a day she didn't train (today or earlier) as trained. It gets the full workout share (40) and counts as an active day for the milestone rewards.
   - The first pass is free. Each later one costs 50 calorie points.
   - A finished day earns 10 calorie points when its rough calorie estimate is between 1,200 and the top of that day's range. Skipping meals is never rewarded.
   - Passes are stored in `day_passes` (migration 0005). The points are derived from the food log.
   - A reminder on the home page offers a pass when yesterday was missed.
+- **Dashboard links** open the exact section, e.g. `#/food/water` scrolls to the element with id `section-water` (`src/lib/router.ts`).
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -79,7 +84,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns) creates these tables:
 
 | Table | Purpose |
 |---|---|
