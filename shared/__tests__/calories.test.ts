@@ -92,3 +92,10 @@ describe('calorie range from her plan', () => {
     expect(rangeStatus(2230, range)).toBe('above')
   })
 })
+
+describe('sandwiches', () => {
+  it('counts a dish inside a sandwich as a filling, about half a portion', () => {
+    expect(kcal('سندوتشات كبدة في فينو', '٥', 'breakfast')).toBe(1875)
+    expect(kcal('سندوتش فول', null, 'breakfast')).toBe(375)
+  })
+})

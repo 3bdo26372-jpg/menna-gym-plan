@@ -18,6 +18,7 @@ import {
 } from '../../shared/waterPoints'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile, type ChoiceOption } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
+import { DayPasses } from './DayPasses'
 
 export function RewardsPage() {
   const state = useAppState()
@@ -31,6 +32,7 @@ export function RewardsPage() {
         {[...state.rewards].sort((a, b) => a.sortOrder - b.sortOrder).map((reward) => <RewardCard key={reward.id} reward={reward} active={active} />)}
       </div>
       <p className="muted small">كل مكافأة مفاجأة، وبتعرفي هي إيه يوم ما تتفتح 🤫</p>
+      {state.profile.programStartDate && <DayPasses />}
       {state.profile.programStartDate && <WaterPoints />}
     </div>
   )

@@ -1,5 +1,6 @@
 import type { FoodEntry } from './food'
 import type { WaterSpend } from './waterPoints'
+import type { DayPass } from './dayPasses'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -63,6 +64,8 @@ export interface ScoreBreakdown {
   feedback: number
   /** Points made up with water points (finished days only). */
   makeup: number
+  /** Points a day pass filled in, up to 100. */
+  pass: number
   total: number
 }
 
@@ -72,6 +75,8 @@ export interface DayRecord {
   checkin: CheckIn | null
   workout: WorkoutResult | null
   feedback: Feedback | null
+  /** A day pass marked this day as trained. */
+  excused: boolean
   score: ScoreBreakdown
 }
 
@@ -122,6 +127,7 @@ export interface AppState {
   reports: ReportMeta[]
   foodEntries: FoodEntry[]
   waterSpends: WaterSpend[]
+  dayPasses: DayPass[]
 }
 
 export interface MeasurementInput {

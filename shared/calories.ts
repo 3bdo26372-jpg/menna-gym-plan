@@ -39,7 +39,7 @@ const FOODS: Food[] = [
   food('fino', 'عيش فينو|فينو', 200, { group: 'bread' }),
   food('shami', 'عيش شامي|شامي', 170, { group: 'bread' }),
   food('croissant', 'كرواسون|كرواسان|croissant', 250, { group: 'bread' }),
-  food('sandwich', 'سندوتش|ساندوتش|سندويتش|ساندويتش|sandwich', 250, { group: 'bread', generic: true }),
+  food('sandwich', 'سندوتش|ساندوتش|سندويتش|ساندويتش|سندوتشات|ساندوتشات|سندويتشات|sandwich|sandwiches', 250, { group: 'bread', generic: true }),
   food('oats', 'شوفان|oats|oatmeal', 250),
   food('cereal', 'كورن فليكس|كورنفليكس|سيريال|cornflakes|cereal', 200),
   food('rice', 'رز|ارز|rice', 250),
@@ -101,7 +101,7 @@ const FOODS: Food[] = [
   food('orientalSweets', 'كنافه|بسبوسه|قطايف|جاتوه|دونات|donut|بلح الشام|كحك', 350, { group: 'sweet' }),
   food('iceCream', 'ايس كريم|ايسكريم|جيلاتي|ice cream', 200, { group: 'sweet' }),
   food('milkDessert', 'رز بلبن|ارز بلبن|مهلبيه|مهلبية|بودنج|pudding', 250, { group: 'sweet' }),
-  food('chips', 'شيبسي|شيبس|chips|دوريتوس|تشيتوس|كراتيه|فلامنكو|بيك رولز|فشار|popcorn', 170, { group: 'snack' }),
+  food('chips', 'شيبسي|شيبس|chips|دوريتوس|تشيتوس|شيتوس|كراتيه|فلامنكو|بيك رولز|فشار|popcorn', 170, { group: 'snack' }),
   food('nuts', 'سوداني|لب|مكسرات|لوز|كاجو|فستق|بندق|nuts', 170, { group: 'snack' }),
   food('dates', 'بلح|تمر|تمرات', 75, { each: 25 }),
   // Fruit
@@ -189,6 +189,9 @@ const hasAny = (wordForms: Set<string>, words: Set<string>) => [...wordForms].so
 
 interface Match { food: Food; count: number | null; pieces: boolean; double: boolean; diet: boolean }
 
+/** In a sandwich, a dish is a filling: about half its usual portion. */
+const FILLING_SHARE = 0.5
+
 /** A "segment" is one item: text between "و", commas and "+". A word starting with "و" starts one when the rest is a known word. */
 function segments(text: string) {
   const words = normalizeFoodText(text).split(/[\s,،+&/()\-:]+/).filter(Boolean)
@@ -208,6 +211,7 @@ function segments(text: string) {
 function parse(text: string) {
   const matches: Match[] = []
   let count: number | null = null
+  let sandwich = false
   for (const segment of segments(text)) {
     const found: Match[] = []
     const diet = segment.some((wordForms) => hasAny(wordForms, DIET))
@@ -245,6 +249,7 @@ function parse(text: string) {
       index += pattern.words.length - 1
       if (negated) continue
       if (amount !== null && count === null) count = amount
+      if (pattern.food.id === 'sandwich') sandwich = true
       found.push({ food: pattern.food, count: amount, pieces, double, diet })
     }
     // One item per group in a segment ("كيكة هوهوز", "كيس كراتيه فلامنكو بالسوداني"), preferring the specific name.
@@ -258,24 +263,26 @@ function parse(text: string) {
     }
     matches.push(...kept)
   }
-  return { matches, count }
+  return { matches, count, sandwich }
 }
 
-function matchCalories(match: Match) {
+function matchCalories(match: Match, sandwich: boolean) {
   if (match.food.soda && match.diet) return 0
   const unit = match.count !== null && match.pieces && match.food.each ? match.food.each : match.food.portion
-  return (match.count ?? 1) * unit * (match.double ? 2 : 1)
+  const share = sandwich && match.food.group !== 'bread' && !match.food.drink ? FILLING_SHARE : 1
+  return (match.count ?? 1) * unit * share * (match.double ? 2 : 1)
 }
 
 /** Approximate calories of one food-log entry. Water is 0. */
 export function estimateCalories(entry: Pick<FoodEntry, 'category' | 'item' | 'quantity' | 'ml'>) {
   if (isWater(entry)) return 0
   const item = parse(entry.item)
-  const quantity = entry.quantity ? parse(entry.quantity) : { matches: [], count: null }
+  const quantity = entry.quantity ? parse(entry.quantity) : { matches: [], count: null, sandwich: false }
+  const sandwich = item.sandwich || quantity.sandwich
   // Foods named in the amount field ("رغيفين ونص عيش") set their own amount.
   let matches = item.matches.map((match) => quantity.matches.find((other) => other.food.id === match.food.id) ?? match)
   matches = [...matches, ...quantity.matches.filter((match) => !item.matches.some((other) => other.food.id === match.food.id))]
-  let total = matches.length ? matches.reduce((sum, match) => sum + matchCalories(match), 0) : CATEGORY_GUESS[entry.category]
+  let total = matches.length ? matches.reduce((sum, match) => sum + matchCalories(match, sandwich), 0) : CATEGORY_GUESS[entry.category]
   // A bare amount ("٢", "كوبايتين") multiplies the whole entry, unless the item already says how many.
   if (!quantity.matches.length && quantity.count !== null && item.count === null) total *= quantity.count
   if (entry.ml && matches.length && matches.every((match) => match.food.drink)) total *= entry.ml / 250

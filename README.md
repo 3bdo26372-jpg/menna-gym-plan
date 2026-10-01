@@ -66,6 +66,11 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Anything unrecognised counts as a typical meal size.
   - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
   - The target range comes from her original nutrition plan (1,850 kcal for days 1–14, 1,750 for days 15–30, 1,700 from day 31), shown as ±100. A chip says whether the weekly average is within it (`CALORIE_STAGES` in `shared/calories.ts`).
+- **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): mark a day she didn't train (today or earlier) as trained. It scores 100 and counts as an active day for the milestone rewards.
+  - The first pass is free. Each later one costs 50 calorie points.
+  - A finished day earns 10 calorie points when its rough calorie estimate is between 1,200 and the top of that day's range. Skipping meals is never rewarded.
+  - Passes are stored in `day_passes` (migration 0005). The points are derived from the food log.
+  - A reminder on the home page offers a pass when yesterday was missed.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -74,7 +79,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -88,6 +93,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `rewards`, `reward_unlocks` | milestones and when they unlocked |
 | `food_entries` | food & drink log |
 | `water_point_spends` | water points spent on requests, surprise gifts and made-up days |
+| `day_passes` | days marked as trained with a pass, and the calorie points each cost |
 | `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media

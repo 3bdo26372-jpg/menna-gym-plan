@@ -88,6 +88,7 @@ describe('rewards and reports', () => {
       { id: 5, date: addDays(start, 3), time: '16:00', category: 'drink', item: 'قهوة', quantity: 'كوباية', ml: 200, createdAt: '' },
     ],
     waterSpends: [],
+    dayPasses: [],
   }
 
   it('unlocks rewards on the day the active-day threshold is reached', () => {

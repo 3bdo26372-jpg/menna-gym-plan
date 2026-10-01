@@ -20,6 +20,7 @@ export interface Backend {
   addFood(date: string, input: FoodInput): Promise<AppState>
   deleteFood(id: number): Promise<AppState>
   spendWaterPoints(input: WaterSpendInput): Promise<AppState>
+  takeDayPass(date: string): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
 }

@@ -5,13 +5,13 @@ import { checkin, feedback, workout } from './fixtures'
 describe('daily score', () => {
   it('is 100 for a full day', () => {
     expect(computeDailyScore({ checkin, workout: workout(), feedback: feedback() })).toEqual({
-      checkin: 15, workout: 60, warmupCooldown: 10, feedback: 15, makeup: 0, total: 100,
+      checkin: 15, workout: 60, warmupCooldown: 10, feedback: 15, makeup: 0, pass: 0, total: 100,
     })
   })
 
   it('gives partial workout points and nothing for skipped parts', () => {
     const score = computeDailyScore({ checkin, workout: workout({ mainCompletion: 0.5, cooldownDone: false }), feedback: null })
-    expect(score).toEqual({ checkin: 15, workout: 30, warmupCooldown: 5, feedback: 0, makeup: 0, total: 50 })
+    expect(score).toEqual({ checkin: 15, workout: 30, warmupCooldown: 5, feedback: 0, makeup: 0, pass: 0, total: 50 })
   })
 
   it('never rewards more than 60 workout points, however long or hard', () => {
