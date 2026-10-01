@@ -103,6 +103,14 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - The source mapping is in `scripts/exercise-media-sources.json`, and `scripts/build_exercise_media.py` rebuilds everything.
 - Review Gym visual's terms (https://gymvisual.com/content/3-terms-and-conditions-of-use) if the app ever becomes more than a private personal app.
 
+### Installing on the phone
+
+The app is installable as a home-screen app (PWA), with `public/manifest.webmanifest`, the icons in `public/icons/` and the iOS meta tags in `index.html`:
+- **iPhone:** open the site in Safari → Share → **Add to Home Screen**. It opens full screen with its own icon.
+- **Android:** use Chrome's **Install app**.
+
+On iPhone the installed app keeps its own storage, so the passcode is typed once more there.
+
 ## Local development
 
 ```bash
