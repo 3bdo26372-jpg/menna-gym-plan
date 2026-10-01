@@ -112,7 +112,7 @@ function MeasurementForm({ today }: { today: string }) {
   }
 
   return (
-    <Card>
+    <Card id="section-new">
       <h2 className="card-title"><Plus /> قياس جديد</h2>
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void submit() }}>
         <label className="field narrow">

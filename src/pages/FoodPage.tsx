@@ -3,7 +3,7 @@ import { Droplets, Flame, Plus, Trash2, Utensils } from 'lucide-react'
 import { addDays, cairoTime, dayNumberFor, formatDateLong, formatDateShort } from '../../shared/date'
 import { averageDailyCalories, calorieRange, dayCalories, formatCalories, hasFoodLogged, rangeStatus, type RangeStatus } from '../../shared/calories'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
-import { WATER_POINTS_DAILY_MAX, waterPointsBalance, waterPointsForMl } from '../../shared/waterPoints'
+import { EARN, pointsBalance, WATER_GOAL_ML } from '../../shared/points'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
@@ -54,7 +54,7 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
   const { addFood } = useAppData()
   const [busy, setBusy] = useState(false)
   const total = waterMl(entries)
-  const { balance } = waterPointsBalance(state.foodEntries, state.waterSpends)
+  const { balance } = pointsBalance(state)
   const add = async (ml: number) => {
     setBusy(true)
     try {
@@ -64,12 +64,12 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
     }
   }
   return (
-    <Card>
+    <Card id="section-water">
       <h2 className="card-title"><Droplets /> المية: {formatLitres(total)} لتر</h2>
       <ProgressBar value={total} max={WATER_TARGET_ML} label="المية من الهدف" />
       <p className="muted small">الهدف ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.</p>
       <p className="water-points-line">
-        💧 {waterPointsForMl(total)} من {WATER_POINTS_DAILY_MAX} نقطة مية لليوم ده · رصيدك {balance} · <a href="#/rewards">تصرفيها إزاي؟</a>
+        💧 {total >= WATER_GOAL_ML ? `وصلتي 2.5 لتر: +${EARN.water} نقط ✓` : `وصلي 2.5 لتر = +${EARN.water} نقط (فاضل ${formatLitres(WATER_GOAL_ML - total)} لتر)`} · رصيدك {balance} · <a href="#/rewards/points">نقطك</a>
       </p>
       <div className="quick-water">
         <button type="button" className="button secondary" disabled={busy} onClick={() => void add(250)}><Plus /> كوباية 250 مل</button>
@@ -88,7 +88,7 @@ function CaloriesCard({ date, entries, start }: { date: string; entries: FoodEnt
   const { average } = averageDailyCalories(state.foodEntries, lastWeek)
   const range = calorieRange(dayNumberFor(start, state.today))
   return (
-    <Card>
+    <Card id="section-calories">
       <h2 className="card-title"><Flame /> السعرات تقريبًا</h2>
       <div className="stat-grid">
         <StatTile
@@ -140,7 +140,7 @@ function FoodForm({ date, isToday }: { date: string; isToday: boolean }) {
   }
 
   return (
-    <Card>
+    <Card id="section-add">
       <h2 className="card-title"><Plus /> إضافة {isToday ? '' : `ليوم ${formatDateShort(date)}`}</h2>
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void submit() }}>
         <ChoiceGroup legend="النوع" options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />

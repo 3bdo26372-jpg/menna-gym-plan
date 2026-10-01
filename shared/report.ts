@@ -5,7 +5,7 @@ import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
 import { averageDailyCalories, calorieRange, roundCalories } from './calories'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
-import { waterPointsForMl } from './waterPoints'
+import { earnings } from './points'
 import type { AppState, DayType, Energy, ReportKind } from './types'
 
 /**
@@ -182,10 +182,10 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
     suggestions: [],
   }
   report.summary = writeSummary(report, recordedCount, withWorkout.map((day) => day.workout!.dayType))
-  const waterPoints = foodDays.reduce((sum, day) => sum + waterPointsForMl(day.waterMl), 0)
-  const madeUp = periodDays.filter((day) => day.score.makeup > 0)
-  if (waterPoints) report.summary.push(`كسبتي ${waterPoints} نقطة مية.`)
-  if (madeUp.length) report.summary.push(`عوّضتي ${madeUp.reduce((sum, day) => sum + day.score.makeup, 0)} نقطة من السكور بنقط المية في ${madeUp.length} يوم.`)
+  const points = earnings(state).filter((earning) => earning.date >= start && earning.date <= lastRecorded).reduce((sum, earning) => sum + earning.points, 0)
+  const passes = state.dayPasses.filter((pass) => pass.date >= start && pass.date <= end).length
+  if (points) report.summary.push(`كسبتي ${points} نقطة في الفترة دي.`)
+  if (passes) report.summary.push(`استخدمتي ${passes} إكسبشن.`)
   report.suggestions = writeSuggestions(report, recordedCount, feedbacks.filter((feedback) => feedback.pain).length, state, start, lastRecorded)
   return report
 }

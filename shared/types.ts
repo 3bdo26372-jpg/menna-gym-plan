@@ -62,6 +62,10 @@ export interface ScoreBreakdown {
   workout: number
   warmupCooldown: number
   feedback: number
+  /** Up to 30 for water against the 2 L target. */
+  water: number
+  /** Up to 30 for eating within the plan's calories. */
+  calories: number
   /** Points made up with water points (finished days only). */
   makeup: number
   /** Points a day pass filled in, up to 100. */

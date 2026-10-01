@@ -50,27 +50,24 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - One after every 5 finished exercises (skipped ones don't count), and one after a hard exercise (a jump, or one she once rated hardest) at most once a workout. That is about 4 a workout, never two close together and none during the cool-down.
   - Each shows for about 3 seconds over the demo and never blocks a tap.
   - Finishing the whole workout plays a celebration that rotates daily (hearts, rockets or clapping) and closes by itself.
-- **Daily score** (max 100): check-in 15, workout 60 (proportional to the main work actually done), warm-up 5, cooldown 5, feedback 15. Harder or longer sessions never earn extra points.
+- **Daily score** (max 100, `shared/scoring.ts`): 40 workout + 30 water + 30 calories.
+  - Workout (40): check-in 6, main work 24 (proportional to what was done), warm-up 2, cooldown 2, feedback 6. Harder or longer sessions never earn extra points.
+  - Water (30): proportional to the 2 L target.
+  - Calories (30): full points from 1,200 kcal up to the top of the day's range. Above it, 1 point is lost per 25 kcal. Below 1,200, points shrink.
+  - A day pass fills the day up to 100. Adding or deleting food re-scores that day.
 - **Food & drink log**: each entry has a time, a category (breakfast, lunch, dinner, snack or drink), the item and an optional amount/ml. Water is totalled against a 2–2.5 L daily target. Today and the 6 days before it can be logged or corrected. The daily score is unchanged.
-- **Water points (نقط المية)**: 1 point per 250 ml of water, up to 2.5 L a day, plus a 5-point bonus at 2 L (max 15 a day).
-  - Points come from the food log, so deleting a water entry takes its points back. They show on the Food page and are spent on the Rewards page.
-  - **Request** (30 points): Menna writes what she wants.
-  - **Surprise gift** (75 points): she pays the points and can add an optional hint; the gift is chosen for her.
-  - **Make up a day**: each point adds 1 to the score of a finished day (not today or yesterday, which can still be logged), up to 100.
-    - It only changes the score. It never turns a day into an active day for the milestone rewards.
-  - Requests and gifts start as `pending`. The app has no screen for fulfilling them; update them directly in D1:
-    - `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …` once fulfilled.
-    - `status = 'cancelled'` gives the points back.
-- **Calories (rough)** (`shared/calories.ts`): estimated from the food log text, so she never counts anything.
-  - A dictionary of common (mostly Egyptian) foods gives typical portions, and simple amounts are read from the text ("2 توست", "رغيفين ونص", "نص معلقة عسل", "دبوسين").
-  - Anything unrecognised counts as a typical meal size.
-  - The Food page shows only rounded totals (to 50): the selected day and the average of the last 7 finished days. Reports show the period's daily average.
-  - The target range comes from her original nutrition plan (1,850 kcal for days 1–14, 1,750 for days 15–30, 1,700 from day 31), shown as ±100. A chip says whether the weekly average is within it (`CALORIE_STAGES` in `shared/calories.ts`).
-- **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): mark a day she didn't train (today or earlier) as trained. It scores 100 and counts as an active day for the milestone rewards.
-  - The first pass is free. Each later one costs 50 calorie points.
-  - A finished day earns 10 calorie points when its rough calorie estimate is between 1,200 and the top of that day's range. Skipping meals is never rewarded.
-  - Passes are stored in `day_passes` (migration 0005). The points are derived from the food log.
-  - A reminder on the home page offers a pass when yesterday was missed.
+- **Points (نقطها)** (`shared/points.ts`): one balance, spent on requests, surprise gifts and day passes. Points are earned by reaching goals, not for every step:
+  - 2.5 L of water in a day: 5. This counts as soon as she reaches it.
+  - A finished day eaten within the calorie range (1,200 up to the top): 5.
+  - A finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10. This is the score she earned herself; a day pass or makeup doesn't count.
+  - Every 7 workout days in a row: 15.
+  - A perfect day is worth about 20. Everything is derived from the log, so deleting an entry takes its points back.
+  - **Request** (30 points): Menna writes what she wants. **Surprise gift** (75): she can add a hint and the gift is chosen for her.
+  - Requests and gifts start as `pending`. Fulfil them in D1 with `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …`. Setting `status = 'cancelled'` gives the points back.
+- **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): complete a day that is short of 100 (today or earlier, once per day).
+  - The score is filled to 100 and the day counts as an active day for the milestone rewards.
+  - The first pass is free. Later ones cost 50 points.
+  - The home page offers one when yesterday's workout was missed.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -79,7 +76,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -105,6 +102,22 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - The dataset has no standing quad stretch, so `standing-quad-stretch.webp` is a drawn illustration in a matching style.
 - The source mapping is in `scripts/exercise-media-sources.json`, and `scripts/build_exercise_media.py` rebuilds everything.
 - Review Gym visual's terms (https://gymvisual.com/content/3-terms-and-conditions-of-use) if the app ever becomes more than a private personal app.
+
+### Speed
+
+- **First screen:** the JS needed for it is about 107 kB gzipped. The animation engine (`LazyMotion`), the workout player and the other pages load after it.
+- **API connection:** production builds bake in the API URL from `public/api-config.json`, so there is no extra request before the first API call. `vite.config.ts` adds a `preconnect` to the API.
+- **Caching:** `vercel.json` caches hashed `/assets` for a year and exercise media and icons for a week.
+- **Server:** `loadState` makes two database round trips.
+- **Measurement:** Vercel Speed Insights (`@vercel/speed-insights/react` in `src/main.tsx`) reports real load times once it is enabled for the project.
+
+### Installing on the phone
+
+The app is installable as a home-screen app (PWA), with `public/manifest.webmanifest`, the icons in `public/icons/` and the iOS meta tags in `index.html`:
+- **iPhone:** open the site in Safari → Share → **Add to Home Screen**. It opens full screen with its own icon.
+- **Android:** use Chrome's **Install app**.
+
+On iPhone the installed app keeps its own storage, so the passcode is typed once more there.
 
 ## Local development
 
