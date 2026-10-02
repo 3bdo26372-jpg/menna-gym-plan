@@ -6,9 +6,17 @@ import type { AppState, DayRecord } from './types'
 /**
  * Day passes (الإكسبشن): complete a day. The day counts as trained (also for
  * the milestone rewards) and its score is filled up to 100. The first pass is
- * free; each later one costs points from the same balance as everything else.
+ * free, and so is one per gift (pass_gifts); each other one costs points from
+ * the same balance as everything else.
  */
 export const PASS_PRICE = 50
+
+export interface PassGift {
+  id: number
+  /** Shown to her until she uses it. */
+  note: string | null
+  createdAt: string
+}
 
 export interface DayPass {
   date: string
@@ -17,13 +25,20 @@ export interface DayPass {
   createdAt: string
 }
 
-type PassState = PointsState & Pick<AppState, 'profile'>
+type PassState = PointsState & Pick<AppState, 'profile' | 'passGifts'>
 
-export function passPrice(state: Pick<AppState, 'dayPasses'>) {
-  return state.dayPasses.length === 0 ? 0 : PASS_PRICE
+const freePassesUsed = (state: Pick<AppState, 'dayPasses'>) => state.dayPasses.filter((pass) => pass.points === 0).length
+
+/** Gifts not used yet. The first free pass is used first, then gifts in order. */
+export function unusedGifts(state: Pick<AppState, 'dayPasses' | 'passGifts'>) {
+  return [...state.passGifts].sort((a, b) => a.id - b.id).slice(Math.max(0, freePassesUsed(state) - 1))
 }
 
-export const canAffordPass = (state: PointsState) => passPrice(state) <= pointsBalance(state).balance
+export function passPrice(state: Pick<AppState, 'dayPasses' | 'passGifts'>) {
+  return freePassesUsed(state) < 1 + state.passGifts.length ? 0 : PASS_PRICE
+}
+
+export const canAffordPass = (state: PointsState & Pick<AppState, 'passGifts'>) => passPrice(state) <= pointsBalance(state).balance
 
 /** A day can take a pass while it is short of 100 and has none yet; today included. */
 export const canTakePass = (day: Pick<DayRecord, 'excused' | 'score'>) => !day.excused && day.score.total < MAX_DAILY_SCORE

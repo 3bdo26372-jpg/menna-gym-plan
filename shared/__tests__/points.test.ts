@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { addDays } from '../date'
 import { isActiveDay, newRewardUnlocks } from '../engine'
 import type { FoodCategory, FoodEntry } from '../food'
-import { PASS_PRICE, missedWorkout, passCandidates, passPrice, validatePass, type DayPass } from '../dayPasses'
-import { EARN, earnings, pointsBalance, scorePoints } from '../points'
-import { computeDailyScore, foodScoreInput } from '../scoring'
+import { PASS_PRICE, missedWorkout, passCandidates, passPrice, unusedGifts, validatePass, type DayPass, type PassGift } from '../dayPasses'
+import { EARN, earnings, legacyWaterPoints, pointsBalance, scorePoints } from '../points'
+import { computeDailyScore, foodScoreInput, isLegacyDay } from '../scoring'
 import type { DayRecord } from '../types'
 import { makeupByDate, validateSpend, type WaterSpend } from '../waterPoints'
 import { checkin, feedback, workout } from './fixtures'
 
-const start = '2026-09-01'
+const start = '2026-11-01'
 let id = 1
 const food = (date: string, item: string, category: FoodCategory = 'lunch', ml: number | null = null): FoodEntry =>
   ({ id: id++, date, time: '12:00', category, item, quantity: null, ml, createdAt: '' })
@@ -29,9 +29,10 @@ const perfectFood = (dayNumber: number) => {
   return [water(date, 2500), food(date, 'كشري'), food(date, 'فول وطعمية وعيش بلدي', 'breakfast')]
 }
 
-function state(days: DayRecord[], foodEntries: FoodEntry[], extra: { waterSpends?: WaterSpend[]; dayPasses?: DayPass[] } = {}) {
-  const today = addDays(start, days.length - 1)
-  return { today, profile: { name: 'Menna', programStartDate: start, timezone: 'Africa/Cairo' }, days, foodEntries, waterSpends: extra.waterSpends ?? [], dayPasses: extra.dayPasses ?? [] }
+function state(days: DayRecord[], foodEntries: FoodEntry[], extra: { waterSpends?: WaterSpend[]; dayPasses?: DayPass[]; passGifts?: PassGift[] } = {}) {
+  const today = addDays(days[0]?.date ?? start, days.length - 1)
+  const programStartDate = days[0]?.date ?? start
+  return { today, profile: { name: 'Menna', programStartDate, timezone: 'Africa/Cairo' }, days, foodEntries, waterSpends: extra.waterSpends ?? [], dayPasses: extra.dayPasses ?? [], passGifts: extra.passGifts ?? [] }
 }
 
 /** n perfect finished days, then today. */
@@ -118,5 +119,47 @@ describe('day passes', () => {
     expect(validatePass({ date: addDays(start, 5) }, state(empty, []))).toBe('unknown day')
     expect(missedWorkout(makeDay(1, [], full))).toBe(false)
     expect(missedWorkout(empty[0])).toBe(true)
+  })
+})
+
+describe('days before the new system keep what they earned', () => {
+  const old = '2026-09-29'
+  const oldDay = (offset: number, entries: FoodEntry[], parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused'>> = {}): DayRecord => {
+    const date = addDays(old, offset)
+    const base = { checkin: null, workout: null, feedback: null, excused: false, ...parts }
+    return { date, dayNumber: offset + 1, ...base, score: computeDailyScore(base, 0, base.excused, foodScoreInput(entries.filter((entry) => entry.date === date), offset + 1), isLegacyDay(date)) }
+  }
+
+  it('scores a full workout 100 before October 2, whatever the water and food', () => {
+    expect(isLegacyDay('2026-10-01')).toBe(true)
+    expect(isLegacyDay('2026-10-02')).toBe(false)
+    const entries = [water(old, 1000), food(old, 'كشري'), food(old, 'كشري')]
+    expect(oldDay(0, entries, full).score).toMatchObject({ checkin: 15, workout: 60, warmupCooldown: 10, feedback: 15, water: 0, calories: 0, total: 100 })
+  })
+
+  it('keeps the original points: a point per cup with a 2 L bonus, and 10 for food in range', () => {
+    expect([1000, 1750, 2000, 2500, 4000].map(legacyWaterPoints)).toEqual([4, 7, 13, 15, 15])
+    const entries = [water(old, 1000), water(addDays(old, 1), 2000), food(addDays(old, 1), 'كشري'), food(addDays(old, 1), 'فول وطعمية وعيش بلدي', 'breakfast')]
+    const days = [oldDay(0, entries, full), oldDay(1, entries, full), oldDay(2, entries), oldDay(3, entries)]
+    // Day 3 (Oct 2) is today and on the new system; nothing logged on it.
+    expect(earnings(state(days, entries)).map((item) => [item.date.slice(5), item.kind, item.points])).toEqual([
+      ['09-29', 'water', 4], ['09-30', 'water', 13], ['09-30', 'calories', 10],
+    ])
+  })
+})
+
+describe('gifted passes', () => {
+  const empty = [makeDay(1, []), makeDay(2, []), makeDay(3, [])]
+  const gift: PassGift = { id: 1, note: 'عشان انتي قلب بابا', createdAt: '' }
+
+  it('makes one more pass free per gift, and shows the gift until it is used', () => {
+    const usedFirst = [{ date: start, points: 0, createdAt: '' }]
+    expect(passPrice(state(empty, [], { dayPasses: usedFirst }))).toBe(PASS_PRICE)
+    expect(passPrice(state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toBe(0)
+    expect(unusedGifts(state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toEqual([gift])
+    expect(validatePass({ date: addDays(start, 1) }, state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toEqual({ date: addDays(start, 1), points: 0 })
+    const usedBoth = [...usedFirst, { date: addDays(start, 1), points: 0, createdAt: '' }]
+    expect(unusedGifts(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toEqual([])
+    expect(passPrice(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toBe(PASS_PRICE)
   })
 })

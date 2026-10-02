@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Ticket } from 'lucide-react'
 import { addDays, formatDateShort } from '../../shared/date'
-import { missedWorkout, PASS_PRICE, passCandidates, passPrice } from '../../shared/dayPasses'
+import { missedWorkout, PASS_PRICE, passCandidates, passPrice, unusedGifts } from '../../shared/dayPasses'
 import { pointsBalance } from '../../shared/points'
 import { Card, EmptyState, Notice, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
@@ -41,6 +41,9 @@ export function DayPasses() {
         <StatTile label="رصيد نقطك" value={balance} unit="نقطة" hint="من المية والسعرات" />
       </div>
       <p className="muted small">أول إكسبشن ببلاش، وبعد كده بـ {PASS_PRICE} نقطة من <a href="#/rewards/points">نقطك</a>.</p>
+      {unusedGifts(state).map((gift) => (
+        <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>
+      ))}
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       {candidates.length === 0 ? (
         <EmptyState icon={<Ticket />} title="كل الأيام كاملة 💪" />

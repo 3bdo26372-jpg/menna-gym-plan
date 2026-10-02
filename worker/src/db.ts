@@ -1,4 +1,4 @@
-import { computeDailyScore, foodScoreInput } from '../../shared/scoring'
+import { computeDailyScore, foodScoreInput, isLegacyDay } from '../../shared/scoring'
 import { dayNumberFor } from '../../shared/date'
 import { newRewardUnlocks } from '../../shared/engine'
 import { BASELINE_METRICS } from '../../shared/measurements'
@@ -16,7 +16,7 @@ import type {
 import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
-import type { DayPass } from '../../shared/dayPasses'
+import type { DayPass, PassGift } from '../../shared/dayPasses'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -81,8 +81,9 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, log_date, eaten_at, category, item, quantity, ml, created_at FROM food_entries ORDER BY log_date, eaten_at, id'),
     db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
     db.prepare('SELECT log_date, points, created_at FROM day_passes ORDER BY created_at'),
+    db.prepare('SELECT id, note, created_at FROM pass_gifts ORDER BY id'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -163,7 +164,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber)) }
+    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date)) }
   })
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
@@ -194,6 +195,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     foodEntries,
     waterSpends,
     dayPasses,
+    passGifts: gifts.results.map((row): PassGift => ({ id: Number(row.id), note: (row.note as string | null) ?? null, createdAt: String(row.created_at) })),
   }
 }
 

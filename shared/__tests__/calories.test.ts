@@ -99,3 +99,11 @@ describe('sandwiches', () => {
     expect(kcal('سندوتش فول', null, 'breakfast')).toBe(375)
   })
 })
+
+describe('calories she wrote herself', () => {
+  it('uses her number instead of guessing', () => {
+    expect(kcal('شكولاته كابري الساده الصغيره الست مربعات المربع ١٦١ كالوري', null, 'snack')).toBe(161)
+    expect(kcal('ساندوتش', '350 سعرة', 'lunch')).toBe(350)
+    expect(kcal('شكولاتة', null, 'snack')).toBe(220)
+  })
+})

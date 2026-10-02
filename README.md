@@ -64,10 +64,15 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - A perfect day is worth about 20. Everything is derived from the log, so deleting an entry takes its points back.
   - **Request** (30 points): Menna writes what she wants. **Surprise gift** (75): she can add a hint and the gift is chosen for her.
   - Requests and gifts start as `pending`. Fulfil them in D1 with `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …`. Setting `status = 'cancelled'` gives the points back.
+- **New system start:** the 40/30/30 split and goal-based points start on `NEW_SYSTEM_FROM` (2026-10-02, `shared/scoring.ts`).
+  - Earlier days keep the original scoring: the workout alone is worth 100.
+  - They also keep their original points: a point per 250 ml of water (up to 10) plus 5 at 2 L, and 10 for a day within the calorie range.
+- **Calories she writes herself** (e.g. "١٦١ كالوري", "350 سعرة") are used instead of the estimate.
 - **Day passes (الإكسبشن)** (`shared/dayPasses.ts`): complete a day that is short of 100 (today or earlier, once per day).
   - The score is filled to 100 and the day counts as an active day for the milestone rewards.
   - The first pass is free. Later ones cost 50 points.
   - The home page offers one when yesterday's workout was missed.
+  - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -76,7 +81,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns, 0007 gift passes) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -90,7 +95,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `rewards`, `reward_unlocks` | milestones and when they unlocked |
 | `food_entries` | food & drink log |
 | `water_point_spends` | water points spent on requests, surprise gifts and made-up days |
-| `day_passes` | days marked as trained with a pass, and the calorie points each cost |
+| `day_passes` | days completed with a pass, and the points each cost |
+| `pass_gifts` | gifted free passes and their notes |
 | `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media

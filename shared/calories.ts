@@ -96,7 +96,7 @@ const FOODS: Food[] = [
   // Sweets and snacks
   food('cake', 'كيك|كيكه|cake', 250, { group: 'sweet', generic: true }),
   food('hohos', 'هوهوز|هوهو|توينكيز|twinkies|تودو|توتو', 190, { group: 'sweet' }),
-  food('chocolate', 'شوكولاته|شوكولاتة|شيكولاته|chocolate|تويكس|twix|كيت كات|كيتكات|جلاكسي|سنيكرز|مارس|كادبوري|مولتو', 220, { group: 'sweet' }),
+  food('chocolate', 'شوكولاته|شوكولاتة|شيكولاته|شكولاته|شكولاتة|chocolate|تويكس|twix|كيت كات|كيتكات|جلاكسي|سنيكرز|مارس|كادبوري|مولتو', 220, { group: 'sweet' }),
   food('biscuits', 'بسكويت|بسكوت|biscuits|cookies|كوكيز', 150, { group: 'sweet' }),
   food('orientalSweets', 'كنافه|بسبوسه|قطايف|جاتوه|دونات|donut|بلح الشام|كحك', 350, { group: 'sweet' }),
   food('iceCream', 'ايس كريم|ايسكريم|جيلاتي|ice cream', 200, { group: 'sweet' }),
@@ -273,9 +273,14 @@ function matchCalories(match: Match, sandwich: boolean) {
   return (match.count ?? 1) * unit * share * (match.double ? 2 : 1)
 }
 
-/** Approximate calories of one food-log entry. Water is 0. */
+/** A calorie count she wrote herself ("١٦١ كالوري", "200 سعرة"). */
+const WRITTEN_CALORIES = /(\d+(?:\.\d+)?)\s*(?:كالوري|كالوري|كالورى|سعرات|سعره|سعر|kcal|cal|calories)/
+
+/** Approximate calories of one food-log entry. Water is 0; a number she wrote herself wins. */
 export function estimateCalories(entry: Pick<FoodEntry, 'category' | 'item' | 'quantity' | 'ml'>) {
   if (isWater(entry)) return 0
+  const written = normalizeFoodText(`${entry.item} ${entry.quantity ?? ''}`).match(WRITTEN_CALORIES)
+  if (written) return Math.round(Number(written[1]))
   const item = parse(entry.item)
   const quantity = entry.quantity ? parse(entry.quantity) : { matches: [], count: null, sandwich: false }
   const sandwich = item.sandwich || quantity.sandwich
