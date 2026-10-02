@@ -251,3 +251,7 @@
 .earn-ways li > span { font-size: 20px; }
 .earn-ways b { font: 800 14px var(--font-num); color: var(--berry-dark); white-space: nowrap; direction: ltr; }
 .earn-ways b.rtl { direction: rtl; }
+.gift-card { grid-template-columns: auto 1fr; align-items: start; border-color: var(--rose-200); background: linear-gradient(160deg, #fff, #fde8f1); }
+.gift-card > div { display: grid; gap: 8px; justify-items: start; }
+.gift-emoji { font-size: 40px; line-height: 1; }
+.gift-note { margin: 0; font-size: 18px; font-weight: 800; color: var(--berry-dark); }

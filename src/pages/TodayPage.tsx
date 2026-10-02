@@ -8,7 +8,7 @@ import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canAffordPass, canTakePass, missedWorkout, passPrice } from '../../shared/dayPasses'
+import { canAffordPass, canTakePass, missedWorkout, passPrice, unusedGifts } from '../../shared/dayPasses'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
@@ -83,7 +83,18 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      {yesterday && missedWorkout(yesterday) && canTakePass(yesterday) && canAffordPass(state) && (
+      {unusedGifts(state).map((gift) => (
+        <Card key={gift.id} className="gift-card">
+          <span className="gift-emoji" aria-hidden="true">🎁</span>
+          <div>
+            <h2 className="card-title">جالك إكسبشن هدية!</h2>
+            {gift.note && <p className="gift-note">{gift.note}</p>}
+            <p className="muted small">إكسبشن ببلاش، تكمّلي بيه أي يوم لـ 100 ويتحسب يوم تمرين.</p>
+            <a className="button secondary" href="#/rewards/passes">شوفيه</a>
+          </div>
+        </Card>
+      ))}
+      {yesterday && missedWorkout(yesterday) && canTakePass(yesterday) && canAffordPass(state) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
           <p className="muted">عندك إكسبشن{passPrice(state) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>

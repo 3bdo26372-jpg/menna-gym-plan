@@ -1,6 +1,7 @@
 import { CALORIE_FLOOR_KCAL, calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
 import { isWater, type FoodEntry } from './food'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
+import { isLegacyDay } from './scoring'
 import type { AppState, DayRecord } from './types'
 
 /**
@@ -13,6 +14,10 @@ import type { AppState, DayRecord } from './types'
  *   (the score she earned herself; a day pass or makeup doesn't count)
  * - every 7 workout days in a row: 15
  * Everything is derived from the log, so deleting an entry takes its points back.
+ *
+ * Days before NEW_SYSTEM_FROM keep the points they earned under the original
+ * rules: a point per 250 ml of water (up to 10) plus 5 at 2 L, and 10 for a
+ * finished day eaten within the calorie range. They don't earn score tiers.
  */
 export const EARN = { water: 5, calories: 5, score60: 3, score80: 6, score100: 10, streak: 15 } as const
 export const WATER_GOAL_ML = 2500
@@ -30,6 +35,10 @@ export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'it
 /** The score she earned herself, without a day pass or makeup. */
 export const earnedScore = (day: Pick<DayRecord, 'score'>) => day.score.total - day.score.pass - day.score.makeup
 
+/** The original water points: a point per 250 ml up to 2.5 L, plus 5 for reaching 2 L. */
+export const legacyWaterPoints = (ml: number) => Math.min(10, Math.floor(ml / 250)) + (ml >= 2000 ? 5 : 0)
+const LEGACY_CALORIE_POINTS = 10
+
 export function scorePoints(score: number) {
   return score >= 100 ? EARN.score100 : score >= 80 ? EARN.score80 : score >= 60 ? EARN.score60 : 0
 }
@@ -40,7 +49,10 @@ const trained = (day: Pick<DayRecord, 'workout'>) => Boolean(day.workout && day.
 export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>): Earning[] {
   const result: Earning[] = []
   for (const [date, ml] of waterMlByDate(state.foodEntries)) {
-    if (ml >= WATER_GOAL_ML && date <= state.today) result.push({ date, kind: 'water', points: EARN.water })
+    if (date > state.today) continue
+    if (isLegacyDay(date)) {
+      if (legacyWaterPoints(ml)) result.push({ date, kind: 'water', points: legacyWaterPoints(ml) })
+    } else if (ml >= WATER_GOAL_ML) result.push({ date, kind: 'water', points: EARN.water })
   }
   let streak = 0
   for (const day of [...state.days].sort((a, b) => a.date.localeCompare(b.date))) {
@@ -48,9 +60,11 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
     const entries = state.foodEntries.filter((entry) => entry.date === day.date)
     if (hasFoodLogged(entries)) {
       const kcal = dayCalories(entries)
-      if (kcal >= CALORIE_FLOOR_KCAL && roundCalories(kcal) <= calorieRange(day.dayNumber).max) result.push({ date: day.date, kind: 'calories', points: EARN.calories })
+      if (kcal >= CALORIE_FLOOR_KCAL && roundCalories(kcal) <= calorieRange(day.dayNumber).max) {
+        result.push({ date: day.date, kind: 'calories', points: isLegacyDay(day.date) ? LEGACY_CALORIE_POINTS : EARN.calories })
+      }
     }
-    const fromScore = scorePoints(earnedScore(day))
+    const fromScore = isLegacyDay(day.date) ? 0 : scorePoints(earnedScore(day))
     if (fromScore) result.push({ date: day.date, kind: 'score', points: fromScore })
     streak = trained(day) ? streak + 1 : 0
     if (streak === STREAK_DAYS) {

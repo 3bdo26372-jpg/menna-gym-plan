@@ -15,6 +15,14 @@ import type { CheckIn, Feedback, ScoreBreakdown, WorkoutResult } from './types'
  * Older "makeup" spends do the same with their points.
  */
 export const SCORE_POINTS = { checkin: 6, workout: 24, warmup: 2, cooldown: 2, feedback: 6, water: 30, calories: 30 } as const
+/**
+ * The 40/30/30 split and goal-based points start on this day. Earlier days
+ * keep the original scoring (the workout alone is worth 100) and the points
+ * they earned under the original rules (see points.ts).
+ */
+export const NEW_SYSTEM_FROM = '2026-10-02'
+export const isLegacyDay = (date: string) => date < NEW_SYSTEM_FROM
+const LEGACY_POINTS = { checkin: 15, workout: 60, warmup: 5, cooldown: 5, feedback: 15 } as const
 export const MAX_DAILY_SCORE = 100
 export const WORKOUT_SHARE = SCORE_POINTS.checkin + SCORE_POINTS.workout + SCORE_POINTS.warmup + SCORE_POINTS.cooldown + SCORE_POINTS.feedback
 const KCAL_PER_POINT_OVER = 25
@@ -44,16 +52,17 @@ export function computeDailyScore(day: {
   checkin: CheckIn | null
   workout: WorkoutResult | null
   feedback: Feedback | null
-}, makeupPoints = 0, excused = false, food?: FoodScoreInput): ScoreBreakdown {
-  const checkin = day.checkin ? SCORE_POINTS.checkin : 0
+}, makeupPoints = 0, excused = false, food?: FoodScoreInput, legacy = false): ScoreBreakdown {
+  const points = legacy ? LEGACY_POINTS : SCORE_POINTS
+  const checkin = day.checkin ? points.checkin : 0
   const completion = day.workout ? Math.min(1, Math.max(0, day.workout.mainCompletion)) : 0
-  const workout = Math.round(SCORE_POINTS.workout * completion)
+  const workout = Math.round(points.workout * completion)
   const warmupCooldown = day.workout
-    ? (day.workout.warmupDone ? SCORE_POINTS.warmup : 0) + (day.workout.cooldownDone ? SCORE_POINTS.cooldown : 0)
+    ? (day.workout.warmupDone ? points.warmup : 0) + (day.workout.cooldownDone ? points.cooldown : 0)
     : 0
-  const feedback = day.feedback ? SCORE_POINTS.feedback : 0
-  const water = food ? waterScore(food.waterMl) : 0
-  const calories = food ? calorieScore(food.calories, food.calorieMax) : 0
+  const feedback = day.feedback ? points.feedback : 0
+  const water = food && !legacy ? waterScore(food.waterMl) : 0
+  const calories = food && !legacy ? calorieScore(food.calories, food.calorieMax) : 0
   const earned = checkin + workout + warmupCooldown + feedback + water + calories
   const makeup = Math.max(0, Math.min(makeupPoints, MAX_DAILY_SCORE - earned))
   const pass = excused ? MAX_DAILY_SCORE - earned - makeup : 0
