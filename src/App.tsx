@@ -8,8 +8,12 @@ import {
   CirclePause,
   CirclePlay,
   Clock3,
+  ExternalLink,
+  Feather,
   Footprints,
   HeartPulse,
+  Library,
+  Play,
   RotateCcw,
   ShieldCheck,
   Sparkles,
@@ -17,14 +21,19 @@ import {
   Wind,
   X,
 } from 'lucide-react'
+import {
+  library,
+  libraryById,
+  libraryCategories,
+  youtubeEmbed,
+  youtubeSearch,
+  youtubeThumbnail,
+  youtubeWatch,
+  type LibraryCategoryId,
+  type LibraryExercise,
+} from './library'
 
-type Exercise = {
-  name: string
-  cue: string
-  focus: string
-  video: string
-  videoNote?: string
-}
+type Exercise = LibraryExercise
 
 type Level = {
   id: 'easy' | 'steady' | 'active'
@@ -39,6 +48,10 @@ type Level = {
   exercises: Exercise[]
 }
 
+function fromLibrary(ids: string[]): Exercise[] {
+  return ids.map((id) => libraryById[id])
+}
+
 const levels: Level[] = [
   {
     id: 'easy',
@@ -50,14 +63,7 @@ const levels: Level[] = [
     rounds: 2,
     duration: '10–12 دقيقة',
     effort: 'خفيف',
-    exercises: [
-      { name: 'مشي في المكان', cue: 'ارفعي القدم بهدوء وحرّكي الذراعين طبيعي.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوة يمين وشمال', cue: 'خطوة جانبية ولمسة خفيفة بالقدم الثانية.', focus: 'الرجلين والوسط', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'رفع ركبة بالتبادل', cue: 'ارفعي الركبة براحة مع بطن مشدودة وظهر طويل.', focus: 'البطن والفخذ', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام بدل الخلف' },
-      { name: 'خطوة مع رفع الذراعين', cue: 'افتحي خطوة وارفعِي الذراعين من غير شد للرقبة.', focus: 'الكتف والدورة الدموية', video: '/exercises/warm-arm-circles.gif' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الكوع من الركبة في نفس الجانب من غير ميل للأمام.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'رفع الكعبين مع سحب الذراع', cue: 'اطلعي على أطراف القدم واسحبي الكوعين للخلف.', focus: 'السمانة وأعلى الظهر', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
-    ],
+    exercises: fromLibrary(['march', 'sideStepTouch', 'heelTap', 'calfRaise', 'shoulderBladeSqueeze', 'abdominalBrace']),
   },
   {
     id: 'steady',
@@ -69,15 +75,7 @@ const levels: Level[] = [
     rounds: 3,
     duration: '18–20 دقيقة',
     effort: 'متوسط مريح',
-    exercises: [
-      { name: 'مشي سريع في المكان', cue: 'زودي سرعة الخطوات مع كتف مرتاح ونَفَس منتظم.', focus: 'القلب والجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوتان جانبيتان مع سحب', cue: 'خطوتان لكل ناحية واسحبي الذراعين ناحية الضلوع.', focus: 'الظهر والوسط', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس حركة الذراع من غير استيك' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّي الجذع بهدوء وقرّبي الركبة للكوع المقابل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
-      { name: 'نصف سكوات مع مدّ الذراع', cue: 'انزلي مسافة صغيرة كأنك هتقعدي ثم ارفعي الذراعين.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif' },
-      { name: 'لكمات أمامية', cue: 'لكمات خفيفة بالتبادل مع ثبات الحوض وارتخاء الكتف.', focus: 'الذراعين والجذع', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات أمامية' },
-      { name: 'كرنش جانبي بالتبادل', cue: 'كوع ناحية ركبة جانبية ثم بدّلي من غير استعجال.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'سحب ركبة لأسفل', cue: 'الذراعان فوق ثم اسحبيهما لأسفل مع رفع ركبة.', focus: 'البطن والظهر', video: '/exercises/warm-wall-slide.gif', videoNote: 'اسحبي الذراعين من فوق مع رفع الركبة' },
-    ],
+    exercises: fromLibrary(['march', 'backToeTap', 'hamstringCurl', 'hipAbduction', 'wallPushUp', 'crossBodyReach', 'sideCrunch']),
   },
   {
     id: 'active',
@@ -88,24 +86,75 @@ const levels: Level[] = [
     rest: 20,
     rounds: 3,
     duration: '24–26 دقيقة',
-    effort: 'نشيط ومتحكَّم فيه',
-    exercises: [
-      { name: 'مشي قوي مع سحب الذراعين', cue: 'خطوات نشيطة واسحبي الكوعين للخلف مع صدر مفتوح.', focus: 'الجسم كله', video: '/exercises/walking.gif', videoNote: 'على الأرض من غير جهاز' },
-      { name: 'خطوة جانبية عريضة', cue: 'وسّعي الخطوة وادفعي الذراعين للأمام بالتبادل.', focus: 'الرجلين والكتف', video: '/exercises/warm-hip-circles.gif' },
-      { name: 'ركبة للكوع العكسي', cue: 'لفّة صغيرة من أعلى الجذع مع تحكم كامل.', focus: 'البطن والخصر', video: '/exercises/warm-leg-swings.gif', videoNote: 'ارفعي الركبة للأمام مع لفّة خفيفة' },
-      { name: 'سكوات صغير مع ركبة', cue: 'نصف سكوات ثم ارفعي ركبة واحدة وبدّلي.', focus: 'الرجلين والبطن', video: '/exercises/warm-bodyweight-squat.gif', videoNote: 'بعد كل سكوات ارفعي ركبة' },
-      { name: 'لكمات جانبية متحكَّم فيها', cue: 'لفّي الصدر قليلًا مع بقاء الركبتين مرنتين.', focus: 'الوسط والذراعين', video: '/exercises/warm-arm-circles.gif', videoNote: 'بدّلي الدوائر بلكمات جانبية' },
-      { name: 'سحب قطري من فوق لتحت', cue: 'اسحبي اليدين قطريًا ناحية الفخذ ثم بدّلي.', focus: 'البطن المائلة والظهر', video: '/exercises/warm-band-pull-apart.gif', videoNote: 'نفس اتجاه السحب من غير استيك' },
-      { name: 'لمسة كعب أمامية', cue: 'مدّي كعبًا للأمام مع دفع الذراعين للخلف.', focus: 'الرجلين والدورة الدموية', video: '/exercises/standing-calf-raise.gif', videoNote: 'من غير أوزان أو خطوة' },
-      { name: 'كرنش جانبي واقف', cue: 'قرّبي الضلوع من الحوض بالتبادل من غير ضغط على الرقبة.', focus: 'جانبي البطن', video: '/exercises/warm-hip-circles.gif' },
-    ],
+    effort: 'نشيط ومتحكَّم فيه',
+    exercises: fromLibrary(['armMarch', 'lowKneeLift', 'sideStepTouch', 'hipExtension', 'wallPushUp', 'palmPress', 'sideCrunch', 'crossBodyReach']),
   },
 ]
+
+const cooldown = library.filter((exercise) => exercise.category === 'stretch')
 
 function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60)
   const remainder = seconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+}
+
+function LiteVideo({ exercise, autoPlay = false }: { exercise: Exercise; autoPlay?: boolean }) {
+  const [isPlaying, setPlaying] = useState(autoPlay)
+  if (isPlaying) {
+    return (
+      <iframe
+        className="lite-video"
+        src={youtubeEmbed(exercise.youtubeId)}
+        title={`فيديو تمرين ${exercise.name}`}
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    )
+  }
+  return (
+    <button type="button" className="lite-video lite-video-poster" onClick={() => setPlaying(true)} aria-label={`تشغيل فيديو ${exercise.name}`}>
+      <img src={youtubeThumbnail(exercise.youtubeId)} alt="" loading="lazy" />
+      <span className="lite-video-play"><Play /></span>
+    </button>
+  )
+}
+
+function VideoLinks({ exercise }: { exercise: Exercise }) {
+  return (
+    <span className="video-links">
+      <a href={youtubeWatch(exercise.youtubeId)} target="_blank" rel="noreferrer">افتحي على يوتيوب <ExternalLink /></a>
+      <a href={youtubeSearch(exercise.searchQuery)} target="_blank" rel="noreferrer">فيديوهات تانية</a>
+    </span>
+  )
+}
+
+function Alternatives({ exercise, compact = false }: { exercise: Exercise; compact?: boolean }) {
+  return (
+    <ul className={`alternatives ${compact ? 'is-compact' : ''}`} aria-label="بدائل أخف">
+      {exercise.alternatives.map((alternative, index) => (
+        <li key={alternative}><b><Feather /> أخف {index + 1}</b><span>{alternative}</span></li>
+      ))}
+    </ul>
+  )
+}
+
+function ExerciseRow({ exercise, index, onPlay }: { exercise: Exercise; index: number; onPlay: (exercise: Exercise) => void }) {
+  return (
+    <li>
+      <span className="exercise-index">{index + 1}</span>
+      <button type="button" className="exercise-media" onClick={() => onPlay(exercise)} aria-label={`شوفي فيديو ${exercise.name}`}>
+        <img src={youtubeThumbnail(exercise.youtubeId)} alt="" loading="lazy" />
+        <span className="lite-video-play is-small"><Play /></span>
+      </button>
+      <div className="exercise-copy">
+        <strong>{exercise.name}</strong>
+        <p>{exercise.cue}</p>
+        <Alternatives exercise={exercise} compact />
+      </div>
+      <span className="focus-tag">{exercise.focus}</span>
+    </li>
+  )
 }
 
 function App() {
@@ -115,6 +164,8 @@ function App() {
   const [phase, setPhase] = useState<'work' | 'rest' | 'done'>('work')
   const [exerciseIndex, setExerciseIndex] = useState(0)
   const [round, setRound] = useState(1)
+  const [libraryFilter, setLibraryFilter] = useState<LibraryCategoryId | 'all'>('all')
+  const [videoExercise, setVideoExercise] = useState<Exercise | null>(null)
   const selected = levels.find((level) => level.id === selectedId) ?? levels[0]
   const [secondsLeft, setSecondsLeft] = useState(selected.work)
 
@@ -128,6 +179,8 @@ function App() {
     return null
   }, [exerciseIndex, round, selected])
   const runnerExercise = phase === 'rest' && nextExercise ? nextExercise : selected.exercises[exerciseIndex]
+
+  const visibleCategories = libraryFilter === 'all' ? libraryCategories : libraryCategories.filter((category) => category.id === libraryFilter)
 
   useEffect(() => {
     if (!isRunnerOpen || !isRunning || phase === 'done') return
@@ -211,7 +264,10 @@ function App() {
           <span className="brand-mark"><HeartPulse /></span>
           <span><strong>Menna Flow</strong><small>حركة خفيفة في البيت</small></span>
         </a>
-        <a href="#levels" className="topbar-action">اختاري مستواكي <ChevronLeft /></a>
+        <nav className="topbar-links">
+          <a href="#library" className="topbar-action">مكتبة الفيديوهات <Library /></a>
+          <a href="#levels" className="topbar-action">اختاري مستواكي <ChevronLeft /></a>
+        </nav>
       </header>
 
       <section className="hero" id="top">
@@ -235,10 +291,41 @@ function App() {
         </div>
       </section>
 
+      <section className="library-section" id="library">
+        <div className="section-heading">
+          <h2>مكتبة الفيديوهات</h2>
+          <p>{library.length} تمرين هم أساس البرنامج كله. كلهم واقفين ومن غير أدوات، ولكل تمرين بديلين أخف لو محتاجة تهدي.</p>
+        </div>
+        <div className="library-filters" role="tablist" aria-label="تصنيف التمارين">
+          <button type="button" role="tab" aria-selected={libraryFilter === 'all'} className={libraryFilter === 'all' ? 'is-active' : ''} onClick={() => setLibraryFilter('all')}>الكل</button>
+          {libraryCategories.map((category) => (
+            <button type="button" role="tab" key={category.id} aria-selected={libraryFilter === category.id} className={libraryFilter === category.id ? 'is-active' : ''} onClick={() => setLibraryFilter(category.id)}>{category.name}</button>
+          ))}
+        </div>
+        {visibleCategories.map((category) => (
+          <div className="library-group" key={category.id}>
+            <div className="library-group-heading"><h3>{category.name}</h3><p>{category.description}</p></div>
+            <div className="library-grid">
+              {library.filter((exercise) => exercise.category === category.id).map((exercise) => (
+                <article className="library-card" key={exercise.id}>
+                  <div className="library-video"><LiteVideo exercise={exercise} /></div>
+                  <div className="library-card-body">
+                    <div className="library-card-title"><span>{exercise.number}</span><strong>{exercise.name}</strong></div>
+                    <p>{exercise.cue}</p>
+                    <Alternatives exercise={exercise} />
+                    <VideoLinks exercise={exercise} />
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
       <section className="level-section" id="levels">
         <div className="section-heading">
           <h2>اختاري على حسب طاقتك</h2>
-          <p>مفيش أيام ثابتة ولا ترتيب إجباري. كل مستوى تمرين كامل لوحده.</p>
+          <p>مفيش أيام ثابتة ولا ترتيب إجباري. كل مستوى تمرين كامل لوحده، ومبني من تمارين المكتبة.</p>
         </div>
         <div className="level-list">
           {levels.map((level, index) => (
@@ -275,21 +362,22 @@ function App() {
 
         <ol className="exercise-list">
           {selected.exercises.map((exercise, index) => (
-            <li key={exercise.name}>
-              <span className="exercise-index">{index + 1}</span>
-              <figure className="exercise-media">
-                <img src={exercise.video} alt={`شرح متحرك لتمرين ${exercise.name}`} loading="lazy" />
-                {exercise.videoNote && <figcaption>{exercise.videoNote}</figcaption>}
-              </figure>
-              <div className="exercise-copy"><strong>{exercise.name}</strong><p>{exercise.cue}</p></div>
-              <span className="focus-tag">{exercise.focus}</span>
-            </li>
+            <ExerciseRow key={exercise.id} exercise={exercise} index={index} onPlay={setVideoExercise} />
           ))}
         </ol>
 
         <div className="round-note">
           <RotateCcw />
           <div><strong>بعد آخر تمرين</strong><p>خدي راحة من 45 إلى 60 ثانية، اشربي رشفات مية، وابدئي الجولة من الأول. لو جسمك مكتفي، وقّفي عند الجولة الحالية.</p></div>
+        </div>
+
+        <div className="cooldown">
+          <div className="library-group-heading"><h3>اختمي بالـStretch الخفيف</h3><p>بعد آخر جولة، اثبتي في كل إطالة 20–30 ثانية مع تنفس هادي.</p></div>
+          <ol className="exercise-list">
+            {cooldown.map((exercise, index) => (
+              <ExerciseRow key={exercise.id} exercise={exercise} index={index} onPlay={setVideoExercise} />
+            ))}
+          </ol>
         </div>
       </section>
 
@@ -299,13 +387,28 @@ function App() {
           <p>الحركة المنتظمة أهم من السرعة أو إنك تكمّلي كل الجولات.</p>
         </div>
         <div className="safety-grid">
-          <article><HeartPulse /><strong>اختبار الكلام</strong><p>خلي الشدة في مستوى تقدري تتكلمي فيه. لو الكلام بقى صعب، هدي السرعة.</p></article>
+          <article><HeartPulse /><strong>اختبار الكلام</strong><p>خلي الشدة في مستوى تقدري تتكلمي فيه. لو الكلام بقى صعب، هدي السرعة أو اختاري بديل أخف.</p></article>
           <article><Sparkles /><strong>البطن شغالة طول الوقت</strong><p>شدّي البطن بدرجة خفيفة مع ظهر طويل؛ الهدف ثبات الجذع، مش حبس النفس.</p></article>
           <article><ShieldCheck /><strong>إشارة التوقف</strong><p>وقّفي فورًا مع ألم صدر، دوخة، ضيق نفس شديد أو ألم حاد ومفاجئ.</p></article>
         </div>
       </section>
 
       <footer><span>Menna Flow</span><small>اختاري الحركة اللي جسمك قادر عليها النهارده.</small></footer>
+
+      <AnimatePresence>
+        {videoExercise && (
+          <motion.div className="runner-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setVideoExercise(null)}>
+            <motion.section className="video-dialog" role="dialog" aria-modal="true" aria-label={`فيديو ${videoExercise.name}`} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onClick={(event) => event.stopPropagation()}>
+              <button className="runner-close" type="button" onClick={() => setVideoExercise(null)} aria-label="إغلاق الفيديو"><X /></button>
+              <h3>{videoExercise.name}</h3>
+              <div className="library-video"><LiteVideo key={videoExercise.id} exercise={videoExercise} autoPlay /></div>
+              <p>{videoExercise.cue}</p>
+              <Alternatives exercise={videoExercise} />
+              <VideoLinks exercise={videoExercise} />
+            </motion.section>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isRunnerOpen && (
@@ -316,7 +419,7 @@ function App() {
                 <div className="runner-complete">
                   <span><Check /></span>
                   <h2>كده تمام يا منّة</h2>
-                  <p>كمّلتي {selected.rounds} جولات من {selected.shortName}. خدي نفس هادي واشربي مية.</p>
+                  <p>كمّلتي {selected.rounds} جولات من {selected.shortName}. اختمي بالإطالة الخفيفة، خدي نفس هادي واشربي مية.</p>
                   <button type="button" onClick={() => resetRunner()}><RotateCcw /> إعادة التمرين</button>
                 </div>
               ) : (
@@ -324,16 +427,14 @@ function App() {
                   <div className="runner-progress"><i style={{ transform: `scaleX(${progress / 100})` }} /></div>
                   <div className="runner-top"><span>الجولة {round} من {selected.rounds}</span><b>{phase === 'work' ? 'وقت الحركة' : 'راحة قصيرة'}</b></div>
                   <div className="runner-stage">
-                    <figure className="runner-demo">
-                      <img src={runnerExercise.video} alt={`شرح متحرك لتمرين ${runnerExercise.name}`} />
-                      <figcaption>{runnerExercise.videoNote ?? 'اتبعي اتجاه الحركة بهدوء'}</figcaption>
-                    </figure>
+                    <div className="runner-demo"><LiteVideo key={runnerExercise.id} exercise={runnerExercise} /></div>
                     <div className={`timer-face ${phase === 'rest' ? 'is-rest' : ''}`}>
                       <span>{formatTime(secondsLeft)}</span>
                       <small>{phase === 'work' ? runnerExercise.name : `التالي: ${runnerExercise.name}`}</small>
                     </div>
                   </div>
-                  <p className="runner-cue">{phase === 'work' ? selected.exercises[exerciseIndex].cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}</p>
+                  <p className="runner-cue">{phase === 'work' ? runnerExercise.cue : nextExercise ? `التالي: ${nextExercise.name}` : 'آخر راحة قبل النهاية'}</p>
+                  {phase === 'work' && <Alternatives exercise={runnerExercise} compact />}
                   <div className="runner-controls">
                     <button type="button" className="runner-primary" onClick={() => setRunning((value) => !value)}>
                       {isRunning ? <><CirclePause /> إيقاف مؤقت</> : <><CirclePlay /> {secondsLeft === selected.work && exerciseIndex === 0 && round === 1 ? 'ابدئي' : 'كمّلي'}</>}
