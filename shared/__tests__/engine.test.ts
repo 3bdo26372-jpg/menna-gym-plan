@@ -90,6 +90,7 @@ describe('rewards and reports', () => {
     waterSpends: [],
     dayPasses: [],
     passGifts: [],
+    periods: [],
   }
 
   it('unlocks rewards on the day the active-day threshold is reached', () => {

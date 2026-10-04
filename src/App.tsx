@@ -13,8 +13,10 @@ const FoodPage = lazy(() => import('./pages/FoodPage').then((module) => ({ defau
 const MeasurementsPage = lazy(() => import('./pages/MeasurementsPage').then((module) => ({ default: module.MeasurementsPage })))
 const RewardsPage = lazy(() => import('./pages/RewardsPage').then((module) => ({ default: module.RewardsPage })))
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })))
+const PeriodPage = lazy(() => import('./pages/PeriodPage').then((module) => ({ default: module.PeriodPage })))
 
-const NAV: { route: Exclude<Route, 'workout'>; label: string; icon: typeof CalendarCheck }[] = [
+/** The period page has no tab of its own: the home page always links to it. */
+const NAV: { route: Exclude<Route, 'workout' | 'period'>; label: string; icon: typeof CalendarCheck }[] = [
   { route: 'today', label: 'اليوم', icon: CalendarCheck },
   { route: 'progress', label: 'التقدم', icon: ChartLine },
   { route: 'food', label: 'الأكل', icon: Utensils },
@@ -80,6 +82,7 @@ function Shell() {
             {route === 'measurements' && <MeasurementsPage />}
             {route === 'rewards' && <RewardsPage />}
             {route === 'reports' && <ReportsPage />}
+            {route === 'period' && <PeriodPage />}
           </Suspense>
         )}
         {status === 'ready' && error && <p className="toast" role="alert">{error}</p>}

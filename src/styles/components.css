@@ -255,3 +255,13 @@
 .gift-card > div { display: grid; gap: 8px; justify-items: start; }
 .gift-emoji { font-size: 40px; line-height: 1; }
 .gift-note { margin: 0; font-size: 18px; font-weight: 800; color: var(--berry-dark); }
+
+/* ---- period */
+.period-card { grid-template-columns: auto 1fr; align-items: start; border-color: var(--rose-200); background: linear-gradient(160deg, #fff, #fdf0f5); }
+.period-card > div { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.period-card.is-warning { border-color: #efd9b0; background: linear-gradient(160deg, #fff, var(--amber-soft)); }
+.period-card.is-warning .card-title { color: var(--amber); }
+.period-card.is-compact { padding: 14px 16px; box-shadow: none; }
+.period-card.is-compact .card-title { font-size: 16px; }
+.period-emoji { font-size: 32px; line-height: 1.1; }
+.period-end-form { padding-top: 12px; border-top: 1px solid var(--line); }
