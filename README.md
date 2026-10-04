@@ -75,11 +75,12 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The home page offers one when yesterday's workout was missed.
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
-  - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends.
+  - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
+  - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.
   - The next start is the latest start plus her average cycle: the gaps between her last 6 starts, ignoring gaps under 18 or over 50 days (usually a start that wasn't logged). Until there are two starts it uses 28 days. Period length works the same from the ends she logs (5 days by default).
   - The home page always has a period card. From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
-  - Starts less than 10 days apart are refused as the same period logged twice. Entries can be deleted from the page's history. Periods don't affect the score or points.
-  - The period page has no tab in the bottom bar (it stays at 6); the home page card links to it.
+  - Starts less than 10 days apart are refused as the same period logged twice. Periods don't affect the score or points.
+- **Bottom bar**: 7 tabs don't fit on a phone, so the bar scrolls sideways; the tab cut off at the edge shows there are more. The current tab is scrolled into view when a link opens a page.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.

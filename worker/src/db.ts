@@ -313,8 +313,8 @@ export async function addDayPass(db: D1Database, pass: Omit<DayPass, 'createdAt'
   await db.prepare('INSERT INTO day_passes (log_date, points) VALUES (?, ?)').bind(pass.date, pass.points).run()
 }
 
-export async function addPeriod(db: D1Database, startDate: string) {
-  await db.prepare('INSERT INTO periods (start_date) VALUES (?)').bind(startDate).run()
+export async function addPeriod(db: D1Database, startDate: string, endDate: string | null) {
+  await db.prepare('INSERT INTO periods (start_date, end_date) VALUES (?, ?)').bind(startDate, endDate).run()
 }
 
 export async function endPeriod(db: D1Database, id: number, endDate: string) {

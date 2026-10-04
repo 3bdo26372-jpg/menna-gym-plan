@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addDays } from '../date'
 import {
-  currentPeriod, cycleLengths, DEFAULT_CYCLE_DAYS, DEFAULT_PERIOD_DAYS, periodForecast, upcomingStarts, validatePeriodEnd, validatePeriodStart,
+  cycleLengths, DEFAULT_CYCLE_DAYS, DEFAULT_PERIOD_DAYS, periodForecast, upcomingStarts, validateNewPeriod, validatePeriodEnd,
   type PeriodEntry,
 } from '../period'
 
@@ -71,17 +71,25 @@ describe('logging a period', () => {
   const today = '2026-09-15'
 
   it('takes a start up to today', () => {
-    expect(validatePeriodStart({ startDate: today }, [], today)).toEqual({ startDate: today })
-    expect(validatePeriodStart({ startDate: '2026-08-20' }, [], today)).toEqual({ startDate: '2026-08-20' })
-    expect(validatePeriodStart({ startDate: addDays(today, 1) }, [], today)).toBeTypeOf('string')
-    expect(validatePeriodStart({ startDate: '2025-09-01' }, [], today)).toBeTypeOf('string')
-    expect(validatePeriodStart({ startDate: 'yesterday' }, [], today)).toBeTypeOf('string')
+    expect(validateNewPeriod({ startDate: today }, [], today)).toEqual({ startDate: today, endDate: null })
+    expect(validateNewPeriod({ startDate: '2026-08-20' }, [], today)).toEqual({ startDate: '2026-08-20', endDate: null })
+    expect(validateNewPeriod({ startDate: addDays(today, 1) }, [], today)).toBeTypeOf('string')
+    expect(validateNewPeriod({ startDate: '2025-09-01' }, [], today)).toBeTypeOf('string')
+    expect(validateNewPeriod({ startDate: 'yesterday' }, [], today)).toBeTypeOf('string')
+  })
+
+  it('takes a past month with its end in one go', () => {
+    expect(validateNewPeriod({ startDate: '2026-08-20', endDate: '2026-08-25' }, [], today)).toEqual({ startDate: '2026-08-20', endDate: '2026-08-25' })
+    expect(validateNewPeriod({ startDate: '2026-08-20', endDate: '' }, [], today)).toEqual({ startDate: '2026-08-20', endDate: null })
+    expect(validateNewPeriod({ startDate: '2026-08-20', endDate: '2026-08-19' }, [], today)).toBe('the end cannot be before the start')
+    expect(validateNewPeriod({ startDate: '2026-08-20', endDate: '2026-09-05' }, [], today)).toBe('that is too long for one period')
+    expect(validateNewPeriod({ startDate: '2026-08-20', endDate: '2026-08-31' }, [entry('2026-08-31')], today)).toBe('the end must be before the next start')
   })
 
   it('refuses the same period twice', () => {
     const logged = [entry('2026-09-10')]
-    expect(validatePeriodStart({ startDate: today }, logged, today)).toBe('a period is already logged near that date')
-    expect(validatePeriodStart({ startDate: '2026-08-12' }, logged, today)).toEqual({ startDate: '2026-08-12' })
+    expect(validateNewPeriod({ startDate: today }, logged, today)).toBe('a period is already logged near that date')
+    expect(validateNewPeriod({ startDate: '2026-08-12' }, logged, today)).toEqual({ startDate: '2026-08-12', endDate: null })
   })
 
   it('takes an end between the start and today, before the next start', () => {
@@ -97,11 +105,5 @@ describe('logging a period', () => {
 
     const shortCycle = entry('2026-08-12')
     expect(validatePeriodEnd({ endDate: '2026-08-12' }, older, [older, shortCycle], today)).toBe('the end must be before the next start')
-  })
-
-  it('lets the latest period be ended for two weeks after it starts', () => {
-    const current = entry('2026-09-10')
-    expect(currentPeriod([entry('2026-08-12'), current], today)).toBe(current)
-    expect(currentPeriod([current], addDays(current.startDate, 14))).toBeNull()
   })
 })

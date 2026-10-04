@@ -35,7 +35,7 @@ const byStart = (periods: PeriodEntry[]) => [...periods].sort((a, b) => a.startD
 const average = (values: number[]) => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
 
 /** Whether a gap between two starts is a real cycle that the average uses. */
-export const countsAsCycle = (days: number) => days >= CYCLE_RANGE.min && days <= CYCLE_RANGE.max
+const countsAsCycle = (days: number) => days >= CYCLE_RANGE.min && days <= CYCLE_RANGE.max
 
 /** The start logged after this one, if any. */
 export const nextEntry = (periods: PeriodEntry[], entry: PeriodEntry) => byStart(periods).find((item) => item.startDate > entry.startDate) ?? null
@@ -103,19 +103,18 @@ export function nearbyStart(periods: PeriodEntry[], date: string) {
   return periods.find((entry) => Math.abs(diffDays(entry.startDate, date)) < DUPLICATE_WINDOW_DAYS) ?? null
 }
 
-/** The latest period, while it is recent enough for its end to be set or corrected. */
-export function currentPeriod(periods: PeriodEntry[], today: string) {
-  const last = byStart(periods.filter((entry) => entry.startDate <= today)).at(-1)
-  return last && diffDays(last.startDate, today) < MAX_PERIOD_DAYS ? last : null
-}
-
-export function validatePeriodStart(input: unknown, periods: PeriodEntry[], today: string): string | { startDate: string } {
-  const startDate = input && typeof input === 'object' ? (input as Record<string, unknown>).startDate : undefined
+/** A new period: its start, and its end too when she logs a past one. */
+export function validateNewPeriod(input: unknown, periods: PeriodEntry[], today: string): string | { startDate: string; endDate: string | null } {
+  const fields = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
+  const startDate = fields.startDate
   if (!isIsoDate(startDate)) return 'invalid date'
   if (startDate > today) return 'the start cannot be in the future'
   if (diffDays(startDate, today) > MAX_PAST_DAYS) return 'that date is too far back'
   if (nearbyStart(periods, startDate)) return 'a period is already logged near that date'
-  return { startDate }
+  if (fields.endDate === undefined || fields.endDate === null || fields.endDate === '') return { startDate, endDate: null }
+  const entry: PeriodEntry = { id: 0, startDate, endDate: null, createdAt: '' }
+  const end = validatePeriodEnd(fields, entry, [...periods, entry], today)
+  return typeof end === 'string' ? end : { startDate, endDate: end.endDate }
 }
 
 export function validatePeriodEnd(input: unknown, entry: PeriodEntry, periods: PeriodEntry[], today: string): string | { endDate: string } {

@@ -5,7 +5,7 @@ import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
 import { validateSpend } from '../../shared/waterPoints'
 import { validatePass } from '../../shared/dayPasses'
-import { validatePeriodEnd, validatePeriodStart } from '../../shared/period'
+import { validateNewPeriod, validatePeriodEnd } from '../../shared/period'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
@@ -196,9 +196,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   // Periods don't touch the daily score, so nothing derived needs refreshing.
   if (method === 'POST' && path === '/api/periods') {
     const state = await loadState(env.DB, today)
-    const period = validatePeriodStart(await body(request), state.periods, today)
+    const period = validateNewPeriod(await body(request), state.periods, today)
     if (typeof period === 'string') throw new HttpError(400, period)
-    await addPeriod(env.DB, period.startDate)
+    await addPeriod(env.DB, period.startDate, period.endDate)
     return json(await afterWrite(env, today))
   }
   const periodItem = path.match(/^\/api\/periods\/(\d+)(\/end)?$/)

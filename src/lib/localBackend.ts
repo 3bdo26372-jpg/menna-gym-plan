@@ -7,7 +7,7 @@ import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
 import { validatePass, type DayPass } from '../../shared/dayPasses'
-import { validatePeriodEnd, validatePeriodStart, type PeriodEntry } from '../../shared/period'
+import { validateNewPeriod, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
@@ -186,13 +186,13 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    addPeriod: (startDate) => attempt(() => {
+    addPeriod: (startDate, endDate) => attempt(() => {
       const db = load()
       const list = db.periods ?? []
-      const period = validatePeriodStart({ startDate }, list, cairoDate())
+      const period = validateNewPeriod({ startDate, endDate }, list, cairoDate())
       if (typeof period === 'string') return fail(400, period)
       const id = list.reduce((max, item) => Math.max(max, item.id), 0) + 1
-      db.periods = [...list, { id, startDate: period.startDate, endDate: null, createdAt: new Date().toISOString() }]
+      db.periods = [...list, { id, ...period, createdAt: new Date().toISOString() }]
       save(db)
       return toState(db)
     }),
