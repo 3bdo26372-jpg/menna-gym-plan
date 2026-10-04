@@ -9,10 +9,12 @@ import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
 import { canAffordPass, canTakePass, missedWorkout, passPrice, unusedGifts } from '../../shared/dayPasses'
+import { periodForecast } from '../../shared/period'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
+import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
 import { scoreLevel } from '../components/ScoreCalendar'
 import { Card, Notice, ProgressBar, ScoreRing, StatTile } from '../components/ui'
@@ -70,6 +72,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
   const periodDays = state.days.filter((day) => day.date >= bounds.start && day.date <= state.today)
   const periodAverage = periodDays.length ? Math.round(periodDays.reduce((sum, day) => sum + day.score.total, 0) / periodDays.length) : 0
   const recentPain = [today, yesterday].some((day) => day?.feedback?.pain)
+  // The app can deploy before the Worker that sends periods; skip the card until it does.
+  const cycle = state.periods ? periodForecast(state.periods, state.today) : null
 
   return (
     <div className="page">
@@ -102,11 +106,15 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
         </Card>
       )}
 
+      {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
+
       <TodayWorkout state={state} day={today} plan={plan} />
 
       <ScoreBreakdown day={today} />
 
       <FoodToday state={state} />
+
+      {cycle && !isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
 
       <Card>
         <h2 className="card-title">ملخص سريع</h2>

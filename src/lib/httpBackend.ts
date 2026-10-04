@@ -44,6 +44,9 @@ export function createHttpBackend(baseUrl: string): Backend {
     deleteFood: (id) => request<AppState>('DELETE', `/api/food/${id}`),
     spendWaterPoints: (input) => request<AppState>('POST', '/api/water-points/spend', input),
     takeDayPass: (date) => request<AppState>('POST', '/api/day-passes', { date }),
+    addPeriod: (startDate, endDate) => request<AppState>('POST', '/api/periods', { startDate, endDate }),
+    endPeriod: (id, endDate) => request<AppState>('PUT', `/api/periods/${id}/end`, { endDate }),
+    deletePeriod: (id) => request<AppState>('DELETE', `/api/periods/${id}`),
     generateReport: (kind, periodIndex) => request<{ report: ReportData; state: AppState }>('POST', `/api/reports/${kind}/${periodIndex}`),
     getReport: (kind, periodIndex) => request<ReportData>('GET', `/api/reports/${kind}/${periodIndex}`),
   }

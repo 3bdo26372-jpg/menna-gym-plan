@@ -17,6 +17,7 @@ import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
 import type { DayPass, PassGift } from '../../shared/dayPasses'
+import type { PeriodEntry } from '../../shared/period'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -82,8 +83,9 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
     db.prepare('SELECT log_date, points, created_at FROM day_passes ORDER BY created_at'),
     db.prepare('SELECT id, note, created_at FROM pass_gifts ORDER BY id'),
+    db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -196,6 +198,12 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     waterSpends,
     dayPasses,
     passGifts: gifts.results.map((row): PassGift => ({ id: Number(row.id), note: (row.note as string | null) ?? null, createdAt: String(row.created_at) })),
+    periods: periods.results.map((row): PeriodEntry => ({
+      id: Number(row.id),
+      startDate: String(row.start_date),
+      endDate: (row.end_date as string | null) ?? null,
+      createdAt: String(row.created_at),
+    })),
   }
 }
 
@@ -303,6 +311,18 @@ export async function addWaterSpend(db: D1Database, spend: NewWaterSpend) {
 
 export async function addDayPass(db: D1Database, pass: Omit<DayPass, 'createdAt'>) {
   await db.prepare('INSERT INTO day_passes (log_date, points) VALUES (?, ?)').bind(pass.date, pass.points).run()
+}
+
+export async function addPeriod(db: D1Database, startDate: string, endDate: string | null) {
+  await db.prepare('INSERT INTO periods (start_date, end_date) VALUES (?, ?)').bind(startDate, endDate).run()
+}
+
+export async function endPeriod(db: D1Database, id: number, endDate: string) {
+  await db.prepare('UPDATE periods SET end_date = ? WHERE id = ?').bind(endDate, id).run()
+}
+
+export async function deletePeriod(db: D1Database, id: number) {
+  await db.prepare('DELETE FROM periods WHERE id = ?').bind(id).run()
 }
 
 export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {

@@ -1,6 +1,7 @@
 import type { FoodEntry } from './food'
 import type { WaterSpend } from './waterPoints'
 import type { DayPass, PassGift } from './dayPasses'
+import type { PeriodEntry } from './period'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -133,6 +134,7 @@ export interface AppState {
   waterSpends: WaterSpend[]
   dayPasses: DayPass[]
   passGifts: PassGift[]
+  periods: PeriodEntry[]
 }
 
 export interface MeasurementInput {

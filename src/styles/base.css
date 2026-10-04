@@ -59,8 +59,10 @@ svg { flex: none; }
 .brand-mark svg { width: 21px; }
 .brand-mark.large { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 18px; }
 
-.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 6px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(6, 1fr); background: rgba(255, 255, 255, 0.96); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
-.nav-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 14px; color: var(--muted); font-size: 11px; font-weight: 700; text-decoration: none; }
+/* On a phone the tabs don't all fit: they scroll sideways, and the cut-off one at the edge shows there are more. */
+.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 6px env(safe-area-inset-bottom); display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: 6px; scrollbar-width: none; background: rgba(255, 255, 255, 0.96); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
+.nav::-webkit-scrollbar { display: none; }
+.nav-link { flex: 1 0 78px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 14px; color: var(--muted); font-size: 11px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .nav-link svg { width: 22px; height: 22px; }
 .nav-link[aria-current='page'] { color: var(--berry-dark); background: var(--rose-100); }
 
@@ -74,7 +76,7 @@ svg { flex: none; }
   .app { padding-bottom: 32px; }
   .topbar { padding: 14px max(24px, calc((100vw - 1080px) / 2)); }
   .nav { position: static; height: auto; padding: 0; display: flex; gap: 4px; background: none; border: 0; backdrop-filter: none; }
-  .nav-link { flex-direction: row; gap: 8px; padding: 9px 14px; font-size: 14px; }
+  .nav-link { flex: none; flex-direction: row; gap: 8px; padding: 9px 12px; font-size: 14px; }
   .nav-link svg { width: 18px; height: 18px; }
   .main { padding: 28px 24px; }
   .page { gap: 20px; }

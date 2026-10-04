@@ -7,6 +7,7 @@ import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
 import { validatePass, type DayPass } from '../../shared/dayPasses'
+import { validateNewPeriod, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
@@ -28,6 +29,7 @@ interface LocalDb {
   foodEntries?: FoodEntry[]
   waterSpends?: WaterSpend[]
   dayPasses?: DayPass[]
+  periods?: PeriodEntry[]
 }
 
 function freshDb(): LocalDb {
@@ -76,6 +78,7 @@ function toState(db: LocalDb): AppState {
     waterSpends: db.waterSpends ?? [],
     dayPasses: db.dayPasses ?? [],
     passGifts: [],
+    periods: [...(db.periods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate)),
   }
 }
 
@@ -180,6 +183,32 @@ export function createLocalBackend(): Backend {
       const pass = validatePass({ date }, toState(db))
       if (typeof pass === 'string') return fail(400, pass)
       db.dayPasses = [...(db.dayPasses ?? []), { ...pass, createdAt: new Date().toISOString() }]
+      save(db)
+      return toState(db)
+    }),
+    addPeriod: (startDate, endDate) => attempt(() => {
+      const db = load()
+      const list = db.periods ?? []
+      const period = validateNewPeriod({ startDate, endDate }, list, cairoDate())
+      if (typeof period === 'string') return fail(400, period)
+      const id = list.reduce((max, item) => Math.max(max, item.id), 0) + 1
+      db.periods = [...list, { id, ...period, createdAt: new Date().toISOString() }]
+      save(db)
+      return toState(db)
+    }),
+    endPeriod: (id, endDate) => attempt(() => {
+      const db = load()
+      const list = db.periods ?? []
+      const entry = list.find((item) => item.id === id) ?? fail(404, 'period not found')
+      const end = validatePeriodEnd({ endDate }, entry, list, cairoDate())
+      if (typeof end === 'string') return fail(400, end)
+      entry.endDate = end.endDate
+      save(db)
+      return toState(db)
+    }),
+    deletePeriod: (id) => attempt(() => {
+      const db = load()
+      db.periods = (db.periods ?? []).filter((item) => item.id !== id)
       save(db)
       return toState(db)
     }),

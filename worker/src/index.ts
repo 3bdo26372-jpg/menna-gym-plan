@@ -5,13 +5,17 @@ import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
 import { validateSpend } from '../../shared/waterPoints'
 import { validatePass } from '../../shared/dayPasses'
+import { validateNewPeriod, validatePeriodEnd } from '../../shared/period'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
   addMeasurement,
   addDayPass,
+  addPeriod,
   addWaterSpend,
   deleteFood,
+  deletePeriod,
+  endPeriod,
   foodDate,
   loadReport,
   loadState,
@@ -187,6 +191,31 @@ async function route(request: Request, env: Env): Promise<Response> {
     if (typeof pass === 'string') throw new HttpError(pass.includes('not started') ? 409 : 400, pass)
     await addDayPass(env.DB, pass)
     return json(await afterWrite(env, today, pass.date))
+  }
+
+  // Periods don't touch the daily score, so nothing derived needs refreshing.
+  if (method === 'POST' && path === '/api/periods') {
+    const state = await loadState(env.DB, today)
+    const period = validateNewPeriod(await body(request), state.periods, today)
+    if (typeof period === 'string') throw new HttpError(400, period)
+    await addPeriod(env.DB, period.startDate, period.endDate)
+    return json(await afterWrite(env, today))
+  }
+  const periodItem = path.match(/^\/api\/periods\/(\d+)(\/end)?$/)
+  if (periodItem) {
+    const state = await loadState(env.DB, today)
+    const entry = state.periods.find((item) => item.id === Number(periodItem[1]))
+    if (!entry) throw new HttpError(404, 'period not found')
+    if (method === 'PUT' && periodItem[2]) {
+      const end = validatePeriodEnd(await body(request), entry, state.periods, today)
+      if (typeof end === 'string') throw new HttpError(400, end)
+      await endPeriod(env.DB, entry.id, end.endDate)
+      return json(await afterWrite(env, today))
+    }
+    if (method === 'DELETE' && !periodItem[2]) {
+      await deletePeriod(env.DB, entry.id)
+      return json(await afterWrite(env, today))
+    }
   }
 
   const report = path.match(/^\/api\/reports\/(week|month)\/(\d+)$/)

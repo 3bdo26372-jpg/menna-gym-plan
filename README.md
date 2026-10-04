@@ -22,11 +22,12 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - reward defaults and hiding locked rewards (`rewards.ts`)
   - water points: earning, spending and making up days (`waterPoints.ts`)
   - the monthly report builder (`report.ts`)
+  - period tracking and the next-period prediction (`period.ts`)
 - **`worker/`**: the Cloudflare Worker API.
   - D1 schema in `worker/migrations/`, queries in `worker/src/db.ts`, routes in `worker/src/index.ts`.
   - Seeding is idempotent (`INSERT OR IGNORE`, run the first time the API is used), so deploys never reset the baseline.
 - **`src/`**: the React app.
-  - Pages: `pages/` (Today, Progress, Measurements, Rewards, Reports).
+  - Pages: `pages/` (Today, Progress, Measurements, Rewards, Reports, Period).
   - Workout player: `workout/`.
   - Monthly PDF: `report/`, rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
   - Persistence goes through the `Backend` interface in `lib/backend.ts`:
@@ -73,6 +74,13 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The first pass is free. Later ones cost 50 points.
   - The home page offers one when yesterday's workout was missed.
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
+- **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
+  - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
+  - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.
+  - The next start is the latest start plus her average cycle: the gaps between her last 6 starts, ignoring gaps under 18 or over 50 days (usually a start that wasn't logged). Until there are two starts it uses 28 days. Period length works the same from the ends she logs (5 days by default).
+  - The home page always has a period card. From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
+  - Starts less than 10 days apart are refused as the same period logged twice. Periods don't affect the score or points.
+- **Bottom bar**: 7 tabs don't fit on a phone, so the bar scrolls sideways; the tab cut off at the edge shows there are more. The current tab is scrolled into view when a link opens a page.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -81,7 +89,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns, 0007 gift passes) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns, 0007 gift passes, 0008 periods) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -97,6 +105,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `water_point_spends` | water points spent on requests, surprise gifts and made-up days |
 | `day_passes` | days completed with a pass, and the points each cost |
 | `pass_gifts` | gifted free passes and their notes |
+| `periods` | each period's start date and, once marked, its last day |
 | `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media
