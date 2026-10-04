@@ -44,19 +44,19 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
 
   const startedToday = !nearbyStart(state.periods, state.today) && (
     <button type="button" className="button primary" disabled={busy} onClick={() => void run(() => addPeriod(state.today))}>
-      {busy ? 'لحظة…' : 'بدأت النهارده 🩸'}
+      {busy ? 'لحظة…' : 'بدأ النهارده'}
     </button>
   )
-  const details = !onPage && <a className="text-link" href="#/period">تفاصيل الدورة <ChevronLeft /></a>
-  const pickDate = <a className="text-link" href="#/period/log">بدأت يوم تاني؟ اختاري التاريخ <ChevronLeft /></a>
+  const details = !onPage && <a className="text-link" href="#/period">تفاصيل البريود <ChevronLeft /></a>
+  const pickDate = <a className="text-link" href="#/period/log">بدأ يوم تاني؟ اختاري التاريخ <ChevronLeft /></a>
 
   if (phase === 'unknown' || !last || !nextStart || daysUntil === null) {
     return (
       <Card className="period-card">
         <span className="period-emoji" aria-hidden="true">🌸</span>
         <div>
-          <h2 className="card-title">متابعة الدورة</h2>
-          <p className="muted small">سجّلي آخر مرة الدورة بدأت فيها، وهنحسب ميعاد الجاية وننبّهك قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
+          <h2 className="card-title">متابعة البريود</h2>
+          <p className="muted small">سجّلي آخر مرة البريود بدأ فيها، وهنحسب ميعاد اللي جاي وننبّهك قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
           <a className="button secondary" href="#/period/log">سجّلي آخر مرة</a>
           {startedToday}
           {error && <Notice tone="care">{error}</Notice>}
@@ -70,11 +70,11 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
       <Card className="period-card">
         <span className="period-emoji" aria-hidden="true">🌸</span>
         <div>
-          <h2 className="card-title">اليوم {forecast.periodDay} من الدورة</h2>
+          <h2 className="card-title">اليوم {forecast.periodDay} من البريود</h2>
           <p className="muted small">خفّفي على نفسك: لو أي تمرين تقيل دوسي «صعب؟ أسهل»، واشربي مية كتير 💧</p>
           {!last.endDate && (
             <button type="button" className="button secondary" disabled={busy} onClick={() => void run(() => endPeriod(last.id, state.today))}>
-              {busy ? 'لحظة…' : 'خلصت النهارده ✓'}
+              {busy ? 'لحظة…' : 'خلص النهارده ✓'}
             </button>
           )}
           {error && <Notice tone="care">{error}</Notice>}
@@ -89,8 +89,8 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
       <Card className="period-card is-compact">
         <span className="period-emoji" aria-hidden="true">🌸</span>
         <div>
-          <h2 className="card-title">الدورة الجاية {inDays(daysUntil)}</h2>
-          <p className="muted small">متوقعة يوم {formatDateLong(nextStart)}، وهننبّهك قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
+          <h2 className="card-title">البريود الجاي {inDays(daysUntil)}</h2>
+          <p className="muted small">متوقع يوم {formatDateLong(nextStart)}، وهننبّهك قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
           {onPage ? pickDate : details}
         </div>
       </Card>
@@ -102,11 +102,11 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
     <Card className="period-card is-warning">
       <span className="period-emoji" aria-hidden="true">{late ? '🗓️' : '⏰'}</span>
       <div>
-        <h2 className="card-title">{late ? `الدورة متأخرة ${dayCount(late)}` : `الدورة متوقعة ${inDays(daysUntil)}`}</h2>
+        <h2 className="card-title">{late ? `البريود متأخر ${dayCount(late)}` : `البريود متوقع ${inDays(daysUntil)}`}</h2>
         <p className="small">
           {late
-            ? `كانت متوقعة يوم ${formatDateShort(nextStart)}. أول ما تيجي سجّليها عشان نظبط الحسبة.`
-            : `متوقعة يوم ${formatDateLong(nextStart)}. جهّزي حاجتك في الشنطة 👜`}
+            ? `كان متوقع يوم ${formatDateShort(nextStart)}. أول ما ييجي سجّليه عشان نظبط الحسبة.`
+            : `متوقع يوم ${formatDateLong(nextStart)}. جهّزي حاجتك في الشنطة 👜`}
         </p>
         {late > 7 && <p className="muted small">التأخير كام يوم بيحصل عادي، ولو اتكرر أو طوّل كلّمي دكتورة.</p>}
         {startedToday}

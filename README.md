@@ -74,8 +74,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The first pass is free. Later ones cost 50 points.
   - The home page offers one when yesterday's workout was missed.
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
-- **Period tracking (الدورة)** (`shared/period.ts`, page `#/period`):
-  - Menna logs the day a period starts, with one tap on the home page (**بدأت النهارده**) or any date on the period page, and optionally the day it ends.
+- **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
+  - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends.
   - The next start is the latest start plus her average cycle: the gaps between her last 6 starts, ignoring gaps under 18 or over 50 days (usually a start that wasn't logged). Until there are two starts it uses 28 days. Period length works the same from the ends she logs (5 days by default).
   - The home page always has a period card. From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
   - Starts less than 10 days apart are refused as the same period logged twice. Entries can be deleted from the page's history. Periods don't affect the score or points.

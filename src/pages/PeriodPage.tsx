@@ -16,8 +16,8 @@ export function PeriodPage() {
   const loggedLengths = state.periods.some((entry) => entry.endDate)
   return (
     <div className="page">
-      <PageHeader eyebrow="الدورة" title="متابعة الدورة">
-        <p>سجّلي اليوم اللي الدورة بتبدأ فيه، وإحنا نحسب ميعاد الجاية من دورتك انتي وننبّهك في الصفحة الرئيسية قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
+      <PageHeader eyebrow="البريود" title="متابعة البريود">
+        <p>سجّلي اليوم اللي البريود بيبدأ فيه، وإحنا نحسب ميعاد اللي جاي من مواعيدك انتي وننبّهك في الصفحة الرئيسية قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
       </PageHeader>
 
       <PeriodCard state={state} forecast={forecast} onPage />
@@ -27,15 +27,15 @@ export function PeriodPage() {
           <h2 className="card-title"><CalendarHeart /> الحسبة</h2>
           <div className="stat-grid">
             <StatTile
-              label="الدورة الجاية" value={formatDateShort(forecast.nextStart)} tone="accent"
-              hint={forecast.daysUntil < 0 ? `متأخرة ${dayCount(-forecast.daysUntil)}` : inDays(forecast.daysUntil)}
+              label="البريود الجاي" value={formatDateShort(forecast.nextStart)} tone="accent"
+              hint={forecast.daysUntil < 0 ? `متأخر ${dayCount(-forecast.daysUntil)}` : inDays(forecast.daysUntil)}
             />
             <StatTile
-              label="من دورة للتانية" value={forecast.cycleDays} unit="يوم"
-              hint={forecast.cyclesUsed ? `متوسط آخر ${forecast.cyclesUsed === 1 ? 'دورة' : `${forecast.cyclesUsed} دورات`}` : 'افتراضي لحد ما تسجّلي مرتين'}
+              label="من بريود للتاني" value={forecast.cycleDays} unit="يوم"
+              hint={forecast.cyclesUsed ? `متوسط آخر ${forecast.cyclesUsed === 1 ? 'مرة' : `${forecast.cyclesUsed} مرات`}` : 'افتراضي لحد ما تسجّلي مرتين'}
             />
             <StatTile
-              label="مدة الدورة" value={forecast.periodDays} unit={forecast.periodDays >= 3 && forecast.periodDays <= 10 ? 'أيام' : 'يوم'}
+              label="مدة البريود" value={forecast.periodDays} unit={forecast.periodDays >= 3 && forecast.periodDays <= 10 ? 'أيام' : 'يوم'}
               hint={loggedLengths ? 'من اللي سجّلتيه' : 'افتراضي لحد ما تسجّلي النهاية'}
             />
           </div>
@@ -43,7 +43,7 @@ export function PeriodPage() {
             <span className="muted small">المواعيد الجاية:</span>
             {upcomingStarts(forecast).map((date) => <span key={date} className="chip soft">{formatDateShort(date)}</span>)}
           </div>
-          <p className="muted small">الحسبة تقريبية: الدورة ممكن تيجي قبل أو بعد ميعادها بكام يوم، وكل ما تسجّلي أكتر الحسبة بتبقى أدق.</p>
+          <p className="muted small">الحسبة تقريبية: البريود ممكن ييجي قبل أو بعد ميعاده بكام يوم، وكل ما تسجّلي أكتر الحسبة بتبقى أدق.</p>
         </Card>
       )}
 
@@ -56,7 +56,7 @@ export function PeriodPage() {
             {history.map((entry) => <HistoryItem key={entry.id} entry={entry} periods={state.periods} />)}
           </ul>
         ) : (
-          <EmptyState icon={<CalendarHeart />} title="لسه مفيش حاجة متسجلة">سجّلي آخر مرة الدورة بدأت فيها من فوق.</EmptyState>
+          <EmptyState icon={<CalendarHeart />} title="لسه مفيش حاجة متسجلة">سجّلي آخر مرة البريود بدأ فيها من فوق.</EmptyState>
         )}
       </Card>
     </div>
@@ -93,16 +93,16 @@ function LogForms({ periods, today }: { periods: PeriodEntry[]; today: string })
       <h2 className="card-title">سجّلي</h2>
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void run(() => addPeriod(start), 'اتسجلت البداية ✓', () => setStart('')) }}>
         <label className="field narrow">
-          <span>الدورة بدأت يوم</span>
+          <span>البريود بدأ يوم</span>
           <input type="date" value={start} min={addDays(today, -MAX_PAST_DAYS)} max={today} required onChange={(event) => setStart(event.target.value)} />
         </label>
-        {clash && <Notice tone="care">فيه دورة متسجلة بدأت يوم {formatDateShort(clash.startDate)}، قريب أوي من التاريخ ده. لو التاريخ القديم غلط امسحيه من السجل الأول.</Notice>}
+        {clash && <Notice tone="care">فيه بريود متسجل بدأ يوم {formatDateShort(clash.startDate)}، قريب أوي من التاريخ ده. لو التاريخ القديم غلط امسحيه من السجل الأول.</Notice>}
         <button type="submit" className="button primary" disabled={busy || !start || Boolean(clash)}>{busy ? 'جاري الحفظ…' : 'سجّلي البداية'}</button>
       </form>
       {current && (
         <form className="form-stack period-end-form" onSubmit={(event) => { event.preventDefault(); void run(() => endPeriod(current.id, end), 'اتسجلت النهاية ✓') }}>
           <label className="field narrow">
-            <span>آخر يوم في الدورة اللي بدأت {formatDateShort(current.startDate)}</span>
+            <span>آخر يوم في البريود اللي بدأ {formatDateShort(current.startDate)}</span>
             <input type="date" value={end} min={current.startDate} max={lastEndDay} required onChange={(event) => setEnd(event.target.value)} />
           </label>
           <button type="submit" className="button secondary" disabled={busy || !end || end === current.endDate}>
@@ -129,11 +129,11 @@ function HistoryItem({ entry, periods }: { entry: PeriodEntry; periods: PeriodEn
       <div className="history-values">
         <span className="chip soft">{length ? `${dayCount(length)}${entry.endDate ? ` · لحد ${formatDateShort(entry.endDate)}` : ''}` : 'النهاية مش متسجلة'}</span>
         {/* A gap left out of the average usually means a start wasn't logged. */}
-        {cycle !== null && <span className="chip soft">لحد اللي بعدها {cycle} يوم{countsAsCycle(cycle) ? '' : ' (مش محسوبة في المتوسط)'}</span>}
+        {cycle !== null && <span className="chip soft">لحد اللي بعده {cycle} يوم{countsAsCycle(cycle) ? '' : ' (مش محسوب في المتوسط)'}</span>}
       </div>
       {confirming ? (
         <span className="spend-confirm">
-          تمسحيها؟
+          تمسحيه؟
           <button type="button" className="button secondary" disabled={busy} onClick={async () => {
             setBusy(true)
             setError(null)
