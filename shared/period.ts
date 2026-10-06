@@ -127,3 +127,19 @@ export function validatePeriodEnd(input: unknown, entry: PeriodEntry, periods: P
   if (next && endDate >= next.startDate) return 'the end must be before the next start'
   return { endDate }
 }
+
+/**
+ * Period pain, rated 1–10 for a day (0 when she says there is none). Above this, the day is a rest day: the
+ * workout's points count without training, but the day only counts as a
+ * workout day (for rewards and streaks) if she actually trains.
+ */
+export const PAIN_REST_ABOVE = 4
+export const isPainRest = (pain: number | null | undefined) => (pain ?? 0) > PAIN_REST_ABOVE
+
+/** A pain rating 1–10, 0 for none, or null to clear it. */
+export function validatePain(input: unknown): number | null | string {
+  const level = input && typeof input === 'object' ? (input as Record<string, unknown>).level : undefined
+  if (level === null) return null
+  if (typeof level !== 'number' || !Number.isInteger(level) || level < 0 || level > 10) return 'level must be 0–10, or null'
+  return level
+}

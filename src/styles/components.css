@@ -103,6 +103,8 @@
 .welcome .button { max-width: 420px; }
 .today-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .today-head h1 { font-size: clamp(26px, 7vw, 34px); color: var(--berry-dark); }
+.today-head > div { min-width: 0; }
+.greeting-line { margin-top: 4px; max-width: 520px; color: var(--muted); font-size: 15px; font-weight: 600; }
 .today-card { gap: 16px; }
 .today-card-head { display: grid; gap: 10px; }
 .today-card-head h2 { font-size: 24px; color: var(--berry-dark); }
@@ -271,3 +273,6 @@
 .period-row-edit td > * + * { margin-top: 8px; }
 .period-row-form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
 .period-row-form .field { flex: 1 1 160px; }
+.pain-scale { display: grid; gap: 8px; width: 100%; }
+.pain-scale .choice-options .choice { min-height: 42px; font: 800 16px var(--font-num); }
+.pain-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

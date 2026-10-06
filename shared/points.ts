@@ -1,5 +1,6 @@
 import { CALORIE_FLOOR_KCAL, calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
 import { isWater, type FoodEntry } from './food'
+import { isPainRest } from './period'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { isLegacyDay } from './scoring'
 import type { AppState, DayRecord } from './types'
@@ -12,7 +13,8 @@ import type { AppState, DayRecord } from './types'
  * - a finished day eaten within the calorie range (1,200 up to the top): 5
  * - a finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10
  *   (the score she earned herself; a day pass or makeup doesn't count)
- * - every 7 workout days in a row: 15
+ * - every 7 workout days in a row: 15 (a period-pain rest day doesn't count,
+ *   but doesn't break the run either)
  * Everything is derived from the log, so deleting an entry takes its points back.
  *
  * Days before NEW_SYSTEM_FROM keep the points they earned under the original
@@ -32,8 +34,8 @@ export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'it
   return byDate
 }
 
-/** The score she earned herself, without a day pass or makeup. */
-export const earnedScore = (day: Pick<DayRecord, 'score'>) => day.score.total - day.score.pass - day.score.makeup
+/** The score she earned herself, without a day pass, makeup or a period-pain rest. */
+export const earnedScore = (day: Pick<DayRecord, 'score'>) => day.score.total - day.score.pass - day.score.makeup - (day.score.rest ?? 0)
 
 /** The original water points: a point per 250 ml up to 2.5 L, plus 5 for reaching 2 L. */
 export const legacyWaterPoints = (ml: number) => Math.min(10, Math.floor(ml / 250)) + (ml >= 2000 ? 5 : 0)
@@ -66,7 +68,8 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
     }
     const fromScore = isLegacyDay(day.date) ? 0 : scorePoints(earnedScore(day))
     if (fromScore) result.push({ date: day.date, kind: 'score', points: fromScore })
-    streak = trained(day) ? streak + 1 : 0
+    if (trained(day)) streak += 1
+    else if (!isPainRest(day.periodPain)) streak = 0
     if (streak === STREAK_DAYS) {
       result.push({ date: day.date, kind: 'streak', points: EARN.streak })
       streak = 0

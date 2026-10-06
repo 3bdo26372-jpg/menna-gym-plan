@@ -73,7 +73,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
-    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
+    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json, period_pain FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
     db.prepare('SELECT * FROM workouts'),
     db.prepare('SELECT * FROM workout_exercises ORDER BY workout_id, position'),
     db.prepare('SELECT * FROM rewards ORDER BY sort_order'),
@@ -163,6 +163,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       checkin: parse<CheckIn>(row.checkin_json),
       workout: workoutByDate.get(date) ?? null,
       feedback: parse<Feedback>(row.feedback_json),
+      periodPain: row.period_pain === null || row.period_pain === undefined ? null : Number(row.period_pain),
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
@@ -213,12 +214,12 @@ export async function refreshDerived(db: D1Database, state: AppState, date: stri
   const statements: D1PreparedStatement[] = []
   if (day) {
     statements.push(db.prepare(`
-      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, water_points, calorie_points, makeup_points, pass_points, total, computed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO daily_scores (log_date, checkin_points, workout_points, warmup_cooldown_points, feedback_points, water_points, calorie_points, makeup_points, pass_points, rest_points, total, computed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (log_date) DO UPDATE SET checkin_points = excluded.checkin_points, workout_points = excluded.workout_points,
         warmup_cooldown_points = excluded.warmup_cooldown_points, feedback_points = excluded.feedback_points,
-        water_points = excluded.water_points, calorie_points = excluded.calorie_points, makeup_points = excluded.makeup_points, pass_points = excluded.pass_points, total = excluded.total, computed_at = excluded.computed_at
-    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.water, day.score.calories, day.score.makeup, day.score.pass, day.score.total, now()))
+        water_points = excluded.water_points, calorie_points = excluded.calorie_points, makeup_points = excluded.makeup_points, pass_points = excluded.pass_points, rest_points = excluded.rest_points, total = excluded.total, computed_at = excluded.computed_at
+    `).bind(date, day.score.checkin, day.score.workout, day.score.warmupCooldown, day.score.feedback, day.score.water, day.score.calories, day.score.makeup, day.score.pass, day.score.rest, day.score.total, now()))
   }
   for (const unlock of newRewardUnlocks(state.days, state.rewards)) {
     statements.push(db.prepare('INSERT OR IGNORE INTO reward_unlocks (reward_id, unlocked_on) VALUES (?, ?)').bind(unlock.id, unlock.unlockedOn))
@@ -255,6 +256,10 @@ export async function saveWorkout(db: D1Database, date: string, workout: Workout
     `).bind(date, position, item.blockId, item.slot, item.plannedExerciseId, item.exerciseId, item.plannedSeconds, item.completedSeconds, item.switched ? 1 : 0))
   })
   await db.batch(statements)
+}
+
+export async function savePeriodPain(db: D1Database, date: string, level: number | null) {
+  await db.prepare('UPDATE daily_logs SET period_pain = ?, updated_at = ? WHERE log_date = ?').bind(level, now(), date).run()
 }
 
 export async function saveFeedback(db: D1Database, date: string, feedback: Feedback) {

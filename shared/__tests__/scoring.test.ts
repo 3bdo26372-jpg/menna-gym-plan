@@ -7,7 +7,7 @@ const goodFood = { waterMl: 2000, calories: 1800, calorieMax: 1950 }
 describe('daily score: 40 workout + 30 water + 30 calories', () => {
   it('is 100 for a full workout, enough water and eating within the range', () => {
     expect(computeDailyScore({ checkin, workout: workout(), feedback: feedback() }, 0, false, goodFood)).toEqual({
-      checkin: 6, workout: 24, warmupCooldown: 4, feedback: 6, water: 30, calories: 30, makeup: 0, pass: 0, total: 100,
+      checkin: 6, workout: 24, warmupCooldown: 4, feedback: 6, water: 30, calories: 30, makeup: 0, pass: 0, rest: 0, total: 100,
     })
   })
 
@@ -51,5 +51,25 @@ describe('daily score: 40 workout + 30 water + 30 calories', () => {
   it('lets a day pass fill whatever is missing, up to 100', () => {
     expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true, goodFood)).toMatchObject({ pass: 40, water: 30, calories: 30, total: 100 })
     expect(computeDailyScore({ checkin: null, workout: null, feedback: null }, 0, true)).toMatchObject({ pass: 100, total: 100 })
+  })
+})
+
+describe('period-pain rest day', () => {
+  const none = { checkin: null, workout: null, feedback: null }
+
+  it('fills in the 40 workout points when the pain is above 4', () => {
+    expect(computeDailyScore({ ...none, periodPain: 5 }, 0, false, goodFood)).toMatchObject({ rest: 40, water: 30, calories: 30, total: 100 })
+    expect(computeDailyScore({ ...none, periodPain: 4 }, 0, false, goodFood)).toMatchObject({ rest: 0, total: 60 })
+    expect(computeDailyScore({ ...none, periodPain: 0 }).rest).toBe(0)
+  })
+
+  it('tops up a tiny workout to the same 40, never more', () => {
+    const half = computeDailyScore({ checkin, workout: workout({ mainCompletion: 0.5 }), feedback: null, periodPain: 8 })
+    expect(half.checkin + half.workout + half.warmupCooldown + half.feedback + half.rest).toBe(40)
+    expect(computeDailyScore({ checkin, workout: workout(), feedback: feedback(), periodPain: 8 }).rest).toBe(0)
+  })
+
+  it('leaves a day pass only the rest of the day to fill', () => {
+    expect(computeDailyScore({ ...none, periodPain: 9 }, 0, true)).toMatchObject({ rest: 40, pass: 60, total: 100 })
   })
 })

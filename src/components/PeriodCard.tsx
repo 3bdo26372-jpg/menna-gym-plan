@@ -4,6 +4,7 @@ import { formatDateLong, formatDateShort } from '../../shared/date'
 import { nearbyStart, WARN_DAYS_BEFORE, type PeriodForecast } from '../../shared/period'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
+import { PainCheck } from './PeriodPain'
 import { Card, Notice } from './ui'
 
 /** "يوم", "يومين", "3 أيام", "11 يوم". */
@@ -60,6 +61,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
           <a className="button secondary" href="#/period/log">سجّلي آخر مرة</a>
           {startedToday}
           {error && <Notice tone="care">{error}</Notice>}
+          <PainCheck state={state} />
         </div>
       </Card>
     )
@@ -72,6 +74,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
         <div>
           <h2 className="card-title">اليوم {forecast.periodDay} من البريود</h2>
           <p className="muted small">خفّفي على نفسك: لو أي تمرين تقيل دوسي «صعب؟ أسهل»، واشربي مية كتير 💧</p>
+          <PainCheck state={state} open />
           {!last.endDate && (
             <button type="button" className="button secondary" disabled={busy} onClick={() => void run(() => endPeriod(last.id, state.today))}>
               {busy ? 'لحظة…' : 'خلص النهارده ✓'}
@@ -91,6 +94,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
         <div>
           <h2 className="card-title">البريود الجاي {inDays(daysUntil)}</h2>
           <p className="muted small">متوقع يوم {formatDateLong(nextStart)}، وهننبّهك قبلها بـ {WARN_DAYS_BEFORE} أيام.</p>
+          <PainCheck state={state} />
           {onPage ? pickDate : details}
         </div>
       </Card>
@@ -109,6 +113,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
             : `متوقع يوم ${formatDateLong(nextStart)}. جهّزي حاجتك في الشنطة 👜`}
         </p>
         {late > 7 && <p className="muted small">التأخير كام يوم بيحصل عادي، ولو اتكرر أو طوّل كلّمي دكتورة.</p>}
+        <PainCheck state={state} open />
         {startedToday}
         {error && <Notice tone="care">{error}</Notice>}
         {pickDate}

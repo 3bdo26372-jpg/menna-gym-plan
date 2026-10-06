@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { m } from 'framer-motion'
 import { CalendarDays, Check, ChevronLeft, Droplets, Flame, Gift, Play, Sparkles, Timer, Utensils } from 'lucide-react'
 import { formatLitres, waterMl, WATER_TARGET_ML } from '../../shared/food'
-import { addDays, dayNumberFor, formatDateLong, periodBounds, periodForDay, PERIOD_DAYS } from '../../shared/date'
+import { addDays, cairoTime, dayNumberFor, formatDateLong, periodBounds, periodForDay, PERIOD_DAYS } from '../../shared/date'
 import { measurementComparison, nextReward, summaryStats } from '../../shared/engine'
 import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
 import { canAffordPass, canTakePass, missedWorkout, passPrice, unusedGifts } from '../../shared/dayPasses'
-import { periodForecast } from '../../shared/period'
+import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
+import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
@@ -19,6 +20,7 @@ import { SafetyNote } from '../components/SafetyNote'
 import { scoreLevel } from '../components/ScoreCalendar'
 import { Card, Notice, ProgressBar, ScoreRing, StatTile } from '../components/ui'
 import { formatChange, formatNumber } from '../lib/format'
+import { greetingFor } from '../lib/greetings'
 import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS, OVERALL_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
 import { useAppData, useAppState } from '../state/AppData'
@@ -80,7 +82,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       <header className="today-head">
         <div>
           <p className="eyebrow">اليوم {dayNumber} · {formatDateLong(state.today)}</p>
-          <h1>أهلًا يا منّة</h1>
+          <Greeting state={state} day={today} dayNumber={dayNumber} cycle={cycle} />
         </div>
         <ScoreRing score={today?.score.total ?? 0} size={92} />
       </header>
@@ -98,7 +100,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
           </div>
         </Card>
       ))}
-      {yesterday && missedWorkout(yesterday) && canTakePass(yesterday) && canAffordPass(state) && unusedGifts(state).length === 0 && (
+      {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPass(state) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
           <p className="muted">عندك إكسبشن{passPrice(state) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
@@ -150,6 +152,39 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
         </Card>
       </div>
     </div>
+  )
+}
+
+/** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
+function useCairoHour() {
+  const read = () => Number(cairoTime().slice(0, 2))
+  const [hour, setHour] = useState(read)
+  useEffect(() => {
+    const timer = window.setInterval(() => setHour(read()), 60_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  return hour
+}
+
+/** A line that follows her day: pain, water, the workout, or the time. */
+function Greeting({ state, day, dayNumber, cycle }: { state: AppState; day: DayRecord | undefined; dayNumber: number; cycle: PeriodForecast | null }) {
+  const hour = useCairoHour()
+  const pain = day?.periodPain ?? 0
+  const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))
+  const greeting = greetingFor({
+    dayNumber,
+    hour,
+    painRest: isPainRest(pain),
+    periodDay: pain > 0 || cycle?.phase === 'period',
+    trained: (day?.workout?.mainCompletion ?? 0) >= ACTIVE_DAY_MIN_COMPLETION,
+    waterDone: water >= WATER_TARGET_ML,
+    score: day?.score.total ?? 0,
+  })
+  return (
+    <>
+      <h1>{greeting.title}</h1>
+      <p className="greeting-line">{greeting.line}</p>
+    </>
   )
 }
 
@@ -298,9 +333,11 @@ function YesterdayFeedback({ day }: { day: DayRecord }) {
 
 function ScoreBreakdown({ day }: { day: DayRecord | undefined }) {
   const score = day?.score
-  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0)
+  // A period-pain rest day fills the workout's points in, shown as part of the workout.
+  const rest = score?.rest ?? 0
+  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + rest
   const rows = [
-    { label: 'التمرين', value: workout, max: WORKOUT_SHARE, href: undefined as string | undefined },
+    { label: rest ? 'التمرين · راحة البريود 🌸' : 'التمرين', value: workout, max: WORKOUT_SHARE, href: rest ? '#/period' : undefined as string | undefined },
     { label: 'المية', value: score?.water ?? 0, max: SCORE_POINTS.water, href: '#/food/water' },
     { label: 'السعرات في الرينج', value: score?.calories ?? 0, max: SCORE_POINTS.calories, href: '#/food/calories' },
     ...(score?.pass || score?.makeup ? [{ label: 'إكسبشن 🎟️', value: (score.pass ?? 0) + (score.makeup ?? 0), max: (score.pass ?? 0) + (score.makeup ?? 0), href: '#/rewards/passes' }] : []),
@@ -330,7 +367,7 @@ function RecentStrip({ days, today }: { days: DayRecord[]; today: string }) {
       {recent.map((date) => {
         const day = byDate.get(date)
         return (
-          <m.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
+          <m.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}${day.score.rest ? ' · راحة البريود 🌸' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
             <span className="cal-score">{day ? day.score.total : ''}</span>
           </m.span>
         )

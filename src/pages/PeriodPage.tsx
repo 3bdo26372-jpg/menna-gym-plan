@@ -6,6 +6,7 @@ import {
   type PeriodEntry,
 } from '../../shared/period'
 import { dayCount, inDays, PeriodCard } from '../components/PeriodCard'
+import { PainScale } from '../components/PeriodPain'
 import { Card, EmptyState, Notice, PageHeader, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
@@ -14,6 +15,7 @@ export function PeriodPage() {
   const forecast = periodForecast(state.periods, state.today)
   const history = [...state.periods].sort((a, b) => b.startDate.localeCompare(a.startDate))
   const loggedLengths = state.periods.some((entry) => entry.endDate)
+  const yesterday = state.days.find((day) => day.date === addDays(state.today, -1))
   return (
     <div className="page">
       <PageHeader eyebrow="البريود" title="متابعة البريود">
@@ -21,6 +23,13 @@ export function PeriodPage() {
       </PageHeader>
 
       <PeriodCard state={state} forecast={forecast} onPage />
+
+      {yesterday && (
+        <Card>
+          <h2 className="card-title">وجع امبارح</h2>
+          <PainScale date={yesterday.date} current={yesterday.periodPain ?? null} legend="نسيتي تسجّليه؟ قيّميه من 10 ويتحسب ليوم امبارح" />
+        </Card>
+      )}
 
       <LogForm periods={state.periods} today={state.today} />
 
