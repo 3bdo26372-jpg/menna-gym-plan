@@ -15,6 +15,7 @@ export interface Backend {
   saveCheckin(date: string, input: CheckInInput): Promise<AppState>
   saveWorkout(date: string, input: WorkoutInput): Promise<AppState>
   saveFeedback(date: string, input: FeedbackInput): Promise<AppState>
+  savePeriodPain(date: string, level: number | null): Promise<AppState>
   addMeasurement(input: MeasurementInput): Promise<AppState>
   markRewardCelebrated(id: string): Promise<AppState>
   addFood(date: string, input: FoodInput): Promise<AppState>

@@ -17,9 +17,9 @@ const water = (date: string, ml: number) => food(date, 'مية', 'drink', ml)
 const spend = (overrides: Partial<WaterSpend>): WaterSpend => ({ id: 1, kind: 'request', points: 30, note: 'x', date: null, status: 'pending', createdAt: '', doneAt: null, ...overrides })
 
 /** A day as the app builds it: score from the workout parts plus that day's water and food. */
-function makeDay(dayNumber: number, foodEntries: FoodEntry[], parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused'>> = {}): DayRecord {
+function makeDay(dayNumber: number, foodEntries: FoodEntry[], parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused' | 'periodPain'>> = {}): DayRecord {
   const date = addDays(start, dayNumber - 1)
-  const base = { checkin: null, workout: null, feedback: null, excused: false, ...parts }
+  const base = { checkin: null, workout: null, feedback: null, excused: false, periodPain: null, ...parts }
   return { date, dayNumber, ...base, score: computeDailyScore(base, 0, base.excused, foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber)) }
 }
 const full = { checkin, workout: workout(), feedback: feedback() }
@@ -126,7 +126,7 @@ describe('days before the new system keep what they earned', () => {
   const old = '2026-09-29'
   const oldDay = (offset: number, entries: FoodEntry[], parts: Partial<Pick<DayRecord, 'checkin' | 'workout' | 'feedback' | 'excused'>> = {}): DayRecord => {
     const date = addDays(old, offset)
-    const base = { checkin: null, workout: null, feedback: null, excused: false, ...parts }
+    const base = { checkin: null, workout: null, feedback: null, excused: false, periodPain: null, ...parts }
     return { date, dayNumber: offset + 1, ...base, score: computeDailyScore(base, 0, base.excused, foodScoreInput(entries.filter((entry) => entry.date === date), offset + 1), isLegacyDay(date)) }
   }
 
@@ -161,5 +161,28 @@ describe('gifted passes', () => {
     const usedBoth = [...usedFirst, { date: addDays(start, 1), points: 0, createdAt: '' }]
     expect(unusedGifts(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toEqual([])
     expect(passPrice(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toBe(PASS_PRICE)
+  })
+})
+
+describe('period-pain rest days', () => {
+  it('give the workout points but not score-tier points, and are not workout days', () => {
+    const entries = perfectFood(1)
+    const rest = makeDay(1, entries, { periodPain: 7 })
+    expect(rest.score).toMatchObject({ rest: 40, total: 100 })
+    expect(isActiveDay(rest)).toBe(false)
+    // Water 30 + calories 30 = 60 earned by her: 3 points, not the 10 of a full 100.
+    expect(earnings(state([rest, makeDay(2, entries)], entries)).find((item) => item.kind === 'score')?.points).toBe(EARN.score60)
+  })
+
+  it('count as workout days when she trains anyway', () => {
+    expect(isActiveDay(makeDay(1, [], { periodPain: 7, workout: workout({ mainCompletion: 0.5 }) }))).toBe(true)
+  })
+
+  it('neither add to nor break a run of workout days', () => {
+    const foodEntries = Array.from({ length: 8 }, (_, index) => perfectFood(index + 1)).flat()
+    const days = Array.from({ length: 8 }, (_, index) => makeDay(index + 1, foodEntries, index === 3 ? { periodPain: 8 } : full))
+    const streaks = earnings(state([...days, makeDay(9, foodEntries)], foodEntries)).filter((item) => item.kind === 'streak')
+    // Days 1–3 and 5–8 are 7 workout days around the rest day.
+    expect(streaks).toEqual([{ date: addDays(start, 7), kind: 'streak', points: EARN.streak }])
   })
 })

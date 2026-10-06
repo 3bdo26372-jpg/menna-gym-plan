@@ -1,5 +1,6 @@
 import { addDays } from './date'
 import { EXERCISE_BY_ID, exercisesWithRole, type Exercise } from './exercises'
+import { isPainRest } from './period'
 import type { BlockId, CheckIn, DayRecord, DayType, Intensity } from './types'
 
 /**
@@ -143,6 +144,8 @@ export interface PlanContext {
   easeAfterHard?: boolean
   /** Pain was reported in the most recent feedback. */
   painReported?: boolean
+  /** Period pain she rated for the day, 1–10. */
+  periodPain?: number | null
 }
 
 export function intensityFor(checkin: CheckIn | null | undefined, easeAfterHard = false): Intensity {
@@ -151,12 +154,43 @@ export function intensityFor(checkin: CheckIn | null | undefined, easeAfterHard 
   return checkin.energy === 'low' || checkin.body === 'tired' ? 'gentle' : 'normal'
 }
 
+/** Gentle moves for a period-pain day: no jumps, no deep squats. */
+const TINY_MOVES = ['step-back-reach', 'hamstring-curl', 'calf-raises', 'ski-steps']
+export const TINY_TITLE = 'تمرين صغنون'
+
+/**
+ * A period-pain day (pain above 4): about 5 minutes of easy movement and
+ * stretching. The workout's points already count, so this is only if she wants to move.
+ */
+function tinyPlan(context: PlanContext): WorkoutPlan {
+  const seed = context.dayNumber - 1
+  const blocks: PlanBlock[] = [
+    { id: 'warmup', title: BLOCK_LABEL.warmup, rounds: 1, workSeconds: 30, restSeconds: 0, exerciseIds: ['knee-circles', 'chest-opener'] },
+    { id: 'light', title: 'حركة هادية', rounds: 1, workSeconds: 30, restSeconds: 15, exerciseIds: rotate(TINY_MOVES.map((id) => EXERCISE_BY_ID[id]), seed, 3, new Set()) },
+    { id: 'cooldown', title: BLOCK_LABEL.cooldown, rounds: 1, workSeconds: 30, restSeconds: 0, exerciseIds: cooldownFor(seed * 2, 4) },
+  ]
+  return {
+    date: context.date,
+    dayNumber: context.dayNumber,
+    dayType: 'light',
+    title: TINY_TITLE,
+    subtitle: 'حركة هادية جدًا وإطالة، على قدك خالص',
+    intensity: 'gentle',
+    level: Math.max(0, Math.min(MAX_LEVEL, context.level)),
+    blocks,
+    totalSeconds: blocks.reduce((sum, block) => sum + blockSeconds(block), 0) + TRANSITION_SECONDS * (blocks.length - 1),
+    notes: ['عشان وجع البريود: نقط التمرين محسوبة لك النهارده حتى لو ماتمرنتيش. ولو حبيتي تتحركي، ده تمرين صغنون، ولو عملتي نصه اليوم يتحسب يوم تمرين كمان.'],
+  }
+}
+
 export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
+  if (isPainRest(context.periodPain)) return tinyPlan(context)
   const level = Math.max(0, Math.min(MAX_LEVEL, context.level))
   const settings = LEVELS[level]
   // Rotate daily so neighbouring days never repeat the same session.
   const seed = context.dayNumber - 1
-  const intensity = intensityFor(context.checkin, context.easeAfterHard)
+  // Any period pain at all takes the jumps out.
+  const intensity = context.periodPain ? 'gentle' : intensityFor(context.checkin, context.easeAfterHard)
   const notes: string[] = []
   let dayType = dayTypeFor(context.dayNumber)
   if (context.painReported && dayType !== 'light') {
@@ -194,9 +228,11 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
       workSeconds = Math.max(25, workSeconds - 5)
       restSeconds += 5
       cardioRounds = Math.min(cardioRounds, 2)
-      notes.push(context.easeAfterHard
-        ? 'آخر تمرين كان صعب، فالنهارده بدائل أخف وفترات أقصر.'
-        : 'على حسب إحساسك النهارده: بدائل من غير قفز وفترات أقصر شوية.')
+      notes.push(context.periodPain
+        ? 'سجّلتي وجع بريود خفيف، فالنهارده بدائل من غير قفز وفترات أقصر.'
+        : context.easeAfterHard
+          ? 'آخر تمرين كان صعب، فالنهارده بدائل أخف وفترات أقصر.'
+          : 'على حسب إحساسك النهارده: بدائل من غير قفز وفترات أقصر شوية.')
     }
     blocks = [
       warmup,
@@ -267,7 +303,9 @@ export function adaptiveState(days: DayRecord[], date: string) {
   }
 }
 
+/** The day's plan, read from what she logged: the check-in and any period pain. */
 export function planForDay(days: DayRecord[], date: string, dayNumber: number, checkin?: CheckIn | null): WorkoutPlan {
   const state = adaptiveState(days, date)
-  return buildWorkoutPlan({ date, dayNumber, checkin, ...state })
+  const periodPain = days.find((day) => day.date === date)?.periodPain ?? null
+  return buildWorkoutPlan({ date, dayNumber, checkin, periodPain, ...state })
 }

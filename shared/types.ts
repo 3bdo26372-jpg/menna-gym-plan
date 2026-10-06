@@ -71,6 +71,8 @@ export interface ScoreBreakdown {
   makeup: number
   /** Points a day pass filled in, up to 100. */
   pass: number
+  /** Workout points given on a period-pain day (pain above 4), up to the workout's full share. */
+  rest: number
   total: number
 }
 
@@ -82,6 +84,8 @@ export interface DayRecord {
   feedback: Feedback | null
   /** A day pass marked this day as trained. */
   excused: boolean
+  /** Period pain she rated for the day, 1–10 (0 for none). */
+  periodPain: number | null
   score: ScoreBreakdown
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES, EXERCISE_BY_ID } from '../exercises'
-import { adaptiveState, buildWorkoutPlan, dayTypeFor, LEVELS, MAX_LEVEL } from '../program'
+import { adaptiveState, buildWorkoutPlan, dayTypeFor, LEVELS, MAX_LEVEL, planForDay, TINY_TITLE } from '../program'
 import { checkin, day, feedback, workout } from './fixtures'
 import { addDays } from '../date'
 
@@ -108,5 +108,28 @@ describe('adaptation', () => {
     const state = adaptiveState(history(['easy', 'easy', 'easy'], true), '2026-10-01')
     expect(state.level).toBe(0)
     expect(state.painReported).toBe(true)
+  })
+})
+
+describe('period pain and the workout', () => {
+  it('is a tiny, jump-free session of about 5 minutes when the pain is above 4', () => {
+    const plan = buildWorkoutPlan({ date: '2026-10-05', dayNumber: 2, level: 4, periodPain: 6 })
+    expect(plan.title).toBe(TINY_TITLE)
+    expect(plan.dayType).toBe('light')
+    expect(plan.totalSeconds).toBeLessThanOrEqual(6 * 60)
+    for (const id of plan.blocks.flatMap((block) => block.exerciseIds)) expect(EXERCISE_BY_ID[id].impact).toBe('low')
+  })
+
+  it('takes the jumps out for milder pain', () => {
+    const plan = buildWorkoutPlan({ date: '2026-10-05', dayNumber: 1, level: 0, periodPain: 3 })
+    expect(plan.intensity).toBe('gentle')
+    const cardio = plan.blocks.find((block) => block.id === 'cardio')!
+    for (const id of cardio.exerciseIds) expect(EXERCISE_BY_ID[id].impact).toBe('low')
+  })
+
+  it('reads the pain she logged for the day', () => {
+    const date = '2026-10-05'
+    expect(planForDay([day(date, 1, { periodPain: 9 })], date, 1).title).toBe(TINY_TITLE)
+    expect(planForDay([day(date, 1, { periodPain: 0 })], date, 1).title).not.toBe(TINY_TITLE)
   })
 })

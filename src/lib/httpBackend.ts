@@ -38,6 +38,7 @@ export function createHttpBackend(baseUrl: string): Backend {
     saveCheckin: (date, input) => request<AppState>('PUT', `/api/days/${date}/checkin`, input),
     saveWorkout: (date, input) => request<AppState>('PUT', `/api/days/${date}/workout`, input),
     saveFeedback: (date, input) => request<AppState>('PUT', `/api/days/${date}/feedback`, input),
+    savePeriodPain: (date, level) => request<AppState>('PUT', `/api/days/${date}/pain`, { level }),
     addMeasurement: (input) => request<AppState>('POST', '/api/measurements', input),
     markRewardCelebrated: (id) => request<AppState>('POST', `/api/rewards/${id}/celebrated`),
     addFood: (date, input) => request<AppState>('POST', `/api/days/${date}/food`, input),

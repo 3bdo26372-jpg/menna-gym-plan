@@ -7,7 +7,7 @@ import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
 import { validatePass, type DayPass } from '../../shared/dayPasses'
-import { validateNewPeriod, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
+import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
@@ -23,7 +23,7 @@ const reportKey = (kind: string, periodIndex: number) => `${kind}:${periodIndex}
 interface LocalDb {
   programStartDate: string | null
   measurements: MeasurementEntry[]
-  logs: Record<string, { checkin: CheckIn | null; workout: WorkoutResult | null; feedback: Feedback | null }>
+  logs: Record<string, { checkin: CheckIn | null; workout: WorkoutResult | null; feedback: Feedback | null; periodPain?: number | null }>
   rewards: RewardState[]
   reports: Record<string, ReportData>
   foodEntries?: FoodEntry[]
@@ -55,7 +55,8 @@ function toState(db: LocalDb): AppState {
   const excused = new Set((db.dayPasses ?? []).map((pass) => pass.date))
   const days = start
     ? dateRange(start, today).map((date) => {
-        const parts = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
+        const log = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
+        const parts = { ...log, periodPain: log.periodPain ?? null }
         return { date, dayNumber: dayNumberFor(start, date), ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput((db.foodEntries ?? []).filter((entry) => entry.date === date), dayNumberFor(start, date)), isLegacyDay(date)) }
       })
     : []
@@ -126,6 +127,11 @@ export function createLocalBackend(): Backend {
       const feedback = validateFeedback(input)
       if (typeof feedback === 'string') fail(400, feedback)
       log.feedback = feedback as Feedback
+    })),
+    savePeriodPain: (date, level) => attempt(() => writeDay(date, (_db, log) => {
+      const pain = validatePain({ level })
+      if (typeof pain === 'string') fail(400, pain)
+      log.periodPain = pain as number | null
     })),
     addMeasurement: (input) => attempt(() => {
       if (!isIsoDate(input.measuredOn) || input.measuredOn > cairoDate()) fail(400, 'measuredOn must be a date up to today')

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addDays } from '../date'
 import {
-  cycleLengths, DEFAULT_CYCLE_DAYS, DEFAULT_PERIOD_DAYS, periodForecast, upcomingStarts, validateNewPeriod, validatePeriodEnd,
+  cycleLengths, DEFAULT_CYCLE_DAYS, DEFAULT_PERIOD_DAYS, isPainRest, periodForecast, upcomingStarts, validateNewPeriod, validatePain, validatePeriodEnd,
   type PeriodEntry,
 } from '../period'
 
@@ -105,5 +105,16 @@ describe('logging a period', () => {
 
     const shortCycle = entry('2026-08-12')
     expect(validatePeriodEnd({ endDate: '2026-08-12' }, older, [older, shortCycle], today)).toBe('the end must be before the next start')
+  })
+})
+
+describe('period pain', () => {
+  it('makes a rest day above 4', () => {
+    expect([null, 0, 1, 4, 5, 10].map(isPainRest)).toEqual([false, false, false, false, true, true])
+  })
+
+  it('takes 0–10, or null to clear', () => {
+    expect([0, 1, 10, null].map((level) => validatePain({ level }))).toEqual([0, 1, 10, null])
+    for (const level of [-1, 11, 4.5, '7', undefined]) expect(validatePain({ level })).toBeTypeOf('string')
   })
 })

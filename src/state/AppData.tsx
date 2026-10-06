@@ -22,6 +22,7 @@ interface AppDataValue {
   saveCheckin(date: string, input: CheckInInput): Promise<void>
   saveWorkout(date: string, input: WorkoutInput): Promise<AppState>
   saveFeedback(date: string, input: FeedbackInput): Promise<void>
+  savePeriodPain(date: string, level: number | null): Promise<void>
   addMeasurement(input: MeasurementInput): Promise<void>
   markRewardCelebrated(id: string): Promise<void>
   addFood(date: string, input: FoodInput): Promise<void>
@@ -72,6 +73,7 @@ function createBackend(): Backend {
     saveCheckin: forward('saveCheckin'),
     saveWorkout: forward('saveWorkout'),
     saveFeedback: forward('saveFeedback'),
+    savePeriodPain: forward('savePeriodPain'),
     addMeasurement: forward('addMeasurement'),
     markRewardCelebrated: forward('markRewardCelebrated'),
     addFood: forward('addFood'),
@@ -181,6 +183,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       saveCheckin: async (date, input) => void (await apply(backend.saveCheckin(date, input))),
       saveWorkout: (date, input) => apply(backend.saveWorkout(date, input)),
       saveFeedback: async (date, input) => void (await apply(backend.saveFeedback(date, input))),
+      savePeriodPain: async (date, level) => void (await apply(backend.savePeriodPain(date, level))),
       addMeasurement: async (input) => void (await apply(backend.addMeasurement(input))),
       markRewardCelebrated: async (id) => void (await apply(backend.markRewardCelebrated(id))),
       addFood: async (date, input) => void (await apply(backend.addFood(date, input))),

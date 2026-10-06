@@ -5,7 +5,7 @@ import { validateMeasurementValues } from '../../shared/measurements'
 import { buildReport } from '../../shared/report'
 import { validateSpend } from '../../shared/waterPoints'
 import { validatePass } from '../../shared/dayPasses'
-import { validateNewPeriod, validatePeriodEnd } from '../../shared/period'
+import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared/period'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
@@ -23,6 +23,7 @@ import {
   refreshDerived,
   saveCheckin,
   saveFeedback,
+  savePeriodPain,
   saveReport,
   saveWorkout,
   startProgram,
@@ -114,7 +115,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     return json(await afterWrite(env, today, today))
   }
 
-  const day = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/(checkin|workout|feedback)$/)
+  const day = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/(checkin|workout|feedback|pain)$/)
   if (day && method === 'PUT') {
     const [, date, part] = day
     const state = await loadState(env.DB, today)
@@ -129,6 +130,10 @@ async function route(request: Request, env: Env): Promise<Response> {
       if (typeof workout === 'string') throw new HttpError(400, workout)
       const existing = state.days.find((item) => item.date === date)?.workout ?? null
       if (preferWorkout(existing, workout)) await saveWorkout(env.DB, date, workout)
+    } else if (part === 'pain') {
+      const level = validatePain(input)
+      if (typeof level === 'string') throw new HttpError(400, level)
+      await savePeriodPain(env.DB, date, level)
     } else {
       if (!state.days.find((item) => item.date === date)?.workout) throw new HttpError(409, 'finish the workout before sending feedback')
       const feedback = validateFeedback(input)
