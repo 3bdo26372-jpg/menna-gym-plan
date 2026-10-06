@@ -74,7 +74,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
         <div>
           <h2 className="card-title">اليوم {forecast.periodDay} من البريود</h2>
           <p className="muted small">خفّفي على نفسك: لو أي تمرين تقيل دوسي «صعب؟ أسهل»، واشربي مية كتير 💧</p>
-          <PainCheck state={state} open />
+          <PainCheck state={state} />
           {!last.endDate && (
             <button type="button" className="button secondary" disabled={busy} onClick={() => void run(() => endPeriod(last.id, state.today))}>
               {busy ? 'لحظة…' : 'خلص النهارده ✓'}
@@ -113,7 +113,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
             : `متوقع يوم ${formatDateLong(nextStart)}. جهّزي حاجتك في الشنطة 👜`}
         </p>
         {late > 7 && <p className="muted small">التأخير كام يوم بيحصل عادي، ولو اتكرر أو طوّل كلّمي دكتورة.</p>}
-        <PainCheck state={state} open />
+        <PainCheck state={state} />
         {startedToday}
         {error && <Notice tone="care">{error}</Notice>}
         {pickDate}

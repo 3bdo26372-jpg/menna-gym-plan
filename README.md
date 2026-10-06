@@ -80,7 +80,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The next start is the latest start plus her average cycle: the gaps between her last 6 starts, ignoring gaps under 18 or over 50 days (usually a start that wasn't logged). Until there are two starts it uses 28 days. Period length works the same from the ends she logs (5 days by default).
   - The home page always has a period card. From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
   - Starts less than 10 days apart are refused as the same period logged twice. Periods don't affect the score or points.
-- **Period pain (وجع البريود)**: she rates a day's pain 1–10 (or "مفيش وجع") from the period card on the home page; yesterday can be rated on the period page.
+- **Period pain (وجع البريود)**: she taps **عندي وجع بريود** on the period card on the home page and rates the pain 1–10 (or "مفيش وجع"); yesterday can be rated on the period page.
   - Above 4 the day is a rest day: the workout's 40 points are filled in (`rest` in the score) without training. The day doesn't count as a workout day for rewards, earns no score-tier points from that credit, and neither adds to nor breaks the 7-day streak. If she trains anyway (half the workout), it counts as usual.
   - On those days the workout is a tiny ~5-minute session of gentle moves and stretches. Milder pain (1–4) takes the jumps out.
   - The home page doesn't offer a pass for a missed workout on a rest day.

@@ -41,8 +41,8 @@ export function PainScale({ date, current, legend = 'وجع البريود من 
   )
 }
 
-/** Today's pain in the period card: the rating once logged, or the scale (open when the period is near). */
-export function PainCheck({ state, open = false }: { state: AppState; open?: boolean }) {
+/** Today's pain in the period card: a button that opens the 1–10 scale, or the rating once logged. */
+export function PainCheck({ state }: { state: AppState }) {
   const today = state.days.find((day) => day.date === state.today)
   const [editing, setEditing] = useState(false)
   if (!today) return null
@@ -57,13 +57,13 @@ export function PainCheck({ state, open = false }: { state: AppState; open?: boo
       </div>
     )
   }
-  if (!open && !editing) {
-    return <button type="button" className="link-button" onClick={() => setEditing(true)}>عندك وجع بريود النهارده؟</button>
+  if (!editing) {
+    return <button type="button" className="button secondary" onClick={() => setEditing(true)}>عندي وجع بريود 🌸</button>
   }
   return (
     <>
-      <PainScale date={state.today} current={pain} legend="عندك وجع بريود النهارده؟ قيّميه من 10" onSaved={() => setEditing(false)} />
-      {editing && <button type="button" className="link-button" onClick={() => setEditing(false)}>إلغاء</button>}
+      <PainScale date={state.today} current={pain} legend="الوجع قد إيه من 10؟" onSaved={() => setEditing(false)} />
+      <button type="button" className="link-button" onClick={() => setEditing(false)}>إلغاء</button>
     </>
   )
 }
