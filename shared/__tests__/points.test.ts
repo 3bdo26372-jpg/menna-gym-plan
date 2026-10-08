@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { addDays } from '../date'
 import { isActiveDay, newRewardUnlocks } from '../engine'
 import type { FoodCategory, FoodEntry } from '../food'
-import { PASS_PRICE, missedWorkout, passCandidates, passPrice, unusedGifts, validatePass, type DayPass, type PassGift } from '../dayPasses'
+import { PASS_PRICE, missedWorkout, passCandidates, passPrice, passPriceFor, periodPassDates, unusedGifts, validatePass, type DayPass, type PassGift } from '../dayPasses'
 import { EARN, earnings, legacyWaterPoints, pointsBalance, scorePoints } from '../points'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../scoring'
+import type { PeriodEntry } from '../period'
 import type { DayRecord } from '../types'
 import { makeupByDate, validateSpend, type WaterSpend } from '../waterPoints'
 import { checkin, feedback, workout } from './fixtures'
@@ -29,10 +30,10 @@ const perfectFood = (dayNumber: number) => {
   return [water(date, 2500), food(date, 'كشري'), food(date, 'فول وطعمية وعيش بلدي', 'breakfast')]
 }
 
-function state(days: DayRecord[], foodEntries: FoodEntry[], extra: { waterSpends?: WaterSpend[]; dayPasses?: DayPass[]; passGifts?: PassGift[] } = {}) {
+function state(days: DayRecord[], foodEntries: FoodEntry[], extra: { waterSpends?: WaterSpend[]; dayPasses?: DayPass[]; passGifts?: PassGift[]; periods?: PeriodEntry[] } = {}) {
   const today = addDays(days[0]?.date ?? start, days.length - 1)
   const programStartDate = days[0]?.date ?? start
-  return { today, profile: { name: 'Menna', programStartDate, timezone: 'Africa/Cairo' }, days, foodEntries, waterSpends: extra.waterSpends ?? [], dayPasses: extra.dayPasses ?? [], passGifts: extra.passGifts ?? [] }
+  return { today, profile: { name: 'Menna', programStartDate, timezone: 'Africa/Cairo' }, days, foodEntries, waterSpends: extra.waterSpends ?? [], dayPasses: extra.dayPasses ?? [], passGifts: extra.passGifts ?? [], periods: extra.periods ?? [] }
 }
 
 /** n perfect finished days, then today. */
@@ -104,13 +105,13 @@ describe('day passes', () => {
 
   it('makes the first pass free, then costs points from the balance', () => {
     expect(passPrice(state(empty, []))).toBe(0)
-    expect(validatePass({ date: start }, state(empty, []))).toEqual({ date: start, points: 0 })
+    expect(validatePass({ date: start }, state(empty, []))).toEqual({ date: start, points: 0, kind: 'regular' })
     const used = [{ date: start, points: 0, createdAt: '' }]
     expect(passPrice(state(empty, [], { dayPasses: used }))).toBe(PASS_PRICE)
     expect(validatePass({ date: addDays(start, 1) }, state(empty, [], { dayPasses: used }))).toBe('not enough points')
     const { days, foodEntries } = perfect(3) // 60 points
     const missed = [...days.slice(0, 3), makeDay(4, foodEntries)]
-    expect(validatePass({ date: addDays(start, 3) }, state(missed, foodEntries, { dayPasses: used }))).toEqual({ date: addDays(start, 3), points: 50 })
+    expect(validatePass({ date: addDays(start, 3) }, state(missed, foodEntries, { dayPasses: used }))).toEqual({ date: addDays(start, 3), points: 50, kind: 'regular' })
   })
 
   it('works on any day short of 100, once a day', () => {
@@ -119,6 +120,31 @@ describe('day passes', () => {
     expect(validatePass({ date: addDays(start, 5) }, state(empty, []))).toBe('unknown day')
     expect(missedWorkout(makeDay(1, [], full))).toBe(false)
     expect(missedWorkout(empty[0])).toBe(true)
+  })
+})
+
+describe('period passes', () => {
+  const days = [1, 2, 3, 4, 5].map((dayNumber) => makeDay(dayNumber, []))
+  const periods: PeriodEntry[] = [{ id: 1, startDate: addDays(start, 1), endDate: null, createdAt: '' }]
+  const used = [{ date: start, points: 0, kind: 'regular' as const, createdAt: '' }]
+
+  it('gives each of the first three days of a period its own free pass, up to today', () => {
+    expect(periodPassDates({ periods, today: addDays(start, 2) })).toEqual([addDays(start, 1), addDays(start, 2)])
+    expect(periodPassDates({ periods, today: addDays(start, 4) })).toEqual([1, 2, 3].map((offset) => addDays(start, offset)))
+  })
+
+  it('is free even when the free pass is used up and there are no points', () => {
+    const s = state(days, [], { dayPasses: used, periods })
+    expect(passPriceFor(s, addDays(start, 2))).toBe(0)
+    expect(validatePass({ date: addDays(start, 2) }, s)).toEqual({ date: addDays(start, 2), points: 0, kind: 'period' })
+    expect(validatePass({ date: addDays(start, 4) }, s)).toBe('not enough points')
+  })
+
+  it("doesn't use up the free pass or a gift", () => {
+    const periodPass = { date: addDays(start, 1), points: 0, kind: 'period' as const, createdAt: '' }
+    expect(passPrice(state(days, [], { dayPasses: [periodPass], periods }))).toBe(0)
+    const gift = { id: 1, note: 'هدية', createdAt: '' }
+    expect(unusedGifts(state(days, [], { dayPasses: [...used, periodPass], passGifts: [gift], periods }))).toEqual([gift])
   })
 })
 
@@ -157,7 +183,7 @@ describe('gifted passes', () => {
     expect(passPrice(state(empty, [], { dayPasses: usedFirst }))).toBe(PASS_PRICE)
     expect(passPrice(state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toBe(0)
     expect(unusedGifts(state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toEqual([gift])
-    expect(validatePass({ date: addDays(start, 1) }, state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toEqual({ date: addDays(start, 1), points: 0 })
+    expect(validatePass({ date: addDays(start, 1) }, state(empty, [], { dayPasses: usedFirst, passGifts: [gift] }))).toEqual({ date: addDays(start, 1), points: 0, kind: 'regular' })
     const usedBoth = [...usedFirst, { date: addDays(start, 1), points: 0, createdAt: '' }]
     expect(unusedGifts(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toEqual([])
     expect(passPrice(state(empty, [], { dayPasses: usedBoth, passGifts: [gift] }))).toBe(PASS_PRICE)

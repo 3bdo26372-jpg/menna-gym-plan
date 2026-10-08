@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { LazyMotion } from 'framer-motion'
 import { CalendarCheck, ChartLine, FileText, Flower2, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
+import { TreatPopup } from './components/ChocolateGift'
 import { Card, Spinner } from './components/ui'
 import { useRoute, type Route } from './lib/router'
 import { TodayPage } from './pages/TodayPage'
@@ -100,6 +101,7 @@ function Shell() {
         {status === 'ready' && error && <p className="toast" role="alert">{error}</p>}
       </main>
       <Celebration reward={pending} onClose={() => pending && void markRewardCelebrated(pending.id)} />
+      {status === 'ready' && state?.profile.programStartDate && !pending && <TreatPopup state={state} />}
     </div>
   )
 }

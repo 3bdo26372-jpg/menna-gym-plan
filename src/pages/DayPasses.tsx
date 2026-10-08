@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Ticket } from 'lucide-react'
 import { addDays, formatDateShort } from '../../shared/date'
 import { isGiftOpened } from '../components/ChocolateGift'
-import { missedWorkout, PASS_PRICE, passCandidates, passPrice, unusedGifts } from '../../shared/dayPasses'
+import { isPeriodPassDate, missedWorkout, PASS_PRICE, PERIOD_PASS_DAYS, passCandidates, passPrice, passPriceFor, unusedGifts } from '../../shared/dayPasses'
 import { pointsBalance } from '../../shared/points'
 import { Card, EmptyState, Notice, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
@@ -41,7 +41,7 @@ export function DayPasses() {
         <StatTile label="الإكسبشن الجاي" value={price === 0 ? 'ببلاش' : price} unit={price === 0 ? '🎁' : 'نقطة'} tone="accent" />
         <StatTile label="رصيد نقطك" value={balance} unit="نقطة" hint="من المية والسعرات" />
       </div>
-      <p className="muted small">أول إكسبشن ببلاش، وبعد كده بـ {PASS_PRICE} نقطة من <a href="#/rewards/points">نقطك</a>.</p>
+      <p className="muted small">أول إكسبشن ببلاش، وبعد كده بـ {PASS_PRICE} نقطة من <a href="#/rewards/points">نقطك</a>. وأول {PERIOD_PASS_DAYS} أيام من كل بريود ليهم إكسبشن ببلاش، كل يوم بيومه 🌸</p>
       {unusedGifts(state).map((gift) => (
         <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{isGiftOpened(gift.id) ? gift.note ?? 'إكسبشن ببلاش' : 'مستنياكي شوكولاتة في الصفحة الرئيسية، افتحيها الأول 🍫'}</p>
       ))}
@@ -50,26 +50,29 @@ export function DayPasses() {
         <EmptyState icon={<Ticket />} title="كل الأيام كاملة 💪" />
       ) : (
         <ul className="makeup-list">
-          {candidates.map((day) => (
+          {candidates.map((day) => {
+            const dayPrice = passPriceFor(state, day.date)
+            return (
             <li key={day.date}>
               <div className="food-copy">
                 <strong>يوم {day.dayNumber} · {label(day.date)}</strong>
-                <small>{day.score.total} من 100{missedWorkout(day) ? ' · ماتمرنتيش' : ''}</small>
+                <small>{day.score.total} من 100{missedWorkout(day) ? ' · ماتمرنتيش' : ''}{isPeriodPassDate(state, day.date) ? ' · إكسبشن البريود ببلاش 🌸' : ''}</small>
               </div>
               {confirming === day.date ? (
                 <span className="spend-confirm">
                   <button type="button" className="button primary" disabled={busy} onClick={() => void take(day.date, day.dayNumber)}>
-                    {busy ? 'لحظة…' : price === 0 ? 'تأكيد (ببلاش)' : `تأكيد (${price} نقطة)`}
+                    {busy ? 'لحظة…' : dayPrice === 0 ? 'تأكيد (ببلاش)' : `تأكيد (${dayPrice} نقطة)`}
                   </button>
                   <button type="button" className="link-button" disabled={busy} onClick={() => setConfirming(null)}>إلغاء</button>
                 </span>
               ) : (
-                <button type="button" className="button secondary" disabled={price > balance} onClick={() => setConfirming(day.date)}>
-                  {price > balance ? `محتاجة ${price - balance} نقطة` : price === 0 ? 'استخدمي الإكسبشن 🎁' : 'استخدمي الإكسبشن'}
+                <button type="button" className="button secondary" disabled={dayPrice > balance} onClick={() => setConfirming(day.date)}>
+                  {dayPrice > balance ? `محتاجة ${dayPrice - balance} نقطة` : dayPrice === 0 ? 'استخدمي الإكسبشن 🎁' : 'استخدمي الإكسبشن'}
                 </button>
               )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </Card>

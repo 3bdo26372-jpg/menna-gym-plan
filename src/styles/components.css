@@ -293,24 +293,57 @@
 .sleep-note { flex-basis: 100%; margin: 0; }
 .sleep-form > .field.is-wide { grid-column: 1 / -1; }
 
-/* ---- gifted pass wrapped as a chocolate bar */
+/* ---- passes wrapped as a chocolate bar (gifts, and the first days of a period) */
 .chocolate-card { grid-template-columns: 1fr; justify-items: center; text-align: center; overflow: hidden; }
-.chocolate-card > div { justify-items: center; }
+.chocolate-card.is-period { background: linear-gradient(160deg, #fff, #fdf0f5); }
+.treat-inside { display: grid; gap: 8px; justify-items: center; }
+.treat-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
 .chocolate-stage { width: 100%; display: grid; place-items: center; padding: 6px 0 2px; }
-.chocolate { position: relative; width: min(100%, 290px); aspect-ratio: 2.1; padding: 0; border: 0; background: none; cursor: pointer; }
+.chocolate { position: relative; width: min(100%, 290px); aspect-ratio: 2.1; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.chocolate.is-big { width: min(100%, 320px); }
 .chocolate:disabled { cursor: default; opacity: 1; }
-.chocolate-bar { position: absolute; inset: 6% 4%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; padding: 7px; border-radius: 12px; background: #45230f; box-shadow: 0 10px 22px rgba(69, 35, 15, 0.28); }
-.chocolate-bar i { border-radius: 7px; background: linear-gradient(145deg, #85502e, #5b301a); box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.14), inset -2px -3px 0 rgba(0, 0, 0, 0.28); }
-.chocolate-wrapper { position: absolute; inset: 0; display: block; filter: drop-shadow(0 10px 16px rgba(99, 33, 63, 0.25)); }
-.wrapper-half { position: absolute; top: 0; bottom: 0; width: 50.5%; background: linear-gradient(160deg, #c65a8d, var(--berry-dark)); }
+.chocolate:focus-visible { outline: 3px solid var(--rose-200); outline-offset: 6px; border-radius: 14px; }
+
+/* Gold foil the bar sits on, seen once the wrapper is off. */
+.chocolate-foil { position: absolute; inset: 1% 0; border-radius: 10px; background: linear-gradient(115deg, #f6e1a3 0%, #d4a443 22%, #fbeec0 40%, #c8932c 58%, #f3d88f 76%, #b98424 100%); box-shadow: 0 14px 26px rgba(69, 35, 15, 0.25); }
+.chocolate-foil::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.18) 0 3px, transparent 3px 9px); }
+.chocolate-bar { position: absolute; inset: 7% 5%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; padding: 7px; border-radius: 12px; background: linear-gradient(160deg, #4f2812, #331707); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05), 0 6px 14px rgba(40, 18, 6, 0.35); }
+.chocolate-bar i { position: relative; display: grid; place-items: center; border-radius: 7px; background: linear-gradient(150deg, #8f5833, #5d311a 70%); box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.16), inset -2px -3px 0 rgba(0, 0, 0, 0.3); }
+/* A heart pressed into every square. */
+.chocolate-bar i::after { content: '♥'; color: #6a3a1f; font-size: clamp(14px, 4vw, 20px); font-style: normal; text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.14), -1px -1px 0 rgba(0, 0, 0, 0.3); }
+.chocolate-bar i::before { content: ''; position: absolute; inset: 3px 8px auto; height: 22%; border-radius: 6px; background: linear-gradient(rgba(255, 255, 255, 0.18), transparent); }
+
+.chocolate-wrapper { position: absolute; inset: 0; display: block; filter: drop-shadow(0 12px 16px rgba(99, 33, 63, 0.28)); }
+.wrapper-half { position: absolute; top: 0; bottom: 0; width: 50.5%; background:
+  radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.16) 0 2px, transparent 3px) 0 0 / 18px 18px,
+  linear-gradient(160deg, #d0679a, var(--berry) 45%, var(--berry-dark)); }
+.chocolate.is-period .wrapper-half { background:
+  radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.3) 0 2px, transparent 3px) 0 0 / 18px 18px,
+  linear-gradient(160deg, #f6b8d0, #e07ba6 50%, #c65a8d); }
 .wrapper-half.is-start { left: 0; border-radius: 10px 0 0 10px; }
 .wrapper-half.is-end { right: 0; border-radius: 0 10px 10px 0; }
 /* Crimped foil at both ends. */
-.wrapper-half::before { content: ''; position: absolute; top: -3px; bottom: -3px; width: 16px; background: repeating-linear-gradient(180deg, #f4d58d 0 4px, #d9b25e 4px 8px); }
+.wrapper-half::before { content: ''; position: absolute; top: -3px; bottom: -3px; width: 16px; background: repeating-linear-gradient(180deg, #f6dc98 0 4px, #cf9f45 4px 8px); }
 .wrapper-half.is-start::before { left: -6px; border-radius: 4px 0 0 4px; }
 .wrapper-half.is-end::before { right: -6px; border-radius: 0 4px 4px 0; }
-.wrapper-label { position: absolute; inset: 22% 22%; display: grid; place-content: center; gap: 2px; border-radius: 999px; color: var(--berry-dark); background: #fff7fb; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08); }
+/* A gold band around the middle, under the label. */
+.wrapper-half::after { content: ''; position: absolute; top: 0; bottom: 0; width: 18px; background: linear-gradient(90deg, #c8932c, #f6dc98 50%, #c8932c); opacity: 0.9; }
+.wrapper-half.is-start::after { right: 0; }
+.wrapper-half.is-end::after { left: 0; }
+.wrapper-shine { position: absolute; inset: 0; border-radius: 10px; overflow: hidden; pointer-events: none; }
+.wrapper-shine::after { content: ''; position: absolute; top: -20%; bottom: -20%; width: 28%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent); transform: translateX(-160%) skewX(-12deg); animation: chocolate-shine 3.2s ease-in-out infinite; }
+@keyframes chocolate-shine { 0%, 55% { transform: translateX(-160%) skewX(-12deg); } 100% { transform: translateX(460%) skewX(-12deg); } }
+.wrapper-label { position: absolute; inset: 20% 20%; display: grid; place-content: center; gap: 2px; border: 2px solid #f0cf86; border-radius: 999px; color: var(--berry-dark); background: radial-gradient(circle at 50% 0%, #fff, #fff2f8); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08); }
 .wrapper-label b { font-size: 16px; }
+.chocolate.is-big .wrapper-label b { font-size: 18px; }
+.wrapper-label b.is-emoji, .chocolate.is-big .wrapper-label b.is-emoji { font-size: 26px; line-height: 1; }
 .wrapper-label small { color: var(--berry-700); font-size: 12px; font-weight: 700; }
 .chocolate-hearts { position: absolute; inset: 0; pointer-events: none; }
 .chocolate-hearts > span { position: absolute; top: 30%; font-size: 22px; }
+@media (prefers-reduced-motion: reduce) { .wrapper-shine::after { animation: none; } }
+
+/* The treat on its own, floating over the app when she opens it. */
+.treat-popup { position: fixed; inset: 0; z-index: 75; display: grid; place-items: center; padding: 16px; background: rgba(46, 14, 30, 0.5); backdrop-filter: blur(6px); }
+.treat-popup-card { position: relative; width: min(390px, 100%); display: grid; justify-items: center; gap: 14px; padding: 56px 18px 22px; border-radius: 26px; text-align: center; background: linear-gradient(170deg, #fff, #fdeef5); box-shadow: 0 30px 80px rgba(29, 12, 21, 0.35); }
+.treat-float { width: 100%; display: grid; place-items: center; }
+.treat-close { position: absolute; top: 10px; inset-inline-end: 10px; width: 38px; height: 38px; }
