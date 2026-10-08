@@ -292,3 +292,25 @@
 .sleep-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sleep-note { flex-basis: 100%; margin: 0; }
 .sleep-form > .field.is-wide { grid-column: 1 / -1; }
+
+/* ---- gifted pass wrapped as a chocolate bar */
+.chocolate-card { grid-template-columns: 1fr; justify-items: center; text-align: center; overflow: hidden; }
+.chocolate-card > div { justify-items: center; }
+.chocolate-stage { width: 100%; display: grid; place-items: center; padding: 6px 0 2px; }
+.chocolate { position: relative; width: min(100%, 290px); aspect-ratio: 2.1; padding: 0; border: 0; background: none; cursor: pointer; }
+.chocolate:disabled { cursor: default; opacity: 1; }
+.chocolate-bar { position: absolute; inset: 6% 4%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; padding: 7px; border-radius: 12px; background: #45230f; box-shadow: 0 10px 22px rgba(69, 35, 15, 0.28); }
+.chocolate-bar i { border-radius: 7px; background: linear-gradient(145deg, #85502e, #5b301a); box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.14), inset -2px -3px 0 rgba(0, 0, 0, 0.28); }
+.chocolate-wrapper { position: absolute; inset: 0; display: block; filter: drop-shadow(0 10px 16px rgba(99, 33, 63, 0.25)); }
+.wrapper-half { position: absolute; top: 0; bottom: 0; width: 50.5%; background: linear-gradient(160deg, #c65a8d, var(--berry-dark)); }
+.wrapper-half.is-start { left: 0; border-radius: 10px 0 0 10px; }
+.wrapper-half.is-end { right: 0; border-radius: 0 10px 10px 0; }
+/* Crimped foil at both ends. */
+.wrapper-half::before { content: ''; position: absolute; top: -3px; bottom: -3px; width: 16px; background: repeating-linear-gradient(180deg, #f4d58d 0 4px, #d9b25e 4px 8px); }
+.wrapper-half.is-start::before { left: -6px; border-radius: 4px 0 0 4px; }
+.wrapper-half.is-end::before { right: -6px; border-radius: 0 4px 4px 0; }
+.wrapper-label { position: absolute; inset: 22% 22%; display: grid; place-content: center; gap: 2px; border-radius: 999px; color: var(--berry-dark); background: #fff7fb; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08); }
+.wrapper-label b { font-size: 16px; }
+.wrapper-label small { color: var(--berry-700); font-size: 12px; font-weight: 700; }
+.chocolate-hearts { position: absolute; inset: 0; pointer-events: none; }
+.chocolate-hearts > span { position: absolute; top: 30%; font-size: 22px; }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Ticket } from 'lucide-react'
 import { addDays, formatDateShort } from '../../shared/date'
+import { isGiftOpened } from '../components/ChocolateGift'
 import { missedWorkout, PASS_PRICE, passCandidates, passPrice, unusedGifts } from '../../shared/dayPasses'
 import { pointsBalance } from '../../shared/points'
 import { Card, EmptyState, Notice, StatTile } from '../components/ui'
@@ -42,7 +43,7 @@ export function DayPasses() {
       </div>
       <p className="muted small">أول إكسبشن ببلاش، وبعد كده بـ {PASS_PRICE} نقطة من <a href="#/rewards/points">نقطك</a>.</p>
       {unusedGifts(state).map((gift) => (
-        <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>
+        <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{isGiftOpened(gift.id) ? gift.note ?? 'إكسبشن ببلاش' : 'مستنياكي شوكولاتة في الصفحة الرئيسية، افتحيها الأول 🍫'}</p>
       ))}
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       {candidates.length === 0 ? (
