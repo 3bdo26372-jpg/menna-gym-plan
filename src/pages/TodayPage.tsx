@@ -13,6 +13,7 @@ import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/pe
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
+import { ChocolateGift } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -90,17 +91,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      {unusedGifts(state).map((gift) => (
-        <Card key={gift.id} className="gift-card">
-          <span className="gift-emoji" aria-hidden="true">🎁</span>
-          <div>
-            <h2 className="card-title">جالك إكسبشن هدية!</h2>
-            {gift.note && <p className="gift-note">{gift.note}</p>}
-            <p className="muted small">إكسبشن ببلاش، تكمّلي بيه أي يوم لـ 100 ويتحسب يوم تمرين.</p>
-            <a className="button secondary" href="#/rewards/passes">شوفيه</a>
-          </div>
-        </Card>
-      ))}
+      {unusedGifts(state).map((gift) => <ChocolateGift key={gift.id} gift={gift} />)}
       {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPass(state) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
