@@ -8,12 +8,12 @@ import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canAffordPass, canTakePass, missedWorkout, passPrice, unusedGifts } from '../../shared/dayPasses'
+import { canAffordPassFor, canTakePass, missedWorkout, passPriceFor, unusedGifts } from '../../shared/dayPasses'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
-import { ChocolateGift } from '../components/ChocolateGift'
+import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -25,6 +25,7 @@ import { formatChange, formatNumber } from '../lib/format'
 import { greetingFor } from '../lib/greetings'
 import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS, OVERALL_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
+import { treatsFor } from '../lib/treats'
 import { useAppData, useAppState } from '../state/AppData'
 import { resumableSession, workSummary } from '../workout/session'
 
@@ -91,11 +92,11 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      {unusedGifts(state).map((gift) => <ChocolateGift key={gift.id} gift={gift} />)}
-      {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPass(state) && unusedGifts(state).length === 0 && (
+      {treatsFor(state).map((treat) => <TreatCard key={treat.id} treat={treat} />)}
+      {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
-          <p className="muted">عندك إكسبشن{passPrice(state) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
+          <p className="muted">عندك إكسبشن{passPriceFor(state, yesterday.date) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
           <a className="button secondary" href="#/rewards/passes">استخدمي الإكسبشن</a>
         </Card>
       )}

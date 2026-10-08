@@ -82,7 +82,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT kind, period_index, start_date, end_date, generated_at FROM reports ORDER BY kind, period_index'),
     db.prepare('SELECT id, log_date, eaten_at, category, item, quantity, ml, created_at FROM food_entries ORDER BY log_date, eaten_at, id'),
     db.prepare('SELECT id, kind, points, note, log_date, status, created_at, done_at FROM water_point_spends ORDER BY id'),
-    db.prepare('SELECT log_date, points, created_at FROM day_passes ORDER BY created_at'),
+    db.prepare('SELECT log_date, points, kind, created_at FROM day_passes ORDER BY created_at'),
     db.prepare('SELECT id, note, created_at FROM pass_gifts ORDER BY id'),
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
   ])
@@ -145,7 +145,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     doneAt: (row.done_at as string | null) ?? null,
   }))
   const makeup = makeupByDate(waterSpends)
-  const dayPasses: DayPass[] = passes.results.map((row) => ({ date: String(row.log_date), points: Number(row.points), createdAt: String(row.created_at) }))
+  const dayPasses: DayPass[] = passes.results.map((row) => ({ date: String(row.log_date), points: Number(row.points), kind: (row.kind as DayPass['kind']) ?? 'regular', createdAt: String(row.created_at) }))
   const excused = new Set(dayPasses.map((pass) => pass.date))
 
   const foodEntries = food.results.map((row): FoodEntry => ({
@@ -325,7 +325,7 @@ export async function addWaterSpend(db: D1Database, spend: NewWaterSpend) {
 }
 
 export async function addDayPass(db: D1Database, pass: Omit<DayPass, 'createdAt'>) {
-  await db.prepare('INSERT INTO day_passes (log_date, points) VALUES (?, ?)').bind(pass.date, pass.points).run()
+  await db.prepare('INSERT INTO day_passes (log_date, points, kind) VALUES (?, ?, ?)').bind(pass.date, pass.points, pass.kind ?? 'regular').run()
 }
 
 export async function addPeriod(db: D1Database, startDate: string, endDate: string | null) {
