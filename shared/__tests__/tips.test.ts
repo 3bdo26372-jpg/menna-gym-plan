@@ -106,8 +106,14 @@ describe('daily tips', () => {
   it('suggests training for the phase until she trains', () => {
     const today = addDays(start, 8)
     const tips = dailyTips(state(today, { periods: [period(start)] }), 10)
-    expect(tips.find((tip) => tip.id === 'train')?.title).toBe('جسمك في أحلى أوقاته يا كتكوتة')
+    expect(tips.find((tip) => tip.id === 'train')?.title).toMatch(/^جسمك في أحلى أوقاته يا /)
     expect(ids(state(today, { periods: [period(start)] }, { workout: workout() }))).not.toContain('train')
+  })
+
+  it('names her on every tip, and قلب دادي around ovulation', () => {
+    const tips = dailyTips(state(addDays(start, 13), { periods: [period(start)] }), 10)
+    expect(tips.some((tip) => tip.title.includes('قلب دادي'))).toBe(true)
+    expect(tips.every((tip) => !`${tip.title}${tip.text}`.includes('{nick}'))).toBe(true)
   })
 
   it('drops the drink once she logged it', () => {

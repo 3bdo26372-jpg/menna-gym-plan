@@ -2,6 +2,7 @@ import { CALORIE_FLOOR_KCAL, dayCalories, formatCalories, hasFoodLogged } from '
 import { addDays } from './date'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
 import { cycleDay, periodForecast, type CycleDay, type HormonePhase } from './period'
+import { NICKNAMES, OVULATION_NICKNAME } from './nicknames'
 import { WATER_GOAL_ML } from './points'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { formatSleep, isLateBedtime, sleepMinutes, SLEEP_GOAL_HOURS } from './sleep'
@@ -43,12 +44,12 @@ export interface Drink {
 }
 
 export const DRINKS: Record<string, Drink> = {
-  greenTea: { key: 'greenTea', item: 'شاي أخضر', title: 'كوباية شاي أخضر 🍵', text: 'دلّعي نفسك بكوباية بعد الأكل بساعة يا قمر، بس مش قبل النوم عشان تنامي زي الكتكوتة 🐥', words: ['شاي اخضر'] },
-  ginger: { key: 'ginger', item: 'جنزبيل بالليمون', title: 'جنزبيل دافي بالليمون 🫚', text: 'كوباية دافية تحضنك من جوه وتهدّي التقلصات والانتفاخ يا حبيبتي 🤍', words: ['جنزبيل', 'زنجبيل'] },
-  cinnamon: { key: 'cinnamon', item: 'قرفة', title: 'كوباية قرفة دافية', text: 'دافية ومن غير سكر، وهتهدّي نفسك على الحلو يا عسولتي 🤎', words: ['قرفه'] },
-  lemon: { key: 'lemon', item: 'ليمون دافي', title: 'ليمون دافي الصبح 🍋', text: 'أول ما تصحي يا أميرتي، قبل الفطار. هيصحّيكي ويفتح نفسك للمية ☀️', words: ['ليمون', 'لمون'] },
-  chia: { key: 'chia', item: 'بذور شيا بالليمون', title: 'معلقة بذور شيا 🌱', text: 'معلقة في كوباية مية أو ليمون وسيبيها ١٠ دقايق. هتشبّعك وتريّح بطنك يا منونة 💕', words: ['شيا'] },
-  mint: { key: 'mint', item: 'نعناع', title: 'كوباية نعناع 🌿', text: 'كوباية حلوة تخفف الانتفاخ اللي بييجي قبل البريود يا قلبي 🌸', words: ['نعناع'] },
+  greenTea: { key: 'greenTea', item: 'شاي أخضر', title: 'كوباية شاي أخضر 🍵', text: 'دلّعي نفسك بكوباية بعد الأكل بساعة يا {nick}، بس مش قبل النوم عشان تنامي زي الكتكوتة 🐥', words: ['شاي اخضر'] },
+  ginger: { key: 'ginger', item: 'جنزبيل بالليمون', title: 'جنزبيل دافي بالليمون 🫚', text: 'كوباية دافية تحضنك من جوه وتهدّي التقلصات والانتفاخ يا {nick} 🤍', words: ['جنزبيل', 'زنجبيل'] },
+  cinnamon: { key: 'cinnamon', item: 'قرفة', title: 'كوباية قرفة دافية', text: 'دافية ومن غير سكر، وهتهدّي نفسك على الحلو يا {nick} 🤎', words: ['قرفه'] },
+  lemon: { key: 'lemon', item: 'ليمون دافي', title: 'ليمون دافي الصبح 🍋', text: 'أول ما تصحي يا {nick}، قبل الفطار. هيصحّيكي ويفتح نفسك للمية ☀️', words: ['ليمون', 'لمون'] },
+  chia: { key: 'chia', item: 'بذور شيا بالليمون', title: 'معلقة بذور شيا 🌱', text: 'معلقة في كوباية مية أو ليمون وسيبيها ١٠ دقايق. هتشبّعك وتريّح بطنك يا {nick} 💕', words: ['شيا'] },
+  mint: { key: 'mint', item: 'نعناع', title: 'كوباية نعناع 🌿', text: 'كوباية حلوة تخفف الانتفاخ اللي بييجي قبل البريود يا {nick} 🌸', words: ['نعناع'] },
   chamomile: { key: 'chamomile', item: 'كاموميل', title: 'كاموميل قبل النوم 🌼', text: 'كوباية دافية في السرير وتنامي بدري زي الأميرات 👑', words: ['كاموميل', 'بابونج', 'ينسون'] },
 }
 
@@ -62,11 +63,11 @@ const DRINKS_BY_PHASE: Record<HormonePhase | 'unknown', string[]> = {
 }
 
 const TRAIN: Record<HormonePhase, { emoji: string; title: string; text: string }> = {
-  period: { emoji: '🌸', title: 'النهارده على قدّك يا قلبي', text: 'أيام البريود جسمك محتاج دلع. حركة خفيفة وإطالة كفاية، ولو فيه وجع سجّليه ونقطك محفوظة 🤍' },
-  follicular: { emoji: '💪', title: 'جسمك في أحلى أوقاته يا كتكوتة', text: 'بعد البريود هرموناتك في صفّك: طاقة أعلى وجسمك بيرتاح أسرع. وريني شطارتك في التمرين النهارده 😍' },
-  ovulation: { emoji: '🔥', title: 'أقوى أيامك في الشهر يا بطلة', text: 'طاقتك في القمة الأيام دي. اتحدّي نفسك شوية، بس سخّني كويس الأول يا أشطر حد بيتمرن 🔥' },
-  luteal: { emoji: '🧘‍♀️', title: 'كمّلي على راحتك يا عسولتي', text: 'التعب والجوع الزيادة الأيام دي طبيعيين خالص من الهرمونات. كمّلي تمرينك، ولو حاسة بتقل اختاري إن طاقتك قليلة والتمرين هيبقى أخف 🤍' },
-  premenstrual: { emoji: '🌙', title: 'دلّعي نفسك الأيام دي', text: 'قبل البريود جسمك بيشيل مية، فلو الميزان زاد ده مش دهون خالص يا قمر. تمرين أخف وملح أقل، وانتي زي الفل 🌙' },
+  period: { emoji: '🌸', title: 'النهارده على قدّك يا {nick}', text: 'أيام البريود جسمك محتاج دلع. حركة خفيفة وإطالة كفاية، ولو فيه وجع سجّليه ونقطك محفوظة 🤍' },
+  follicular: { emoji: '💪', title: 'جسمك في أحلى أوقاته يا {nick}', text: 'بعد البريود هرموناتك في صفّك: طاقة أعلى وجسمك بيرتاح أسرع. وريني شطارتك في التمرين النهارده 😍' },
+  ovulation: { emoji: '🔥', title: 'أقوى أيامك في الشهر يا {nick}', text: 'طاقتك في القمة الأيام دي. اتحدّي نفسك شوية، بس سخّني كويس الأول يا أشطر حد بيتمرن 🔥' },
+  luteal: { emoji: '🧘‍♀️', title: 'كمّلي على راحتك يا {nick}', text: 'التعب والجوع الزيادة الأيام دي طبيعيين خالص من الهرمونات. كمّلي تمرينك، ولو حاسة بتقل اختاري إن طاقتك قليلة والتمرين هيبقى أخف 🤍' },
+  premenstrual: { emoji: '🌙', title: 'دلّعي نفسك الأيام دي', text: 'قبل البريود جسمك بيشيل مية، فلو الميزان زاد ده مش دهون خالص يا {nick}. تمرين أخف وملح أقل، وانتي زي الفل 🌙' },
 }
 
 const HOUR_DRINK_SWITCH = 20
@@ -96,26 +97,26 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
 
   // Sleep: ask in the morning; once logged, a word only when it was short or late.
   if (day && day.sleep === null) {
-    tips.push({ id: 'sleep-log', emoji: '😴', title: 'صباح الفل يا أميرتي، نمتي امتى وصحيتي امتى؟', text: 'قوليلي نمتي كويس ولا لأ، عشان نظبط يومك على قد طاقتك 😴' })
+    tips.push({ id: 'sleep-log', emoji: '😴', title: 'صباح الفل يا {nick}، نمتي امتى وصحيتي امتى؟', text: 'قوليلي نمتي كويس ولا لأ، عشان نظبط يومك على قد طاقتك 😴' })
   } else if (day?.sleep) {
     const minutes = sleepMinutes(day.sleep)
     if (minutes < (SLEEP_GOAL_HOURS - 1) * 60) {
-      tips.push({ id: 'sleep', emoji: '🥱', title: `نمتي ${formatSleep(minutes)} بس يا كتكوتي`, text: 'النوم القليل بيجوّع وبيتعب. خفّي التمرين لو تعبانة، والنهارده نامي بدري عشان خاطري 🥺' })
+      tips.push({ id: 'sleep', emoji: '🥱', title: `نمتي ${formatSleep(minutes)} بس يا {nick}`, text: 'النوم القليل بيجوّع وبيتعب. خفّي التمرين لو تعبانة، والنهارده نامي بدري عشان خاطري 🥺' })
     } else if (isLateBedtime(day.sleep)) {
-      tips.push({ id: 'sleep', emoji: '🌙', title: `سهرانة لحد ${day.sleep.sleptAt} يا منونة؟`, text: 'النوم بدري بيظبط الهرمونات والحرق ويخلّي بشرتك أحلى. النهارده نامي قبل ٢، ومن غير شاي أو ريدبول بعد المغرب 🌙' })
+      tips.push({ id: 'sleep', emoji: '🌙', title: `سهرانة لحد ${day.sleep.sleptAt} يا {nick}؟`, text: 'النوم بدري بيظبط الهرمونات والحرق ويخلّي بشرتك أحلى. النهارده نامي قبل ٢، ومن غير شاي أو ريدبول بعد المغرب 🌙' })
     }
   }
 
   // Weigh and measure only in the calm days after a period, once a cycle.
   if (state.periods && !state.periods.length) {
-    tips.push({ id: 'period-log', emoji: '🌸', title: 'قوليلي آخر بريود جالك امتى يا قلبي', text: 'عشان أعرف أنسب أيام للميزان والمقاسات، وإمتى جسمك في أحلى أوقاته للتمرين 🌸', href: '#/period/log' })
+    tips.push({ id: 'period-log', emoji: '🌸', title: 'قوليلي آخر بريود جالك امتى يا {nick}', text: 'عشان أعرف أنسب أيام للميزان والمقاسات، وإمتى جسمك في أحلى أوقاته للتمرين 🌸', href: '#/period/log' })
   } else if (cycle?.measureDaysLeft) {
     const start = state.periods!.filter((entry) => entry.startDate <= today).at(-1)!.startDate
     const measured = state.measurements.some((entry) => entry.measuredOn >= start && entry.values.weight !== undefined)
     if (!measured) {
       tips.push({
         id: 'measure', emoji: '⚖️',
-        title: cycle.measureDaysLeft > 1 ? `وقت الميزان والمقاسات يا قمر، في ${cycle.measureDaysLeft === 2 ? 'اليومين' : `الـ${cycle.measureDaysLeft} أيام`} الجايين` : 'النهارده آخر يوم حلو للميزان والمقاسات يا قمر',
+        title: cycle.measureDaysLeft > 1 ? `وقت الميزان والمقاسات يا {nick}، في ${cycle.measureDaysLeft === 2 ? 'اليومين' : `الـ${cycle.measureDaysLeft} أيام`} الجايين` : 'النهارده آخر يوم حلو للميزان والمقاسات يا {nick}',
         text: 'دي أحلى أيام في الشهر، جسمك مش شايل مية والأرقام هتفرّحك 😍 الصبح بعد الحمام وقبل أي أكل أو شرب، على نفس الميزان، والمازورة على نفس الأماكن.',
         href: '#/measurements/new',
       })
@@ -127,7 +128,7 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
   const waterToday = waterMl(foodOn(today))
   if (waterYesterday < WATER_TARGET_ML && waterToday < WATER_GOAL_ML && state.days.some((item) => item.date === yesterday)) {
     tips.push({
-      id: 'water', emoji: '💧', title: 'مية زيادة النهارده يا عسولتي',
+      id: 'water', emoji: '💧', title: 'مية زيادة النهارده يا {nick}',
       text: `امبارح شربتي ${formatLitres(waterYesterday)} لتر بس، فالنهارده عايزين نوصل ${formatLitres(WATER_GOAL_ML)} لتر: كوباية أول ما تصحي وكوباية مع كل أكلة، وبشرتك هتشكرك ✨`,
       href: '#/food/water',
     })
@@ -138,7 +139,7 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
   if (hasFoodLogged(foodYesterday) && dayCalories(foodYesterday) < CALORIE_FLOOR_KCAL) {
     tips.push({
       id: 'food', emoji: '🍽️', title: 'دلّعي نفسك بأكلة حلوة النهارده',
-      text: `امبارح أكلتي حوالي ${formatCalories(dayCalories(foodYesterday))} سعرة بس يا قلبي، وده قليل عليكي. الأكل القليل قوي بيبطّأ الحرق، فكُلي كويس وخلّي فيه بروتين (فراخ، بيض، تونة، زبادي) 🤍`,
+      text: `امبارح أكلتي حوالي ${formatCalories(dayCalories(foodYesterday))} سعرة بس يا {nick}، وده قليل عليكي. الأكل القليل قوي بيبطّأ الحرق، فكُلي كويس وخلّي فيه بروتين (فراخ، بيض، تونة، زبادي) 🤍`,
       href: '#/food/calories',
     })
   }
@@ -150,7 +151,13 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
   // One drink for the day; chamomile for a late night.
   const lateNight = hour >= HOUR_DRINK_SWITCH && day?.sleep && isLateBedtime(day.sleep)
   const drink = lateNight ? DRINKS.chamomile : DRINKS[pick(DRINKS_BY_PHASE[cycle?.phase ?? 'unknown'], today)]
-  if (!hadDrink(foodOn(today), drink)) tips.push({ id: 'drink', emoji: '🥤', title: `مشروبك النهارده يا أميرتي: ${drink.title}`, text: drink.text, drink })
+  if (!hadDrink(foodOn(today), drink)) tips.push({ id: 'drink', emoji: '🥤', title: `مشروبك النهارده يا {nick}: ${drink.title}`, text: drink.text, drink })
 
-  return tips.slice(0, MAX_TIPS)
+  // A different nickname on each tip, rotating day by day; around ovulation she is قلب دادي.
+  const seed = [...today].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  return tips.slice(0, MAX_TIPS).map((tip, index) => {
+    const nick = cycle?.phase === 'ovulation' ? OVULATION_NICKNAME : NICKNAMES[(seed + index) % NICKNAMES.length]
+    const named = (text: string) => text.replaceAll('{nick}', nick)
+    return { ...tip, title: named(tip.title), text: named(tip.text), ...(tip.drink && { drink: { ...tip.drink, title: named(tip.drink.title), text: named(tip.drink.text) } }) }
+  })
 }
