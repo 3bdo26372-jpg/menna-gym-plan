@@ -106,7 +106,7 @@ describe('daily tips', () => {
   it('suggests training for the phase until she trains', () => {
     const today = addDays(start, 8)
     const tips = dailyTips(state(today, { periods: [period(start)] }), 10)
-    expect(tips.find((tip) => tip.id === 'train')?.title).toBe('وقت ممتاز للتمرين')
+    expect(tips.find((tip) => tip.id === 'train')?.title).toBe('جسمك في أحلى أوقاته يا كتكوتة')
     expect(ids(state(today, { periods: [period(start)] }, { workout: workout() }))).not.toContain('train')
   })
 

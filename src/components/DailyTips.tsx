@@ -56,7 +56,7 @@ export function DailyTips({ state }: { state: AppState }) {
 }
 
 function linkLabel(tip: Tip) {
-  if (tip.id === 'measure') return 'سجّلي الوزن والمقاسات'
+  if (tip.id === 'measure') return 'سجّلي وزنك ومقاساتك'
   if (tip.id === 'period-log') return 'سجّلي البريود'
   if (tip.id === 'water') return 'سجّلي مية'
   return 'شوفي أكلك'
