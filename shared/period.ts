@@ -143,3 +143,46 @@ export function validatePain(input: unknown): number | null | string {
   if (typeof level !== 'number' || !Number.isInteger(level) || level < 0 || level > 10) return 'level must be 0–10, or null'
   return level
 }
+
+/**
+ * Where she is in her cycle, for the daily tips. Ovulation is about 14 days
+ * before the next start, so it is placed from her own cycle length.
+ * - period: bleeding days; energy and iron are low, so go gentle.
+ * - follicular: after the period, estrogen rises; energy and recovery are at their best.
+ * - ovulation: the peak of the follicular rise.
+ * - luteal: progesterone rises; a bit more hunger and tiredness is normal.
+ * - premenstrual: the last days before it; water retention and bloating, so the scale goes up.
+ */
+export type HormonePhase = 'period' | 'follicular' | 'ovulation' | 'luteal' | 'premenstrual'
+const LUTEAL_DAYS = 14
+const PREMENSTRUAL_DAYS = 5
+/** Weigh and measure this many days after the period ends, for this many days. */
+const MEASURE_AFTER_PERIOD = 2
+const MEASURE_WINDOW_DAYS = 4
+
+export interface CycleDay {
+  /** Day of the cycle; the start of the latest period is day 1. */
+  day: number
+  phase: HormonePhase
+  /** Days left (including today) in the window that suits weighing and measuring, or 0 outside it. */
+  measureDaysLeft: number
+}
+
+export function cycleDay(forecast: PeriodForecast, today: string): CycleDay | null {
+  const { last, cycleDays, periodDays } = forecast
+  if (!last) return null
+  const day = diffDays(last.startDate, today) + 1
+  // Long past the expected start without a new one logged: too unsure to say.
+  if (day > cycleDays + 10) return null
+  const ovulation = cycleDays - LUTEAL_DAYS
+  const daysLeft = cycleDays - day + 1
+  const phase: HormonePhase = forecast.phase === 'period'
+    ? 'period'
+    : daysLeft <= PREMENSTRUAL_DAYS ? 'premenstrual'
+      : day < ovulation - 1 ? 'follicular'
+        : day <= ovulation + 1 ? 'ovulation' : 'luteal'
+  const lastDay = last.endDate ? diffDays(last.startDate, last.endDate) + 1 : periodDays
+  const windowStart = lastDay + MEASURE_AFTER_PERIOD + 1
+  const windowEnd = Math.min(windowStart + MEASURE_WINDOW_DAYS - 1, ovulation + 1)
+  return { day, phase, measureDaysLeft: day >= windowStart && day <= windowEnd ? windowEnd - day + 1 : 0 }
+}

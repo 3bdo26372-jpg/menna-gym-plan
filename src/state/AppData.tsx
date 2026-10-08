@@ -3,6 +3,7 @@ import { cairoDate } from '../../shared/date'
 import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
+import type { SleepLog } from '../../shared/sleep'
 import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
@@ -23,6 +24,7 @@ interface AppDataValue {
   saveWorkout(date: string, input: WorkoutInput): Promise<AppState>
   saveFeedback(date: string, input: FeedbackInput): Promise<void>
   savePeriodPain(date: string, level: number | null): Promise<void>
+  saveSleep(date: string, sleep: SleepLog | null): Promise<void>
   addMeasurement(input: MeasurementInput): Promise<void>
   markRewardCelebrated(id: string): Promise<void>
   addFood(date: string, input: FoodInput): Promise<void>
@@ -74,6 +76,7 @@ function createBackend(): Backend {
     saveWorkout: forward('saveWorkout'),
     saveFeedback: forward('saveFeedback'),
     savePeriodPain: forward('savePeriodPain'),
+    saveSleep: forward('saveSleep'),
     addMeasurement: forward('addMeasurement'),
     markRewardCelebrated: forward('markRewardCelebrated'),
     addFood: forward('addFood'),
@@ -184,6 +187,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       saveWorkout: (date, input) => apply(backend.saveWorkout(date, input)),
       saveFeedback: async (date, input) => void (await apply(backend.saveFeedback(date, input))),
       savePeriodPain: async (date, level) => void (await apply(backend.savePeriodPain(date, level))),
+      saveSleep: async (date, sleep) => void (await apply(backend.saveSleep(date, sleep))),
       addMeasurement: async (input) => void (await apply(backend.addMeasurement(input))),
       markRewardCelebrated: async (id) => void (await apply(backend.markRewardCelebrated(id))),
       addFood: async (date, input) => void (await apply(backend.addFood(date, input))),

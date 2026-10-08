@@ -13,6 +13,7 @@ import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/pe
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CheckInForm } from '../components/CheckInForm'
+import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
@@ -109,6 +110,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       )}
 
       {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
+
+      <DailyTips state={state} />
 
       <TodayWorkout state={state} day={today} plan={plan} />
 
