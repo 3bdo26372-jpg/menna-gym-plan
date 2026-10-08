@@ -9,7 +9,19 @@ export interface SleepLog {
   sleptAt: string
   /** "HH:MM" she woke up. */
   wokeAt: string
+  /** How it felt, if she said. */
+  quality?: SleepQuality | null
+  /** Anything she wants to add: woke up a lot, dreams, cramps… */
+  note?: string | null
 }
+
+export type SleepQuality = 'good' | 'okay' | 'bad'
+export const SLEEP_QUALITIES: { value: SleepQuality; label: string; emoji: string }[] = [
+  { value: 'good', label: 'كويس', emoji: '😴' },
+  { value: 'okay', label: 'عادي', emoji: '😐' },
+  { value: 'bad', label: 'وحش', emoji: '😣' },
+]
+export const SLEEP_NOTE_MAX = 200
 
 /** Hours of sleep the tips aim for. */
 export const SLEEP_GOAL_HOURS = 7
@@ -54,7 +66,11 @@ export function validateSleep(input: unknown): SleepLog | null | string {
   if (typeof sleptAt !== 'string' || !TIME.test(sleptAt)) return 'sleptAt must be HH:MM'
   if (typeof wokeAt !== 'string' || !TIME.test(wokeAt)) return 'wokeAt must be HH:MM'
   if (sleepMinutes({ sleptAt, wokeAt }) > MAX_SLEEP_MINUTES) return 'that is too long for one night'
-  return { sleptAt, wokeAt }
+  const quality = fields.quality ?? null
+  if (quality !== null && !SLEEP_QUALITIES.some((option) => option.value === quality)) return 'invalid quality'
+  if (fields.note !== undefined && fields.note !== null && typeof fields.note !== 'string') return 'note must be text'
+  const note = typeof fields.note === 'string' ? fields.note.trim().slice(0, SLEEP_NOTE_MAX) || null : null
+  return { sleptAt, wokeAt, quality: quality as SleepQuality | null, note }
 }
 
 /** Average minutes over the nights that have a log, or null with none. */

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Check, ChevronLeft, Moon } from 'lucide-react'
 import { cairoTime } from '../../shared/date'
-import { formatSleep, sleepMinutes, validateSleep, type SleepLog } from '../../shared/sleep'
+import { formatSleep, SLEEP_NOTE_MAX, SLEEP_QUALITIES, sleepMinutes, validateSleep, type SleepLog, type SleepQuality } from '../../shared/sleep'
 import { dailyTips, type Drink, type Tip } from '../../shared/tips'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
-import { Card, Notice } from './ui'
+import { Card, ChoiceGroup, Notice } from './ui'
 
 /** The Cairo hour, refreshed every few minutes so evening tips switch on time. */
 function useHour() {
@@ -48,11 +48,19 @@ export function DailyTips({ state }: { state: AppState }) {
         : (
           <div className="sleep-summary">
             <span className="chip soft"><Moon /> نمتي {sleep.sleptAt} · صحيتي {sleep.wokeAt} · {formatSleep(sleepMinutes(sleep))}</span>
+            {sleep.quality && <span className="chip soft">{qualityLabel(sleep.quality)}</span>}
             <button type="button" className="link-button" onClick={() => setEditingSleep(true)}>تعديل</button>
+            {sleep.note && <p className="muted small sleep-note">📝 {sleep.note}</p>}
           </div>
         ))}
     </Card>
   )
+}
+
+const QUALITY_OPTIONS = SLEEP_QUALITIES.map((option) => ({ value: option.value, label: option.label, emoji: option.emoji }))
+const qualityLabel = (quality: SleepQuality) => {
+  const option = SLEEP_QUALITIES.find((item) => item.value === quality)!
+  return `${option.emoji} نوم ${option.label}`
 }
 
 function linkLabel(tip: Tip) {
@@ -91,9 +99,11 @@ function SleepForm({ date, current, onDone }: { date: string; current: SleepLog 
   const { saveSleep } = useAppData()
   const [sleptAt, setSleptAt] = useState(current?.sleptAt ?? '')
   const [wokeAt, setWokeAt] = useState(current?.wokeAt ?? '')
+  const [quality, setQuality] = useState<SleepQuality | null>(current?.quality ?? null)
+  const [note, setNote] = useState(current?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const draft = sleptAt && wokeAt ? validateSleep({ sleptAt, wokeAt }) : null
+  const draft = sleptAt && wokeAt ? validateSleep({ sleptAt, wokeAt, quality, note }) : null
   const valid = draft !== null && typeof draft !== 'string'
 
   async function save() {
@@ -122,6 +132,11 @@ function SleepForm({ date, current, onDone }: { date: string; current: SleepLog 
       </label>
       {valid && <p className="muted small">يعني {formatSleep(sleepMinutes(draft))} نوم</p>}
       {typeof draft === 'string' && <p className="muted small">الوقت ده طويل قوي لليلة واحدة، راجعيه.</p>}
+      <ChoiceGroup legend="نمتي كويس؟" options={QUALITY_OPTIONS} value={quality} onChange={setQuality} columns={3} />
+      <label className="field is-wide">
+        <span>عايزة تقولي حاجة؟ <small>(اختياري)</small></span>
+        <textarea rows={2} maxLength={SLEEP_NOTE_MAX} value={note} placeholder="مثلًا: صحيت كتير، كان عندي تقلصات، حلمت حلم حلو…" onChange={(event) => setNote(event.target.value)} />
+      </label>
       <div className="sleep-actions">
         <button type="submit" className="button primary" disabled={!valid || busy}>{busy ? 'لحظة…' : 'سجّلي'}</button>
         {onDone && <button type="button" className="link-button" onClick={onDone}>إلغاء</button>}

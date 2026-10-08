@@ -100,7 +100,9 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
     tips.push({ id: 'sleep-log', emoji: '😴', title: 'صباح الفل يا {nick}، نمتي امتى وصحيتي امتى؟', text: 'قوليلي نمتي كويس ولا لأ، عشان نظبط يومك على قد طاقتك 😴' })
   } else if (day?.sleep) {
     const minutes = sleepMinutes(day.sleep)
-    if (minutes < (SLEEP_GOAL_HOURS - 1) * 60) {
+    if (day.sleep.quality === 'bad') {
+      tips.push({ id: 'sleep', emoji: '🫂', title: 'نومك كان وحش يا {nick}؟', text: 'سلامتك. خفّي التمرين النهارده لو تعبانة، وكوباية دافية بالليل ونامي بدري عشان خاطري 🤍' })
+    } else if (minutes < (SLEEP_GOAL_HOURS - 1) * 60) {
       tips.push({ id: 'sleep', emoji: '🥱', title: `نمتي ${formatSleep(minutes)} بس يا {nick}`, text: 'النوم القليل بيجوّع وبيتعب. خفّي التمرين لو تعبانة، والنهارده نامي بدري عشان خاطري 🥺' })
     } else if (isLateBedtime(day.sleep)) {
       tips.push({ id: 'sleep', emoji: '🌙', title: `سهرانة لحد ${day.sleep.sleptAt} يا {nick}؟`, text: 'النوم بدري بيظبط الهرمونات والحرق ويخلّي بشرتك أحلى. النهارده نامي قبل ٢، ومن غير شاي أو ريدبول بعد المغرب 🌙' })
