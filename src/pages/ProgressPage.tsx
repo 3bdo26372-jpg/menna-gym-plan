@@ -3,6 +3,7 @@ import { LineChart as LineIcon } from 'lucide-react'
 import { dayNumberFor, periodForDay } from '../../shared/date'
 import { summaryStats } from '../../shared/engine'
 import { MEASUREMENT_FIELDS } from '../../shared/measurements'
+import { averageSleep, formatSleep } from '../../shared/sleep'
 import { DailyBars, TrendChart } from '../components/Charts'
 import { ScoreCalendar, ScoreLegend } from '../components/ScoreCalendar'
 import { Card, EmptyState, PageHeader, StatTile } from '../components/ui'
@@ -16,6 +17,7 @@ export function ProgressPage() {
   const stats = summaryStats(state)
   const recent = state.days.slice(-30)
   const charted = MEASUREMENT_FIELDS.filter((field) => field.chart)
+  const sleep = averageSleep(state.days.slice(-7).map((day) => day.sleep ?? null))
 
   return (
     <div className="page">
@@ -27,6 +29,7 @@ export function ProgressPage() {
         <StatTile label="أيام التمرين" value={stats.activeDays} tone="accent" />
         <StatTile label="متوسط النقاط" value={stats.averageScore} unit="/100" />
         <StatTile label="دقائق التمرين" value={stats.totalMinutes} />
+        {sleep !== null && <StatTile label="متوسط نومك آخر أسبوع" value={formatSleep(sleep)} />}
       </div>
 
       {start && (

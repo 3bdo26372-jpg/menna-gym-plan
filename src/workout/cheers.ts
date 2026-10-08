@@ -18,7 +18,8 @@ export interface Cheer {
   loading?: boolean
 }
 
-export const NICKNAMES = ['كتكوتة', 'منونة', 'عسولتي', 'كتكوتي', 'أميرتي البينك']
+export { NICKNAMES } from '../../shared/nicknames'
+import { NICKNAMES } from '../../shared/nicknames'
 export const SPECIAL_CHEERS: Cheer[] = [
   { text: 'أشطر حد بيتمرن', emoji: '💪' },
   { text: 'أحلى جسم', loading: true },

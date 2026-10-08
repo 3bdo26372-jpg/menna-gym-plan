@@ -2,6 +2,7 @@ import type { FoodEntry } from './food'
 import type { WaterSpend } from './waterPoints'
 import type { DayPass, PassGift } from './dayPasses'
 import type { PeriodEntry } from './period'
+import type { SleepLog } from './sleep'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -86,6 +87,8 @@ export interface DayRecord {
   excused: boolean
   /** Period pain she rated for the day, 1–10 (0 for none). */
   periodPain: number | null
+  /** The night before this day: when she slept and woke up. */
+  sleep?: SleepLog | null
   score: ScoreBreakdown
 }
 

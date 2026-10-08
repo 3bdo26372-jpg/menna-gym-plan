@@ -18,6 +18,7 @@ import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
 import type { DayPass, PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
+import type { SleepLog } from '../../shared/sleep'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -73,7 +74,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
-    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json, period_pain FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
+    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json, period_pain, slept_at, woke_at FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
     db.prepare('SELECT * FROM workouts'),
     db.prepare('SELECT * FROM workout_exercises ORDER BY workout_id, position'),
     db.prepare('SELECT * FROM rewards ORDER BY sort_order'),
@@ -167,7 +168,8 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    return { date, dayNumber, ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date)) }
+    const sleep: SleepLog | null = row.slept_at && row.woke_at ? { sleptAt: String(row.slept_at), wokeAt: String(row.woke_at) } : null
+    return { date, dayNumber, ...parts, sleep, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date)) }
   })
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
@@ -260,6 +262,11 @@ export async function saveWorkout(db: D1Database, date: string, workout: Workout
 
 export async function savePeriodPain(db: D1Database, date: string, level: number | null) {
   await db.prepare('UPDATE daily_logs SET period_pain = ?, updated_at = ? WHERE log_date = ?').bind(level, now(), date).run()
+}
+
+export async function saveSleep(db: D1Database, date: string, sleep: SleepLog | null) {
+  await db.prepare('UPDATE daily_logs SET slept_at = ?, woke_at = ?, updated_at = ? WHERE log_date = ?')
+    .bind(sleep?.sleptAt ?? null, sleep?.wokeAt ?? null, now(), date).run()
 }
 
 export async function saveFeedback(db: D1Database, date: string, feedback: Feedback) {
