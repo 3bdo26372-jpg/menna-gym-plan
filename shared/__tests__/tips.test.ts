@@ -25,7 +25,7 @@ describe('sleep', () => {
   })
 
   it('validates times and clears with null', () => {
-    expect(validateSleep({ sleptAt: '01:00', wokeAt: '09:00' })).toEqual({ sleptAt: '01:00', wokeAt: '09:00' })
+    expect(validateSleep({ sleptAt: '01:00', wokeAt: '09:00' })).toEqual({ sleptAt: '01:00', wokeAt: '09:00', quality: null, note: null })
     expect(validateSleep(null)).toBeNull()
     expect(validateSleep({ sleptAt: '1am', wokeAt: '09:00' })).toBeTypeOf('string')
     expect(validateSleep({ sleptAt: '09:30', wokeAt: '09:00' })).toBeTypeOf('string')
@@ -120,5 +120,17 @@ describe('daily tips', () => {
     const drink = dailyTips(state(start), 10).find((tip) => tip.id === 'drink')!.drink!
     expect(ids(state(start, { foodEntries: [food(start, drink.item)] }))).not.toContain('drink')
     expect(hadDrink([{ item: 'شاى أخضر بالنعناع' }], DRINKS.greenTea)).toBe(true)
+  })
+})
+
+describe('sleep quality and notes', () => {
+  it('keeps how it felt and a trimmed note', () => {
+    expect(validateSleep({ sleptAt: '01:00', wokeAt: '09:00', quality: 'bad', note: '  صحيت كتير ' })).toEqual({ sleptAt: '01:00', wokeAt: '09:00', quality: 'bad', note: 'صحيت كتير' })
+    expect(validateSleep({ sleptAt: '01:00', wokeAt: '09:00', quality: 'great' })).toBeTypeOf('string')
+  })
+
+  it('checks on her after a bad night even when it was long enough', () => {
+    const tip = dailyTips(state(start, {}, { sleep: { sleptAt: '00:30', wokeAt: '08:30', quality: 'bad' } }), 10).find((item) => item.id === 'sleep')
+    expect(tip?.title).toMatch(/^نومك كان وحش/)
   })
 })

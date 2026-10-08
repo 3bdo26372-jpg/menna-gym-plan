@@ -74,7 +74,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT metric, value, unit FROM baseline_measurements'),
     db.prepare('SELECT id, measured_on, note, created_at FROM measurement_entries ORDER BY measured_on, id'),
     db.prepare('SELECT entry_id, metric, value FROM measurement_values'),
-    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json, period_pain, slept_at, woke_at FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
+    db.prepare('SELECT log_date, day_number, checkin_json, feedback_json, period_pain, slept_at, woke_at, sleep_quality, sleep_note FROM daily_logs WHERE log_date <= ? AND log_date >= ? ORDER BY log_date').bind(today, startDate ?? today),
     db.prepare('SELECT * FROM workouts'),
     db.prepare('SELECT * FROM workout_exercises ORDER BY workout_id, position'),
     db.prepare('SELECT * FROM rewards ORDER BY sort_order'),
@@ -168,7 +168,10 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     }
     // Derived from the start date so it stays right even if the start date is corrected by hand.
     const dayNumber = startDate ? dayNumberFor(startDate, date) : Number(row.day_number)
-    const sleep: SleepLog | null = row.slept_at && row.woke_at ? { sleptAt: String(row.slept_at), wokeAt: String(row.woke_at) } : null
+    const sleep: SleepLog | null = row.slept_at && row.woke_at ? {
+      sleptAt: String(row.slept_at), wokeAt: String(row.woke_at),
+      quality: (row.sleep_quality as SleepLog['quality']) ?? null, note: (row.sleep_note as string | null) ?? null,
+    } : null
     return { date, dayNumber, ...parts, sleep, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date)) }
   })
 
@@ -265,8 +268,8 @@ export async function savePeriodPain(db: D1Database, date: string, level: number
 }
 
 export async function saveSleep(db: D1Database, date: string, sleep: SleepLog | null) {
-  await db.prepare('UPDATE daily_logs SET slept_at = ?, woke_at = ?, updated_at = ? WHERE log_date = ?')
-    .bind(sleep?.sleptAt ?? null, sleep?.wokeAt ?? null, now(), date).run()
+  await db.prepare('UPDATE daily_logs SET slept_at = ?, woke_at = ?, sleep_quality = ?, sleep_note = ?, updated_at = ? WHERE log_date = ?')
+    .bind(sleep?.sleptAt ?? null, sleep?.wokeAt ?? null, sleep?.quality ?? null, sleep?.note ?? null, now(), date).run()
 }
 
 export async function saveFeedback(db: D1Database, date: string, feedback: Feedback) {
