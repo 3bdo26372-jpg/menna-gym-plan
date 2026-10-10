@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { LazyMotion } from 'framer-motion'
 import { CalendarCheck, ChartLine, FileText, Flower2, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
@@ -42,18 +42,6 @@ function Shell() {
   const route = useRoute()
   const { status, error, reload, mode, state, markRewardCelebrated } = useAppData()
   const pending = state?.rewards.find((reward) => reward.unlockedOn && !reward.celebratedAt) ?? null
-  const navRef = useRef<HTMLElement>(null)
-
-  // On a phone the tabs scroll sideways; bring the current one into view (e.g. after a link from the home page).
-  useEffect(() => {
-    const nav = navRef.current
-    const link = nav?.querySelector('[aria-current="page"]')
-    if (!nav || !link) return
-    const box = nav.getBoundingClientRect()
-    const item = link.getBoundingClientRect()
-    if (item.left < box.left) nav.scrollBy({ left: item.left - box.left - 12 })
-    else if (item.right > box.right) nav.scrollBy({ left: item.right - box.right + 12 })
-  }, [route, status])
 
   if (status === 'passcode') return <PasscodeScreen />
   if (route === 'workout' && status === 'ready') return <Suspense fallback={<div className="page center"><Spinner /></div>}><WorkoutPage /></Suspense>
@@ -65,7 +53,7 @@ function Shell() {
           <span className="brand-mark"><HeartPulse /></span>
           <span><strong>Menna Flow</strong><small>تمرين كل يوم</small></span>
         </a>
-        <nav className="nav" aria-label="الأقسام" ref={navRef}>
+        <nav className="nav" aria-label="الأقسام">
           {NAV.map(({ route: target, label, icon: Icon }) => (
             <a key={target} href={`#/${target}`} className="nav-link" aria-current={route === target ? 'page' : undefined}>
               <Icon aria-hidden="true" /><span>{label}</span>
