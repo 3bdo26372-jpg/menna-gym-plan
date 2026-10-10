@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, m } from 'framer-motion'
 import { X } from 'lucide-react'
-import { PERIOD_PASS_DAYS } from '../../shared/dayPasses'
 import { NICKNAMES } from '../../shared/nicknames'
 import type { AppState } from '../../shared/types'
 import { giftTreatId, isTreatOpened, openTreat, treatsFor, useTreatOpened, type Treat } from '../lib/treats'
@@ -114,7 +113,7 @@ function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?
   return (
     <>
       <h2 className="card-title">اليوم {treat.periodDay} من البريود 🌸</h2>
-      <p className="gift-note">أول {PERIOD_PASS_DAYS} أيام البريود عليا يا {nickFor(treat.date)} 🤍</p>
+      <p className="gift-note">هدية مني ليكي النهارده يا {nickFor(treat.date)} 🤍</p>
       <p className="muted small">لو مش قادرة تتمرني النهارده، استخدمي الإكسبشن ده ويتحسب يوم كامل. ولو مش محتاجاه سيبيه، وتقدري تستخدميه بعدين من صفحة الإكسبشن.</p>
       <div className="treat-actions">
         <button type="button" className="button primary" disabled={busy} onClick={() => void applyToday(treat.date)}>{busy ? 'لحظة…' : 'استخدميه للنهارده'}</button>
@@ -139,7 +138,7 @@ export function TreatCard({ treat }: { treat: Treat }) {
         </m.div>
       ) : (
         <div className="treat-inside">
-          <h2 className="card-title">{treat.kind === 'period' ? 'مفاجأة أيام البريود 🌸' : 'فيه حاجة حلوة مستنياكي 🎁'}</h2>
+          <h2 className="card-title">{treat.kind === 'period' ? 'مفاجأة النهارده 🌸' : 'فيه حاجة حلوة مستنياكي 🎁'}</h2>
           <p className="muted small">{treat.kind === 'period' ? 'دوسي عليها وافتحيها.' : 'دوسي على الشوكولاتة وافتحيها.'}</p>
         </div>
       )}
@@ -178,7 +177,7 @@ export function TreatPopup({ state }: { state: AppState }) {
               </m.div>
             ) : (
               <div className="treat-inside">
-                <h2 className="card-title">{treat.kind === 'period' ? 'مفاجأة أيام البريود 🌸' : 'فيه حاجة حلوة ليكي 🎁'}</h2>
+                <h2 className="card-title">{treat.kind === 'period' ? 'مفاجأة النهارده 🌸' : 'فيه حاجة حلوة ليكي 🎁'}</h2>
                 <p className="muted small">{treat.kind === 'period' ? 'دوسي عليها وافتحيها.' : 'دوسي على الشوكولاتة وافتحيها.'}</p>
               </div>
             )}
