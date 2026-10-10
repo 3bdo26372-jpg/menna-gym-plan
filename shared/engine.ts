@@ -1,5 +1,6 @@
 import { addDays, diffDays, isIsoDate } from './date'
 import { EXERCISE_BY_ID } from './exercises'
+import { isPainRest } from './period'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import type {
   AppState,
@@ -136,8 +137,9 @@ export function preferWorkout(existing: WorkoutResult | null, incoming: WorkoutR
   return !existing || incoming.mainCompletion >= existing.mainCompletion
 }
 
-export function isActiveDay(day: Pick<DayRecord, 'workout' | 'excused'>) {
-  return Boolean(day.excused || (day.workout && day.workout.mainCompletion >= ACTIVE_DAY_MIN_COMPLETION))
+/** Trained (half the workout or more), a day pass, or a period-pain rest day. */
+export function isActiveDay(day: Pick<DayRecord, 'workout' | 'excused'> & Partial<Pick<DayRecord, 'periodPain'>>) {
+  return Boolean(day.excused || isPainRest(day.periodPain) || (day.workout && day.workout.mainCompletion >= ACTIVE_DAY_MIN_COMPLETION))
 }
 
 /** Rewards that should now be unlocked, with the date their threshold was reached. */

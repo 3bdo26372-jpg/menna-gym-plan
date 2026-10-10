@@ -16,7 +16,7 @@ export function RewardsPage() {
   return (
     <div className="page">
       <PageHeader eyebrow="المكافآت" title="استمرارك يستاهل احتفال">
-        <p>أي يوم تخلّصي فيه نص التمرين على الأقل بيتحسب يوم تمرين، حتى أيام التمرين الخفيف. لحد دلوقتي: <strong>{active}</strong> يوم.</p>
+        <p>أي يوم تخلّصي فيه نص التمرين على الأقل بيتحسب يوم تمرين، حتى أيام التمرين الخفيف وأيام راحة البريود. لحد دلوقتي: <strong>{active}</strong> يوم.</p>
       </PageHeader>
       <div className="reward-list" id="section-milestones">
         {[...state.rewards].sort((a, b) => a.sortOrder - b.sortOrder).map((reward) => <RewardCard key={reward.id} reward={reward} active={active} />)}

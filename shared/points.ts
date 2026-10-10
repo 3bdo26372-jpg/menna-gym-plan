@@ -12,9 +12,8 @@ import type { AppState, DayRecord } from './types'
  * - 2.5 L of water in a day: 5 (counts as soon as she reaches it)
  * - a finished day eaten within the calorie range (1,200 up to the top): 5
  * - a finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10
- *   (the score she earned herself; a day pass or makeup doesn't count)
- * - every 7 workout days in a row: 15 (a period-pain rest day doesn't count,
- *   but doesn't break the run either)
+ *   (a day pass or makeup doesn't count; a period-pain rest day's workout points do)
+ * - every 7 workout days in a row: 15 (a period-pain rest day counts as one)
  * Everything is derived from the log, so deleting an entry takes its points back.
  *
  * Days before NEW_SYSTEM_FROM keep the points they earned under the original
@@ -34,8 +33,8 @@ export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'it
   return byDate
 }
 
-/** The score she earned herself, without a day pass, makeup or a period-pain rest. */
-export const earnedScore = (day: Pick<DayRecord, 'score'>) => day.score.total - day.score.pass - day.score.makeup - (day.score.rest ?? 0)
+/** The day's score without a day pass or makeup. A period-pain rest day's workout points count. */
+export const earnedScore = (day: Pick<DayRecord, 'score'>) => day.score.total - day.score.pass - day.score.makeup
 
 /** The original water points: a point per 250 ml up to 2.5 L, plus 5 for reaching 2 L. */
 export const legacyWaterPoints = (ml: number) => Math.min(10, Math.floor(ml / 250)) + (ml >= 2000 ? 5 : 0)
@@ -68,8 +67,8 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
     }
     const fromScore = isLegacyDay(day.date) ? 0 : scorePoints(earnedScore(day))
     if (fromScore) result.push({ date: day.date, kind: 'score', points: fromScore })
-    if (trained(day)) streak += 1
-    else if (!isPainRest(day.periodPain)) streak = 0
+    if (trained(day) || isPainRest(day.periodPain)) streak += 1
+    else streak = 0
     if (streak === STREAK_DAYS) {
       result.push({ date: day.date, kind: 'streak', points: EARN.streak })
       streak = 0
