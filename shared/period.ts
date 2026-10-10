@@ -130,8 +130,8 @@ export function validatePeriodEnd(input: unknown, entry: PeriodEntry, periods: P
 
 /**
  * Period pain, rated 1–10 for a day (0 when she says there is none). Above this, the day is a rest day: the
- * workout's points count without training, but the day only counts as a
- * workout day (for rewards and streaks) if she actually trains.
+ * workout's points count without training, and the day counts as a workout
+ * day for the rewards, streaks and score points.
  */
 export const PAIN_REST_ABOVE = 4
 export const isPainRest = (pain: number | null | undefined) => (pain ?? 0) > PAIN_REST_ABOVE

@@ -191,24 +191,29 @@ describe('gifted passes', () => {
 })
 
 describe('period-pain rest days', () => {
-  it('give the workout points but not score-tier points, and are not workout days', () => {
+  it('give the workout points, count them for score points, and count as workout days', () => {
     const entries = perfectFood(1)
     const rest = makeDay(1, entries, { periodPain: 7 })
     expect(rest.score).toMatchObject({ rest: 40, total: 100 })
-    expect(isActiveDay(rest)).toBe(false)
-    // Water 30 + calories 30 = 60 earned by her: 3 points, not the 10 of a full 100.
-    expect(earnings(state([rest, makeDay(2, entries)], entries)).find((item) => item.kind === 'score')?.points).toBe(EARN.score60)
+    expect(isActiveDay(rest)).toBe(true)
+    // Water 30 + calories 30 + the rest day's 40 = 100: the full 10.
+    expect(earnings(state([rest, makeDay(2, entries)], entries)).find((item) => item.kind === 'score')?.points).toBe(EARN.score100)
+    expect(newRewardUnlocks([rest], [{ id: 'r', thresholdDays: 1, unlockedOn: null }])).toEqual([{ id: 'r', unlockedOn: start }])
+  })
+
+  it('do not count with pain of 4 or less', () => {
+    expect(isActiveDay(makeDay(1, [], { periodPain: 4 }))).toBe(false)
   })
 
   it('count as workout days when she trains anyway', () => {
     expect(isActiveDay(makeDay(1, [], { periodPain: 7, workout: workout({ mainCompletion: 0.5 }) }))).toBe(true)
   })
 
-  it('neither add to nor break a run of workout days', () => {
+  it('count in a run of workout days', () => {
     const foodEntries = Array.from({ length: 8 }, (_, index) => perfectFood(index + 1)).flat()
     const days = Array.from({ length: 8 }, (_, index) => makeDay(index + 1, foodEntries, index === 3 ? { periodPain: 8 } : full))
     const streaks = earnings(state([...days, makeDay(9, foodEntries)], foodEntries)).filter((item) => item.kind === 'streak')
-    // Days 1–3 and 5–8 are 7 workout days around the rest day.
-    expect(streaks).toEqual([{ date: addDays(start, 7), kind: 'streak', points: EARN.streak }])
+    // Days 1–7, with the rest day as day 4, are 7 workout days in a row.
+    expect(streaks).toEqual([{ date: addDays(start, 6), kind: 'streak', points: EARN.streak }])
   })
 })
