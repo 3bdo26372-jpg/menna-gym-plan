@@ -19,7 +19,7 @@ import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/
 import type { DayPass, PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
-import type { GamePlay } from '../../shared/game'
+import { PRIZES, toPrizeId, type GamePlay } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -216,7 +216,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       round: Number(row.round),
       date: String(row.log_date),
       pick: Number(row.pick),
-      cards: JSON.parse(String(row.cards)) as number[],
+      cards: (JSON.parse(String(row.cards)) as unknown[]).map(toPrizeId),
       createdAt: String(row.created_at),
     })),
   }
@@ -349,10 +349,10 @@ export async function deletePeriod(db: D1Database, id: number) {
   await db.prepare('DELETE FROM periods WHERE id = ?').bind(id).run()
 }
 
-/** One play per round: the primary key turns a second one away. */
+/** One play per round: the primary key turns a second one away. `prize` is the pounds won (0 for a treat). */
 export async function addGamePlay(db: D1Database, play: Omit<GamePlay, 'createdAt'>) {
   await db.prepare('INSERT INTO game_plays (round, log_date, pick, cards, prize) VALUES (?, ?, ?, ?, ?)')
-    .bind(play.round, play.date, play.pick, JSON.stringify(play.cards), play.cards[play.pick]).run()
+    .bind(play.round, play.date, play.pick, JSON.stringify(play.cards), PRIZES[play.cards[play.pick]].pounds ?? 0).run()
 }
 
 export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {
