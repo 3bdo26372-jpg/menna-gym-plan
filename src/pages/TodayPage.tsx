@@ -12,6 +12,7 @@ import { canAffordPassFor, canTakePass, missedWorkout, passPriceFor, unusedGifts
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
+import { CardGame } from '../components/CardGame'
 import { CheckInForm } from '../components/CheckInForm'
 import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
@@ -93,6 +94,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
       {treatsFor(state).map((treat) => <TreatCard key={treat.id} treat={treat} />)}
+      <CardGame state={state} />
       {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>

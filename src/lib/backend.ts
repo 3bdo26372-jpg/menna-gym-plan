@@ -24,6 +24,7 @@ export interface Backend {
   deleteFood(id: number): Promise<AppState>
   spendWaterPoints(input: WaterSpendInput): Promise<AppState>
   takeDayPass(date: string): Promise<AppState>
+  playGame(pick: number): Promise<AppState>
   addPeriod(startDate: string, endDate?: string): Promise<AppState>
   endPeriod(id: number, endDate: string): Promise<AppState>
   deletePeriod(id: number): Promise<AppState>
