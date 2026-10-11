@@ -31,6 +31,7 @@ interface AppDataValue {
   deleteFood(id: number): Promise<void>
   spendWaterPoints(input: WaterSpendInput): Promise<void>
   takeDayPass(date: string): Promise<void>
+  playGame(pick: number): Promise<void>
   addPeriod(startDate: string, endDate?: string): Promise<void>
   endPeriod(id: number, endDate: string): Promise<void>
   deletePeriod(id: number): Promise<void>
@@ -83,6 +84,7 @@ function createBackend(): Backend {
     deleteFood: forward('deleteFood'),
     spendWaterPoints: forward('spendWaterPoints'),
     takeDayPass: forward('takeDayPass'),
+    playGame: forward('playGame'),
     addPeriod: forward('addPeriod'),
     endPeriod: forward('endPeriod'),
     deletePeriod: forward('deletePeriod'),
@@ -194,6 +196,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       deleteFood: async (id) => void (await apply(backend.deleteFood(id))),
       spendWaterPoints: async (input) => void (await apply(backend.spendWaterPoints(input))),
       takeDayPass: async (date) => void (await apply(backend.takeDayPass(date))),
+      playGame: async (pick) => void (await apply(backend.playGame(pick))),
       addPeriod: async (startDate, endDate) => void (await apply(backend.addPeriod(startDate, endDate))),
       endPeriod: async (id, endDate) => void (await apply(backend.endPeriod(id, endDate))),
       deletePeriod: async (id) => void (await apply(backend.deletePeriod(id))),

@@ -10,6 +10,7 @@ import { validatePass, type DayPass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { validateSleep, type SleepLog } from '../../shared/sleep'
+import { dealCards, validatePlay, type GamePlay } from '../../shared/game'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -31,6 +32,7 @@ interface LocalDb {
   waterSpends?: WaterSpend[]
   dayPasses?: DayPass[]
   periods?: PeriodEntry[]
+  gamePlays?: GamePlay[]
 }
 
 function freshDb(): LocalDb {
@@ -81,6 +83,7 @@ function toState(db: LocalDb): AppState {
     dayPasses: db.dayPasses ?? [],
     passGifts: [],
     periods: [...(db.periods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+    gamePlays: db.gamePlays ?? [],
   }
 }
 
@@ -195,6 +198,14 @@ export function createLocalBackend(): Backend {
       const pass = validatePass({ date }, toState(db))
       if (typeof pass === 'string') return fail(400, pass)
       db.dayPasses = [...(db.dayPasses ?? []), { ...pass, createdAt: new Date().toISOString() }]
+      save(db)
+      return toState(db)
+    }),
+    playGame: (pick) => attempt(() => {
+      const db = load()
+      const play = validatePlay({ pick }, toState(db))
+      if (typeof play === 'string') return fail(play.includes('already') ? 409 : 400, play)
+      db.gamePlays = [...(db.gamePlays ?? []), { round: play.round, date: cairoDate(), pick: play.pick, cards: dealCards(play.round, play.pick), createdAt: new Date().toISOString() }]
       save(db)
       return toState(db)
     }),

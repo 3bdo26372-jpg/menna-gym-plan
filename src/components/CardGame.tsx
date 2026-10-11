@@ -1,0 +1,88 @@
+import { useState } from 'react'
+import { m } from 'framer-motion'
+import { formatDateShort } from '../../shared/date'
+import { currentGame, gamePrize, gameTotal } from '../../shared/game'
+import type { AppState } from '../../shared/types'
+import { useAppData } from '../state/AppData'
+import { Card, Notice } from './ui'
+
+const FLIP = { duration: 0.6, ease: 'easeInOut' } as const
+const OTHERS_DELAY = 1.1
+const HEARTS = ['💗', '💸', '🤍', '💕', '💸', '💗']
+
+/**
+ * اللعبة: three face-down cards (100, 50 and 5 pounds). Her card turns over
+ * first, then the other two. Shown on the home page while today's round is
+ * open, and on the day she played it.
+ */
+export function CardGame({ state }: { state: AppState }) {
+  const { playGame } = useAppData()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [justPlayed, setJustPlayed] = useState(false)
+  const game = currentGame(state)
+  if (!game || (game.played && game.played.date !== state.today && !justPlayed)) return null
+  const { played } = game
+
+  async function pick(index: number) {
+    setBusy(true)
+    setError(null)
+    try {
+      await playGame(index)
+      setJustPlayed(true)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'تعذّر الحفظ')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="game-card" id="section-game">
+      <div className="game-head">
+        <h2 className="card-title">🎲 اختاري كارت</h2>
+        <p className="muted small">{played ? 'كل ٥ أيام فيه لعبة جديدة.' : 'تحت كل كارت فلوس: 100 أو 50 أو 5 جنيه. اختاري واحد بس!'}</p>
+      </div>
+      <div className="game-cards">
+        {[0, 1, 2].map((index) => {
+          const value = played?.cards[index]
+          const mine = played?.pick === index
+          const delay = justPlayed && !mine ? OTHERS_DELAY : 0
+          return (
+            <button
+              key={index} type="button" className={`game-card-button ${mine ? 'is-mine' : ''} ${played && !mine ? 'is-other' : ''}`}
+              disabled={busy || Boolean(played)} onClick={() => void pick(index)} aria-label={played ? `${value} جنيه` : `الكارت ${index + 1}`}
+            >
+              <m.span
+                className="game-flip" initial={false}
+                animate={{ rotateY: played ? 180 : 0, scale: busy ? [1, 1.04, 1] : 1 }}
+                transition={played ? { ...FLIP, delay: justPlayed ? delay : 0 } : { duration: 0.6, repeat: busy ? Infinity : 0 }}
+              >
+                <span className="game-face game-back" aria-hidden="true"><b>؟</b><small>💌</small></span>
+                <span className="game-face game-front" aria-hidden="true"><b>{value}</b><small>جنيه</small></span>
+              </m.span>
+            </button>
+          )
+        })}
+        {justPlayed && played && (
+          <span className="game-hearts" aria-hidden="true">
+            {HEARTS.map((heart, index) => (
+              <m.span
+                key={index} style={{ insetInlineStart: `${10 + index * 15}%` }}
+                initial={{ y: 0, opacity: 0 }} animate={{ y: -110, opacity: [0, 1, 0] }}
+                transition={{ duration: 1.8, delay: 0.5 + index * 0.1, ease: 'easeOut' }}
+              >{heart}</m.span>
+            ))}
+          </span>
+        )}
+      </div>
+      {played && (
+        <m.div className="game-result" initial={justPlayed ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: justPlayed ? OTHERS_DELAY + 0.6 : 0 }}>
+          <p className="gift-note">كسبتي {gamePrize(played)} جنيه 🎉</p>
+          <p className="muted small">هتوصلك من بابا 💸 · اللعبة الجاية يوم {formatDateShort(game.next)}{gameTotal(state.gamePlays) > gamePrize(played) ? ` · كسبتي لحد دلوقتي ${gameTotal(state.gamePlays)} جنيه` : ''}</p>
+        </m.div>
+      )}
+      {error && <Notice tone="care">{error}</Notice>}
+    </Card>
+  )
+}

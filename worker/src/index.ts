@@ -7,11 +7,13 @@ import { validateSpend } from '../../shared/waterPoints'
 import { validatePass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared/period'
 import { validateSleep } from '../../shared/sleep'
+import { dealCards, validatePlay } from '../../shared/game'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
   addMeasurement,
   addDayPass,
+  addGamePlay,
   addPeriod,
   addWaterSpend,
   deleteFood,
@@ -194,6 +196,14 @@ async function route(request: Request, env: Env): Promise<Response> {
     if (typeof spend === 'string') throw new HttpError(400, spend)
     await addWaterSpend(env.DB, spend)
     return json(await afterWrite(env, today, spend.date ?? undefined))
+  }
+
+  if (method === 'POST' && path === '/api/game') {
+    const state = await loadState(env.DB, today)
+    const play = validatePlay(await body(request), state)
+    if (typeof play === 'string') throw new HttpError(play.includes('already') ? 409 : 400, play)
+    await addGamePlay(env.DB, { round: play.round, date: today, pick: play.pick, cards: dealCards(play.round, play.pick) })
+    return json(await afterWrite(env, today))
   }
 
   if (method === 'POST' && path === '/api/day-passes') {

@@ -347,3 +347,26 @@
 .treat-popup-card { position: relative; width: min(390px, 100%); display: grid; justify-items: center; gap: 14px; padding: 56px 18px 22px; border-radius: 26px; text-align: center; background: linear-gradient(170deg, #fff, #fdeef5); box-shadow: 0 30px 80px rgba(29, 12, 21, 0.35); }
 .treat-float { width: 100%; display: grid; place-items: center; }
 .treat-close { position: absolute; top: 10px; inset-inline-end: 10px; width: 38px; height: 38px; }
+
+/* ---- the card game (100 / 50 / 5 pounds) */
+.game-card { position: relative; border-color: var(--rose-200); background: linear-gradient(160deg, #fff, #fdf0f6); text-align: center; overflow: hidden; }
+.game-head { display: grid; gap: 4px; justify-items: center; }
+.game-cards { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; perspective: 900px; }
+.game-card-button { padding: 0; border: 0; background: none; aspect-ratio: 3 / 4; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.game-card-button:disabled { cursor: default; opacity: 1; }
+.game-flip { position: relative; display: block; width: 100%; height: 100%; transform-style: preserve-3d; }
+.game-face { position: absolute; inset: 0; display: grid; place-content: center; gap: 2px; border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 10px 22px rgba(99, 33, 63, 0.18); }
+.game-back { color: #fff; background:
+  radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.18) 0 2px, transparent 3px) 0 0 / 16px 16px,
+  linear-gradient(160deg, #d0679a, var(--berry) 50%, var(--berry-dark)); border: 3px solid #f0cf86; }
+.game-back b { font-size: 40px; line-height: 1; }
+.game-back small { font-size: 18px; }
+.game-front { transform: rotateY(180deg); color: var(--berry-dark); background: linear-gradient(160deg, #fffaf0, #fbeec8); border: 3px solid #e8c36d; }
+.game-front b { font-size: clamp(26px, 8vw, 38px); line-height: 1; }
+.game-front small { font-size: 14px; font-weight: 800; color: var(--amber); }
+.game-card-button.is-mine .game-front { background: linear-gradient(160deg, #fff, #ffe3ef); border-color: var(--berry); box-shadow: 0 0 0 4px rgba(159, 45, 100, 0.18), 0 12px 26px rgba(99, 33, 63, 0.25); }
+.game-card-button.is-other .game-front { opacity: 0.75; }
+.game-card-button:not(:disabled):active .game-flip { transform: scale(0.97); }
+.game-result { display: grid; gap: 4px; justify-items: center; }
+.game-hearts { position: absolute; inset: 0; pointer-events: none; }
+.game-hearts > span { position: absolute; top: 45%; font-size: 22px; }

@@ -19,6 +19,7 @@ import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/
 import type { DayPass, PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
+import type { GamePlay } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -85,8 +86,9 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT log_date, points, kind, created_at FROM day_passes ORDER BY created_at'),
     db.prepare('SELECT id, note, created_at FROM pass_gifts ORDER BY id'),
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
+    db.prepare('SELECT round, log_date, pick, cards, created_at FROM game_plays ORDER BY round'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -208,6 +210,13 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       id: Number(row.id),
       startDate: String(row.start_date),
       endDate: (row.end_date as string | null) ?? null,
+      createdAt: String(row.created_at),
+    })),
+    gamePlays: games.results.map((row): GamePlay => ({
+      round: Number(row.round),
+      date: String(row.log_date),
+      pick: Number(row.pick),
+      cards: JSON.parse(String(row.cards)) as number[],
       createdAt: String(row.created_at),
     })),
   }
@@ -338,6 +347,12 @@ export async function endPeriod(db: D1Database, id: number, endDate: string) {
 
 export async function deletePeriod(db: D1Database, id: number) {
   await db.prepare('DELETE FROM periods WHERE id = ?').bind(id).run()
+}
+
+/** One play per round: the primary key turns a second one away. */
+export async function addGamePlay(db: D1Database, play: Omit<GamePlay, 'createdAt'>) {
+  await db.prepare('INSERT INTO game_plays (round, log_date, pick, cards, prize) VALUES (?, ?, ?, ?, ?)')
+    .bind(play.round, play.date, play.pick, JSON.stringify(play.cards), play.cards[play.pick]).run()
 }
 
 export async function loadReport(db: D1Database, kind: ReportKind, periodIndex: number) {
