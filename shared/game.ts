@@ -2,17 +2,44 @@ import { addDays, diffDays } from './date'
 import type { AppState } from './types'
 
 /**
- * اللعبة: three face-down cards hiding 100, 50 and 5 Egyptian pounds (real
- * money from him, not app points). She picks one and wins what is under it;
- * the other two then turn over too. There is one round every 5 days, playable on any day of its window. The first round
- * always lands on 50; later rounds are random. The server decides, so a
+ * اللعبة: three face-down cards, each hiding a real prize from him (not app
+ * points): money (50 or 100 pounds) or a treat or gift. She picks one and
+ * wins what is under it; the other two then turn over too. There is one round
+ * every 5 days, playable on any day of its window. The server decides, so a
  * reload can't change the result.
+ *
+ * The first round was 100 / 50 / 5 pounds and always landed on 50. From the
+ * second round the three cards are three different prizes from `PRIZES`.
  */
 export const GAME_START = '2026-10-11'
 export const GAME_EVERY_DAYS = 5
-export const GAME_PRIZES = [100, 50, 5] as const
-export const FIRST_ROUND_PRIZE = 50
 export const GAME_CARDS = 3
+
+export type PrizeId = 'money-100' | 'money-50' | 'money-5' | 'chocolate' | 'gum' | 'ring' | 'candy' | 'marshmallow'
+
+export interface Prize {
+  id: PrizeId
+  emoji: string
+  label: string
+  /** Pounds, for money. */
+  pounds?: number
+}
+
+export const PRIZES: Record<PrizeId, Prize> = {
+  'money-100': { id: 'money-100', emoji: '💸', label: '100 جنيه', pounds: 100 },
+  'money-50': { id: 'money-50', emoji: '💸', label: '50 جنيه', pounds: 50 },
+  'money-5': { id: 'money-5', emoji: '💸', label: '5 جنيه', pounds: 5 },
+  chocolate: { id: 'chocolate', emoji: '🍫', label: 'شوكولاتة' },
+  gum: { id: 'gum', emoji: '🫧', label: 'لبان' },
+  ring: { id: 'ring', emoji: '💍', label: 'خاتم' },
+  candy: { id: 'candy', emoji: '🍭', label: 'كاندي' },
+  marshmallow: { id: 'marshmallow', emoji: '☁️', label: 'مارشميلو' },
+}
+
+/** What later rounds deal from. Money is always 50 or 100. */
+export const PRIZE_POOL: PrizeId[] = ['money-100', 'money-50', 'chocolate', 'gum', 'ring', 'candy', 'marshmallow']
+const FIRST_ROUND: PrizeId[] = ['money-100', 'money-50', 'money-5']
+const FIRST_ROUND_PRIZE: PrizeId = 'money-50'
 
 export interface GamePlay {
   round: number
@@ -20,14 +47,17 @@ export interface GamePlay {
   /** The card she picked, 0–2. */
   pick: number
   /** What was under each card; `cards[pick]` is her prize. */
-  cards: number[]
+  cards: PrizeId[]
   createdAt: string
 }
 
-export const gamePrize = (play: Pick<GamePlay, 'cards' | 'pick'>) => play.cards[play.pick]
+/** Cards stored before prizes had ids were plain pound amounts. */
+export const toPrizeId = (card: unknown): PrizeId => (typeof card === 'number' ? (`money-${card}` as PrizeId) : (card as PrizeId))
+
+export const gamePrize = (play: Pick<GamePlay, 'cards' | 'pick'>): Prize => PRIZES[play.cards[play.pick]] ?? PRIZES['money-50']
 
 /** Pounds won across every round. */
-export const gameTotal = (plays: GamePlay[] = []) => plays.reduce((sum, play) => sum + gamePrize(play), 0)
+export const gameTotal = (plays: GamePlay[] = []) => plays.reduce((sum, play) => sum + (gamePrize(play).pounds ?? 0), 0)
 
 /** The round a day belongs to, or null before the game started. */
 export const roundFor = (date: string) => (date < GAME_START ? null : Math.floor(diffDays(GAME_START, date) / GAME_EVERY_DAYS))
@@ -43,12 +73,15 @@ export function currentGame(state: Pick<AppState, 'today' | 'profile'> & { gameP
   return { round, played: (state.gamePlays ?? []).find((play) => play.round === round) ?? null, next: roundStart(round + 1) }
 }
 
-/** The cards for a pick: the prize under her card, the other two shuffled under the rest. */
-export function dealCards(round: number, pick: number, random: () => number = Math.random) {
-  const prize = round === 0 ? FIRST_ROUND_PRIZE : GAME_PRIZES[Math.floor(random() * GAME_PRIZES.length)]
-  const others = GAME_PRIZES.filter((value) => value !== prize)
-  if (random() < 0.5) others.reverse()
-  return Array.from({ length: GAME_CARDS }, (_, index) => (index === pick ? prize : others.shift()!))
+/** Three different prizes, with hers under the card she picked. */
+export function dealCards(round: number, pick: number, random: () => number = Math.random): PrizeId[] {
+  if (round === 0) {
+    const others = FIRST_ROUND.filter((id) => id !== FIRST_ROUND_PRIZE)
+    if (random() < 0.5) others.reverse()
+    return Array.from({ length: GAME_CARDS }, (_, index) => (index === pick ? FIRST_ROUND_PRIZE : others.shift()!))
+  }
+  const pool = [...PRIZE_POOL]
+  return Array.from({ length: GAME_CARDS }, () => pool.splice(Math.min(pool.length - 1, Math.floor(random() * pool.length)), 1)[0])
 }
 
 export function validatePlay(input: unknown, state: Parameters<typeof currentGame>[0]): { round: number; pick: number } | string {

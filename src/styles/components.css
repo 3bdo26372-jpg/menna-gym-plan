@@ -364,6 +364,7 @@
 .game-front { transform: rotateY(180deg); color: var(--berry-dark); background: linear-gradient(160deg, #fffaf0, #fbeec8); border: 3px solid #e8c36d; }
 .game-front b { font-size: clamp(26px, 8vw, 38px); line-height: 1; }
 .game-front small { font-size: 14px; font-weight: 800; color: var(--amber); }
+.game-front b.game-emoji { font-size: clamp(30px, 9vw, 42px); }
 .game-card-button.is-mine .game-front { background: linear-gradient(160deg, #fff, #ffe3ef); border-color: var(--berry); box-shadow: 0 0 0 4px rgba(159, 45, 100, 0.18), 0 12px 26px rgba(99, 33, 63, 0.25); }
 .game-card-button.is-other .game-front { opacity: 0.75; }
 .game-card-button:not(:disabled):active .game-flip { transform: scale(0.97); }

@@ -10,7 +10,7 @@ import { validatePass, type DayPass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { validateSleep, type SleepLog } from '../../shared/sleep'
-import { dealCards, validatePlay, type GamePlay } from '../../shared/game'
+import { dealCards, toPrizeId, validatePlay, type GamePlay } from '../../shared/game'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -83,7 +83,7 @@ function toState(db: LocalDb): AppState {
     dayPasses: db.dayPasses ?? [],
     passGifts: [],
     periods: [...(db.periods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    gamePlays: db.gamePlays ?? [],
+    gamePlays: (db.gamePlays ?? []).map((play) => ({ ...play, cards: play.cards.map(toPrizeId) })),
   }
 }
 

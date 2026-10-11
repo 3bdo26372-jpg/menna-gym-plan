@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { m } from 'framer-motion'
 import { formatDateShort } from '../../shared/date'
-import { currentGame, gamePrize, gameTotal } from '../../shared/game'
+import { currentGame, gamePrize, PRIZES } from '../../shared/game'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
 import { Card, Notice } from './ui'
@@ -11,7 +11,7 @@ const OTHERS_DELAY = 1.1
 const HEARTS = ['💗', '💸', '🤍', '💕', '💸', '💗']
 
 /**
- * اللعبة: three face-down cards (100, 50 and 5 pounds). Her card turns over
+ * اللعبة: three face-down cards, each hiding money or a treat. Her card turns over
  * first, then the other two. Shown on the home page while today's round is
  * open, and on the day she played it.
  */
@@ -41,17 +41,17 @@ export function CardGame({ state }: { state: AppState }) {
     <Card className="game-card" id="section-game">
       <div className="game-head">
         <h2 className="card-title">🎲 اختاري كارت</h2>
-        <p className="muted small">{played ? 'كل ٥ أيام فيه لعبة جديدة.' : 'تحت كل كارت فلوس: 100 أو 50 أو 5 جنيه. اختاري واحد بس!'}</p>
+        <p className="muted small">{played ? 'كل ٥ أيام فيه لعبة جديدة.' : 'تحت كل كارت مفاجأة: فلوس أو حاجة حلوة. اختاري واحد بس!'}</p>
       </div>
       <div className="game-cards">
         {[0, 1, 2].map((index) => {
-          const value = played?.cards[index]
+          const prize = played ? PRIZES[played.cards[index]] : null
           const mine = played?.pick === index
           const delay = justPlayed && !mine ? OTHERS_DELAY : 0
           return (
             <button
               key={index} type="button" className={`game-card-button ${mine ? 'is-mine' : ''} ${played && !mine ? 'is-other' : ''}`}
-              disabled={busy || Boolean(played)} onClick={() => void pick(index)} aria-label={played ? `${value} جنيه` : `الكارت ${index + 1}`}
+              disabled={busy || Boolean(played)} onClick={() => void pick(index)} aria-label={prize ? prize.label : `الكارت ${index + 1}`}
             >
               <m.span
                 className="game-flip" initial={false}
@@ -59,7 +59,9 @@ export function CardGame({ state }: { state: AppState }) {
                 transition={played ? { ...FLIP, delay: justPlayed ? delay : 0 } : { duration: 0.6, repeat: busy ? Infinity : 0 }}
               >
                 <span className="game-face game-back" aria-hidden="true"><b>؟</b><small>💌</small></span>
-                <span className="game-face game-front" aria-hidden="true"><b>{value}</b><small>جنيه</small></span>
+                <span className={`game-face game-front ${prize?.pounds ? 'is-money' : ''}`} aria-hidden="true">
+                  {prize?.pounds ? <><b>{prize.pounds}</b><small>جنيه</small></> : <><b className="game-emoji">{prize?.emoji}</b><small>{prize?.label}</small></>}
+                </span>
               </m.span>
             </button>
           )
@@ -78,8 +80,8 @@ export function CardGame({ state }: { state: AppState }) {
       </div>
       {played && (
         <m.div className="game-result" initial={justPlayed ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: justPlayed ? OTHERS_DELAY + 0.6 : 0 }}>
-          <p className="gift-note">كسبتي {gamePrize(played)} جنيه 🎉</p>
-          <p className="muted small">هتوصلك من بابا 💸 · اللعبة الجاية يوم {formatDateShort(game.next)}{gameTotal(state.gamePlays) > gamePrize(played) ? ` · كسبتي لحد دلوقتي ${gameTotal(state.gamePlays)} جنيه` : ''}</p>
+          <p className="gift-note">كسبتي {gamePrize(played).pounds ? gamePrize(played).label : `${gamePrize(played).emoji} ${gamePrize(played).label}`} 🎉</p>
+          <p className="muted small">هتوصلك من بابا {gamePrize(played).pounds ? '💸' : '🤍'} · اللعبة الجاية يوم {formatDateShort(game.next)}</p>
         </m.div>
       )}
       {error && <Notice tone="care">{error}</Notice>}
