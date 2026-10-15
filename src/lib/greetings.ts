@@ -1,4 +1,4 @@
-import { NICKNAMES } from '../workout/cheers'
+import { NICKNAMES, PERIOD_NICKNAME } from '../../shared/nicknames'
 
 /**
  * The line at the top of the home page, instead of a fixed "أهلًا يا منّة".
@@ -18,6 +18,8 @@ export interface GreetingInput {
   painRest: boolean
   /** Any period pain logged today, or a period going on. */
   periodDay: boolean
+  /** Her period is going on: she is called إزازة كاتشب. */
+  inPeriod?: boolean
   /** At least half the main workout done. */
   trained: boolean
   waterDone: boolean
@@ -149,7 +151,7 @@ export function greetingFor(input: GreetingInput) {
   const kind = greetingKind(input)
   const { titles, lines } = LINES[kind]
   const day = input.dayNumber - 1
-  const nickname = pick(NICKNAMES, day)
+  const nickname = input.inPeriod ? PERIOD_NICKNAME : pick(NICKNAMES, day)
   const fill = (text: string) => text.replaceAll('{nick}', nickname)
   return { kind, title: fill(pick(titles, day)), line: fill(pick(lines, day)) }
 }

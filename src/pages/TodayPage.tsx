@@ -183,6 +183,7 @@ function Greeting({ state, day, dayNumber, cycle }: { state: AppState; day: DayR
     hour,
     painRest: isPainRest(pain),
     periodDay: pain > 0 || cycle?.phase === 'period',
+    inPeriod: cycle?.phase === 'period',
     trained: (day?.workout?.mainCompletion ?? 0) >= ACTIVE_DAY_MIN_COMPLETION,
     waterDone: water >= WATER_TARGET_ML,
     score: day?.score.total ?? 0,

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, m } from 'framer-motion'
 import { X } from 'lucide-react'
-import { NICKNAMES } from '../../shared/nicknames'
+import { PERIOD_NICKNAME } from '../../shared/nicknames'
 import type { AppState } from '../../shared/types'
 import { giftTreatId, isTreatOpened, openTreat, treatsFor, useTreatOpened, type Treat } from '../lib/treats'
 import { Card } from './ui'
@@ -64,7 +64,6 @@ function Chocolate({ treat, opened, onOpen, big = false }: { treat: Treat; opene
   )
 }
 
-const nickFor = (date: string) => NICKNAMES[[...date].reduce((sum, char) => sum + char.charCodeAt(0), 0) % NICKNAMES.length]
 
 /** What's inside, once unwrapped: the note and what she can do with it. */
 function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?: () => void; inPopup?: boolean }) {
@@ -85,7 +84,7 @@ function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?
   return (
     <>
       <h2 className="card-title">اليوم {treat.periodDay} من البريود 🌸</h2>
-      <p className="gift-note">هدية مني ليكي النهارده يا {nickFor(treat.date)} 🤍</p>
+      <p className="gift-note">هدية مني ليكي النهارده يا {PERIOD_NICKNAME} 🤍</p>
       <p className="muted small">النهارده اتحسب يوم كامل لوحده، من غير ما تعملي حاجة. ريّحي نفسك، ونقطك كلها محفوظة.</p>
       {inPopup && <button type="button" className="button primary" onClick={onDone}>تمام 💗</button>}
     </>

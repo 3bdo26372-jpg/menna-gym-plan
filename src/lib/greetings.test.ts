@@ -41,3 +41,14 @@ describe('home page greeting', () => {
     }
   })
 })
+
+describe('during her period', () => {
+  it('calls her إزازة كاتشب', () => {
+    for (let dayNumber = 1; dayNumber < 6; dayNumber++) {
+      const greeting = greetingFor({ ...base, periodDay: true, inPeriod: true, dayNumber })
+      if ((greeting.title + greeting.line).includes('يا ')) expect(greeting.title + greeting.line).not.toMatch(/كتكوتة|منونة|عسولتي/)
+    }
+    const titles = [1, 2].map((dayNumber) => greetingFor({ ...base, periodDay: true, inPeriod: true, dayNumber }).title)
+    expect(titles.join(' ')).toContain('إزازة كاتشب')
+  })
+})

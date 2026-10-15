@@ -5,3 +5,5 @@ export const NICKNAMES = [
 ]
 /** Around ovulation, she is called this instead. */
 export const OVULATION_NICKNAME = 'قلب دادي'
+/** During her period this one joins in: the greeting, the period gift and the first tip use it. */
+export const PERIOD_NICKNAME = 'إزازة كاتشب'
