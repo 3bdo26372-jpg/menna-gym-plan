@@ -1,4 +1,4 @@
-import { NICKNAMES, PERIOD_NICKNAME } from '../../shared/nicknames'
+import { NICKNAMES, PERIOD_NICKNAME, withNickname } from '../../shared/nicknames'
 
 /**
  * The line at the top of the home page, instead of a fixed "أهلًا يا منّة".
@@ -152,6 +152,6 @@ export function greetingFor(input: GreetingInput) {
   const { titles, lines } = LINES[kind]
   const day = input.dayNumber - 1
   const nickname = input.inPeriod ? PERIOD_NICKNAME : pick(NICKNAMES, day)
-  const fill = (text: string) => text.replaceAll('{nick}', nickname)
+  const fill = (text: string) => withNickname(text, nickname)
   return { kind, title: fill(pick(titles, day)), line: fill(pick(lines, day)) }
 }

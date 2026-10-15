@@ -84,7 +84,7 @@ function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?
   return (
     <>
       <h2 className="card-title">اليوم {treat.periodDay} من البريود 🌸</h2>
-      <p className="gift-note">هدية مني ليكي النهارده يا {PERIOD_NICKNAME} 🤍</p>
+      <p className="gift-note">هدية مني ليكي النهارده {PERIOD_NICKNAME} 🤍</p>
       <p className="muted small">النهارده اتحسب يوم كامل لوحده، من غير ما تعملي حاجة. ريّحي نفسك، ونقطك كلها محفوظة.</p>
       {inPopup && <button type="button" className="button primary" onClick={onDone}>تمام 💗</button>}
     </>
