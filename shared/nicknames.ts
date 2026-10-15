@@ -5,3 +5,13 @@ export const NICKNAMES = [
 ]
 /** Around ovulation, she is called this instead. */
 export const OVULATION_NICKNAME = 'قلب دادي'
+/**
+ * During her period this one joins in: the greeting, the period gift and the first tip use it.
+ * It is said on its own, without the "يا" the other nicknames get.
+ */
+export const PERIOD_NICKNAME = 'أحلى إزازة كاتشب'
+
+/** Fill `{nick}` in a text; the period nickname drops the "يا " before it. */
+export function withNickname(text: string, nick: string) {
+  return nick === PERIOD_NICKNAME ? text.replaceAll('يا {nick}', nick).replaceAll('{nick}', nick) : text.replaceAll('{nick}', nick)
+}

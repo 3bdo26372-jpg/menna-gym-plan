@@ -2,7 +2,7 @@ import { CALORIE_FLOOR_KCAL, dayCalories, formatCalories, hasFoodLogged } from '
 import { addDays } from './date'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
 import { cycleDay, periodForecast, type CycleDay, type HormonePhase } from './period'
-import { NICKNAMES, OVULATION_NICKNAME } from './nicknames'
+import { NICKNAMES, OVULATION_NICKNAME, PERIOD_NICKNAME, withNickname } from './nicknames'
 import { WATER_GOAL_ML } from './points'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { formatSleep, isLateBedtime, sleepMinutes, SLEEP_GOAL_HOURS } from './sleep'
@@ -155,11 +155,14 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
   const drink = lateNight ? DRINKS.chamomile : DRINKS[pick(DRINKS_BY_PHASE[cycle?.phase ?? 'unknown'], today)]
   if (!hadDrink(foodOn(today), drink)) tips.push({ id: 'drink', emoji: '🥤', title: `مشروبك النهارده يا {nick}: ${drink.title}`, text: drink.text, drink })
 
-  // A different nickname on each tip, rotating day by day; around ovulation she is قلب دادي.
+  // A different nickname on each tip, rotating day by day; around ovulation she is قلب دادي,
+  // and during her period the first tip calls her أحلى إزازة كاتشب.
   const seed = [...today].reduce((sum, char) => sum + char.charCodeAt(0), 0)
   return tips.slice(0, MAX_TIPS).map((tip, index) => {
-    const nick = cycle?.phase === 'ovulation' ? OVULATION_NICKNAME : NICKNAMES[(seed + index) % NICKNAMES.length]
-    const named = (text: string) => text.replaceAll('{nick}', nick)
+    const nick = cycle?.phase === 'ovulation' ? OVULATION_NICKNAME
+      : cycle?.phase === 'period' && index === 0 ? PERIOD_NICKNAME
+        : NICKNAMES[(seed + index) % NICKNAMES.length]
+    const named = (text: string) => withNickname(text, nick)
     return { ...tip, title: named(tip.title), text: named(tip.text), ...(tip.drink && { drink: { ...tip.drink, title: named(tip.drink.title), text: named(tip.drink.text) } }) }
   })
 }
