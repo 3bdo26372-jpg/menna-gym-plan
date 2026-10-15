@@ -6,7 +6,7 @@ import { buildReport, type ReportData } from '../../shared/report'
 import { DEFAULT_REWARDS, hideIfLocked } from '../../shared/rewards'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../../shared/scoring'
 import { makeupByDate, validateSpend, type WaterSpend } from '../../shared/waterPoints'
-import { validatePass, type DayPass } from '../../shared/dayPasses'
+import { excusedDates, validatePass, type DayPass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } from '../../shared/period'
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { validateSleep, type SleepLog } from '../../shared/sleep'
@@ -55,7 +55,7 @@ function toState(db: LocalDb): AppState {
   const today = cairoDate()
   const start = db.programStartDate
   const makeup = makeupByDate(db.waterSpends ?? [])
-  const excused = new Set((db.dayPasses ?? []).map((pass) => pass.date))
+  const excused = excusedDates(db.dayPasses ?? [], db.periods ?? [], today)
   const days = start
     ? dateRange(start, today).map((date) => {
         const log = db.logs[date] ?? { checkin: null, workout: null, feedback: null }

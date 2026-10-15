@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { addDays } from '../date'
 import { isActiveDay, newRewardUnlocks } from '../engine'
 import type { FoodCategory, FoodEntry } from '../food'
-import { PASS_PRICE, missedWorkout, passCandidates, passPrice, passPriceFor, periodPassDates, unusedGifts, validatePass, type DayPass, type PassGift } from '../dayPasses'
+import { PASS_PRICE, missedWorkout, passCandidates, passPrice, passPriceFor, periodPassDates, unusedGifts, validatePass, type DayPass, type PassGift, excusedDates } from '../dayPasses'
 import { EARN, earnings, legacyWaterPoints, pointsBalance, scorePoints } from '../points'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../scoring'
 import type { PeriodEntry } from '../period'
@@ -127,6 +127,16 @@ describe('period passes', () => {
   const days = [1, 2, 3, 4, 5].map((dayNumber) => makeDay(dayNumber, []))
   const periods: PeriodEntry[] = [{ id: 1, startDate: addDays(start, 1), endDate: null, createdAt: '' }]
   const used = [{ date: start, points: 0, kind: 'regular' as const, createdAt: '' }]
+
+  it('passes the first three days of a period by itself, with nothing stored or spent', () => {
+    const excused = excusedDates(used, periods, addDays(start, 4))
+    expect([0, 1, 2, 3, 4].map((offset) => excused.has(addDays(start, offset)))).toEqual([true, true, true, true, false])
+    // The days are filled to 100 and count as workout days, without using a pass.
+    const day2 = makeDay(2, [], { excused: excused.has(addDays(start, 1)) })
+    expect(day2.score.total).toBe(100)
+    expect(isActiveDay(day2)).toBe(true)
+    expect(passPrice(state(days, [], { dayPasses: [], periods }))).toBe(0)
+  })
 
   it('gives each of the first three days of a period its own free pass, up to today', () => {
     expect(periodPassDates({ periods, today: addDays(start, 2) })).toEqual([addDays(start, 1), addDays(start, 2)])

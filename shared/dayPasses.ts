@@ -9,8 +9,10 @@ import type { AppState, DayRecord } from './types'
  * free, and so is one per gift (pass_gifts); each other one costs points from
  * the same balance as everything else.
  *
- * The first days of each logged period also come with a free pass each, for
- * that day only (kind 'period'). Those don't use up the free pass or a gift.
+ * The first days of each logged period are passed automatically: as soon as
+ * the period is logged, each of those days counts as trained and is filled
+ * up to 100, with nothing to tap and nothing used up. (Passes stored with
+ * kind 'period' come from before that, when she had to take them herself.)
  */
 export const PASS_PRICE = 50
 
@@ -46,6 +48,11 @@ export function periodPassDates(state: WithPeriods & Pick<AppState, 'today'>) {
 }
 
 export const isPeriodPassDate = (state: WithPeriods & Pick<AppState, 'today'>, date: string) => periodPassDates(state).includes(date)
+
+/** Days that count as passed: the ones with a stored pass, and the first days of every period. */
+export function excusedDates(dayPasses: Pick<DayPass, 'date'>[], periods: AppState['periods'] | undefined, today: string) {
+  return new Set([...dayPasses.map((pass) => pass.date), ...periodPassDates({ periods, today })])
+}
 
 /** What a pass for this day costs: nothing on the first days of a period, otherwise the usual price. */
 export const passPriceFor = (state: PointsState & Pick<AppState, 'passGifts'> & WithPeriods, date: string) => (isPeriodPassDate(state, date) ? 0 : passPrice(state))
