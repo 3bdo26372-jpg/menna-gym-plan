@@ -4,8 +4,7 @@ import { X } from 'lucide-react'
 import { NICKNAMES } from '../../shared/nicknames'
 import type { AppState } from '../../shared/types'
 import { giftTreatId, isTreatOpened, openTreat, treatsFor, useTreatOpened, type Treat } from '../lib/treats'
-import { useAppData } from '../state/AppData'
-import { Card, Notice } from './ui'
+import { Card } from './ui'
 
 /** Whether she already unwrapped this gift on this device. */
 export const isGiftOpened = (id: number) => isTreatOpened(giftTreatId({ id, note: null, createdAt: '' }))
@@ -69,24 +68,6 @@ const nickFor = (date: string) => NICKNAMES[[...date].reduce((sum, char) => sum 
 
 /** What's inside, once unwrapped: the note and what she can do with it. */
 function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?: () => void; inPopup?: boolean }) {
-  const { takeDayPass } = useAppData()
-  const [busy, setBusy] = useState(false)
-  const [used, setUsed] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function applyToday(date: string) {
-    setBusy(true)
-    setError(null)
-    try {
-      await takeDayPass(date)
-      setUsed(true)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'تعذّر الحفظ')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   if (treat.kind === 'gift') {
     return (
       <>
@@ -100,26 +81,13 @@ function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?
       </>
     )
   }
-
-  if (used) {
-    return (
-      <>
-        <h2 className="card-title">النهارده اتحسب يوم كامل 🤍</h2>
-        <p className="muted small">ريّحي نفسك يا {nickFor(treat.date)}، ونقطك كلها محفوظة.</p>
-        {inPopup && <button type="button" className="button primary" onClick={onDone}>تمام 💗</button>}
-      </>
-    )
-  }
+  // The first days of a period are passed automatically; this only tells her.
   return (
     <>
       <h2 className="card-title">اليوم {treat.periodDay} من البريود 🌸</h2>
       <p className="gift-note">هدية مني ليكي النهارده يا {nickFor(treat.date)} 🤍</p>
-      <p className="muted small">لو مش قادرة تتمرني النهارده، استخدمي الإكسبشن ده ويتحسب يوم كامل. ولو مش محتاجاه سيبيه، وتقدري تستخدميه بعدين من صفحة الإكسبشن.</p>
-      <div className="treat-actions">
-        <button type="button" className="button primary" disabled={busy} onClick={() => void applyToday(treat.date)}>{busy ? 'لحظة…' : 'استخدميه للنهارده'}</button>
-        {inPopup && <button type="button" className="link-button" disabled={busy} onClick={onDone}>مش دلوقتي</button>}
-      </div>
-      {error && <Notice tone="care">{error}</Notice>}
+      <p className="muted small">النهارده اتحسب يوم كامل لوحده، من غير ما تعملي حاجة. ريّحي نفسك، ونقطك كلها محفوظة.</p>
+      {inPopup && <button type="button" className="button primary" onClick={onDone}>تمام 💗</button>}
     </>
   )
 }

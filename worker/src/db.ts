@@ -16,7 +16,7 @@ import type {
 import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
-import type { DayPass, PassGift } from '../../shared/dayPasses'
+import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
 import { PRIZES, toPrizeId, type GamePlay } from '../../shared/game'
@@ -148,7 +148,13 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   }))
   const makeup = makeupByDate(waterSpends)
   const dayPasses: DayPass[] = passes.results.map((row) => ({ date: String(row.log_date), points: Number(row.points), kind: (row.kind as DayPass['kind']) ?? 'regular', createdAt: String(row.created_at) }))
-  const excused = new Set(dayPasses.map((pass) => pass.date))
+  const periodEntries = periods.results.map((row): PeriodEntry => ({
+    id: Number(row.id),
+    startDate: String(row.start_date),
+    endDate: (row.end_date as string | null) ?? null,
+    createdAt: String(row.created_at),
+  }))
+  const excused = excusedDates(dayPasses, periodEntries, today)
 
   const foodEntries = food.results.map((row): FoodEntry => ({
       id: Number(row.id),
@@ -206,12 +212,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     waterSpends,
     dayPasses,
     passGifts: gifts.results.map((row): PassGift => ({ id: Number(row.id), note: (row.note as string | null) ?? null, createdAt: String(row.created_at) })),
-    periods: periods.results.map((row): PeriodEntry => ({
-      id: Number(row.id),
-      startDate: String(row.start_date),
-      endDate: (row.end_date as string | null) ?? null,
-      createdAt: String(row.created_at),
-    })),
+    periods: periodEntries,
     gamePlays: games.results.map((row): GamePlay => ({
       round: Number(row.round),
       date: String(row.log_date),

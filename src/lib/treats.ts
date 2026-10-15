@@ -1,13 +1,13 @@
 import { useSyncExternalStore } from 'react'
-import { canTakePass, isPeriodPassDate, unusedGifts, type PassGift } from '../../shared/dayPasses'
+import { isPeriodPassDate, unusedGifts, type PassGift } from '../../shared/dayPasses'
 import { diffDays } from '../../shared/date'
 import type { AppState } from '../../shared/types'
 import { storage } from './storage'
 
 /**
- * Treats are the passes wrapped as chocolate: gifted passes, and the free
- * pass on each of the first days of a period (today's only, so each day
- * brings its own). Whether one was unwrapped is kept on this device.
+ * Treats are the passes wrapped as chocolate: gifted passes, and a note on
+ * each of the first days of a period, which are passed automatically (today's
+ * only, so each day brings its own). Whether one was unwrapped is kept on this device.
  */
 export type Treat =
   | { id: string; kind: 'gift'; gift: PassGift }
@@ -42,7 +42,7 @@ export function treatsFor(state: AppState): Treat[] {
   const treats: Treat[] = unusedGifts(state).map((gift) => ({ id: giftTreatId(gift), kind: 'gift', gift }))
   const today = state.days.find((day) => day.date === state.today)
   const start = (state.periods ?? []).filter((entry) => entry.startDate <= state.today).at(-1)
-  if (today && start && isPeriodPassDate(state, state.today) && canTakePass(today)) {
+  if (today && start && isPeriodPassDate(state, state.today)) {
     treats.push({ id: `period-${state.today}`, kind: 'period', date: state.today, periodDay: diffDays(start.startDate, state.today) + 1 })
   }
   return treats

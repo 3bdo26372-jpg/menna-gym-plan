@@ -73,6 +73,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The score is filled to 100 and the day counts as an active day for the milestone rewards.
   - The first pass is free. Later ones cost 50 points.
   - The home page offers one when yesterday's workout was missed.
+  - **Period days:** the first 3 days of every logged period are passed automatically (filled to 100 and counted as workout days) as soon as the period is logged, past periods included. Nothing is stored or spent (`excusedDates` in `shared/dayPasses.ts`).
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
