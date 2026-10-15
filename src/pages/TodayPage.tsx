@@ -26,7 +26,7 @@ import { formatChange, formatNumber } from '../lib/format'
 import { greetingFor } from '../lib/greetings'
 import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS, OVERALL_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
-import { treatsFor } from '../lib/treats'
+import { isTreatOpened, treatsFor } from '../lib/treats'
 import { useAppData, useAppState } from '../state/AppData'
 import { resumableSession, workSummary } from '../workout/session'
 
@@ -93,7 +93,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      {treatsFor(state).map((treat) => <TreatCard key={treat.id} treat={treat} />)}
+      <TreatCards state={state} />
       <CardGame state={state} />
       {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
@@ -150,6 +150,16 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       </div>
     </div>
   )
+}
+
+/**
+ * Wrapped treats. A gift she unwrapped on an earlier visit leaves the home
+ * page (its pass stays on the passes page until she uses it); one she opens
+ * now stays until she leaves, so she can read it.
+ */
+function TreatCards({ state }: { state: AppState }) {
+  const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
+  return <>{treatsFor(state).filter((treat) => !openedBefore.has(treat.id)).map((treat) => <TreatCard key={treat.id} treat={treat} />)}</>
 }
 
 /** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
