@@ -153,13 +153,26 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 }
 
 /**
- * Wrapped treats. A gift she unwrapped on an earlier visit leaves the home
- * page (its pass stays on the passes page until she uses it); one she opens
- * now stays until she leaves, so she can read it.
+ * Wrapped treats. A gift she unwrapped on an earlier visit loses its chocolate
+ * but stays on the home page as a short reminder until she uses its pass; one
+ * she opens now keeps its chocolate until she leaves, so she can read it.
  */
 function TreatCards({ state }: { state: AppState }) {
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
-  return <>{treatsFor(state).filter((treat) => !openedBefore.has(treat.id)).map((treat) => <TreatCard key={treat.id} treat={treat} />)}</>
+  const treats = treatsFor(state)
+  const waiting = treats.flatMap((treat) => (treat.kind === 'gift' && openedBefore.has(treat.id) ? [treat.gift] : []))
+  return (
+    <>
+      {treats.filter((treat) => !openedBefore.has(treat.id)).map((treat) => <TreatCard key={treat.id} treat={treat} />)}
+      {waiting.length > 0 && (
+        <Card className="soft-card">
+          <h2 className="card-title">{waiting.length === 1 ? 'معاكي إكسبشن هدية 🎁' : `معاكي ${waiting.length} إكسبشن هدية 🎁`}</h2>
+          {waiting.map((gift) => <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>)}
+          <a className="button secondary" href="#/rewards/passes">استخدميه</a>
+        </Card>
+      )}
+    </>
+  )
 }
 
 /** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
