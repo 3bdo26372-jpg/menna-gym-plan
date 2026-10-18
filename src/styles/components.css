@@ -379,3 +379,4 @@
 .new-page-notes ul { display: grid; gap: 6px; margin: 0; padding-inline-start: 18px; color: var(--berry-dark); font-size: 14px; }
 .meal-ideas { display: grid; gap: 10px; justify-items: stretch; }
 .meal-ideas > .link-button { justify-self: start; }
+.summary-actions { display: flex; flex-wrap: wrap; gap: 8px; }
