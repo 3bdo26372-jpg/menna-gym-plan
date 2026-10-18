@@ -57,6 +57,7 @@ export async function notifyAll(db: D1Database, reminder: Pick<Reminder, 'title'
 export async function sendDueReminders(db: D1Database, now = new Date()) {
   const targets = await subscriptions(db)
   if (!targets.length) return
+  await sendMessages(db, targets)
   const today = cairoDate(now)
   const { results } = await db.prepare("SELECT key FROM push_sent WHERE sent_date = ? OR key LIKE 'gift-%'").bind(today).all<Row>()
   const sent = new Set(results.map((row) => String(row.key)))
@@ -66,5 +67,15 @@ export async function sendDueReminders(db: D1Database, now = new Date()) {
     // Record it first, so a slow push service never leads to a second copy.
     await db.prepare('INSERT OR IGNORE INTO push_sent (sent_date, key) VALUES (?, ?)').bind(today, reminder.key).run()
     await notifyAll(db, { ...reminder, tag: reminder.key }, targets)
+  }
+}
+
+/** Messages queued in push_messages, each sent once. */
+async function sendMessages(db: D1Database, targets: PushSubscriptionInput[]) {
+  const { results } = await db.prepare('SELECT id, title, body FROM push_messages WHERE sent_at IS NULL ORDER BY id').all<Row>()
+  for (const row of results) {
+    // Marked first, like the reminders, so it never goes out twice.
+    await db.prepare("UPDATE push_messages SET sent_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").bind(row.id).run()
+    await notifyAll(db, { title: String(row.title), body: String(row.body), url: '/#/today', tag: `message-${row.id}` }, targets)
   }
 }
