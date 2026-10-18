@@ -8,7 +8,8 @@ import type { AppState, DayRecord } from '../types'
 import { day, workout } from './fixtures'
 
 const start = '2026-10-01'
-const period = (startDate: string, endDate: string | null = null): PeriodEntry => ({ id: 1, startDate, endDate, createdAt: '' })
+/** A logged period; she marked it ended after 5 days unless the test says otherwise. */
+const period = (startDate: string, endDate: string | null = addDays(startDate, 4)): PeriodEntry => ({ id: 1, startDate, endDate, createdAt: '' })
 
 describe('sleep', () => {
   it('reads a bedtime after midnight and one before it', () => {

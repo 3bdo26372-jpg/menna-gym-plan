@@ -147,18 +147,19 @@ describe('period passes', () => {
     expect(passPrice(state(days, [], { dayPasses: [], periods }))).toBe(0)
   })
 
-  it('counts her usual length until she marks the end, then up to the end, never past today', () => {
+  it('goes on until she marks the end, then stops there, never past today', () => {
     expect(periodPassDates({ periods, today: addDays(start, 2) })).toEqual([addDays(start, 1), addDays(start, 2)])
-    expect(periodPassDates({ periods, today: addDays(start, 9) })).toEqual([1, 2, 3, 4, 5].map((offset) => addDays(start, offset)))
+    expect(periodPassDates({ periods, today: addDays(start, 9) })).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9].map((offset) => addDays(start, offset)))
     const ended = [{ ...periods[0], endDate: addDays(start, 2) }]
     expect(periodPassDates({ periods: ended, today: addDays(start, 9) })).toEqual([addDays(start, 1), addDays(start, 2)])
   })
 
-  it('kept only the first three days of a period before every period day counted', () => {
-    const before = [{ id: 1, startDate: '2026-10-12', endDate: '2026-10-16', createdAt: '' }]
-    expect(periodPassDates({ periods: before, today: '2026-10-25' })).toEqual(['2026-10-12', '2026-10-13', '2026-10-14'])
-    const across = [{ id: 1, startDate: '2026-10-16', endDate: '2026-10-20', createdAt: '' }]
-    expect(periodPassDates({ periods: across, today: '2026-10-25' })).toEqual(['2026-10-16', '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20'])
+  it('passes every day of past periods too, and her usual length for an old one without an end', () => {
+    const past = [{ id: 1, startDate: '2026-09-14', endDate: null, createdAt: '' }, { id: 2, startDate: '2026-10-12', endDate: '2026-10-16', createdAt: '' }]
+    expect(periodPassDates({ periods: past, today: '2026-10-25' })).toEqual([
+      '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18',
+      '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16',
+    ])
   })
 
   it('is free even when the free pass is used up and there are no points', () => {
