@@ -15,6 +15,12 @@ const HEARTS = ['💗', '💸', '🤍', '💕', '💸', '💗']
  * first, then the other two. Shown on the home page while today's round is
  * open, and on the day she played it.
  */
+/** Whether the home page shows the game: a round is open, or she played it today. */
+export function gameShown(state: AppState) {
+  const game = currentGame(state)
+  return Boolean(game && (!game.played || game.played.date === state.today))
+}
+
 export function CardGame({ state }: { state: AppState }) {
   const { playGame } = useAppData()
   const [busy, setBusy] = useState(false)

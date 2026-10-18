@@ -92,12 +92,15 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
   - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.
   - The next start is the latest start plus her average cycle: the gaps between her last 6 starts, ignoring gaps under 18 or over 50 days (usually a start that wasn't logged). Until there are two starts it uses 28 days. Period length works the same from the ends she logs (5 days by default).
-  - The home page always has a period card. From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
+  - The home page always has a period card (small, at the bottom). From 3 days before the expected start, on the day, and while it is late, it turns into a warning at the top of the page. During a period it shows the day of the period and a reminder to go easy.
   - Starts less than 10 days apart are refused as the same period logged twice. Periods don't affect the score or points.
 - **Period pain (وجع البريود)**: she taps **عندي وجع بريود** on the period card on the home page and rates the pain 1–10 (or "مفيش وجع"); yesterday can be rated on the period page.
   - Above 4 the day is a rest day: the workout's 40 points are filled in (`rest` in the score) without training. The day doesn't count as a workout day for rewards, earns no score-tier points from that credit, and neither adds to nor breaks the 7-day streak. If she trains anyway (half the workout), it counts as usual.
   - On those days the workout is a tiny ~5-minute session of gentle moves and stretches. Milder pain (1–4) takes the jumps out.
   - The home page doesn't offer a pass for a missed workout on a rest day.
+- **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, the workout (or the period rest card), today's points with buttons to log food and water, and the small period card at the bottom.
+  - The highlight is the first that applies: a new treat to open, yesterday's feedback, the card game, the fresh start after a period, gift passes waiting, a pass for a missed yesterday, or turning on notifications.
+  - The overall stats, next reward and month progress live on the progress and rewards pages.
 - **Greeting** (`src/lib/greetings.ts`): the line at the top of the home page follows her day (a pain rest day, a full 100, the water target, the workout, a nudge from 7 pm with no workout, her period, or the time of day), with a few lines per case rotating daily.
 - **Bottom bar**: 7 tabs don't fit on a phone, so the bar scrolls sideways; the tab cut off at the edge shows there are more. The current tab is scrolled into view when a link opens a page.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.

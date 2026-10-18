@@ -1,30 +1,28 @@
 import { useEffect, useState } from 'react'
-import { m } from 'framer-motion'
-import { CalendarDays, Check, ChevronLeft, Droplets, Flame, Gift, Play, Sparkles, Timer, Utensils } from 'lucide-react'
+import { Check, Droplets, Flame, Play, Sparkles, Timer, Utensils } from 'lucide-react'
 import { formatLitres, waterMl, WATER_TARGET_ML } from '../../shared/food'
-import { addDays, cairoTime, dayNumberFor, formatDateLong, periodBounds, periodForDay, PERIOD_DAYS } from '../../shared/date'
-import { measurementComparison, nextReward, summaryStats } from '../../shared/engine'
+import { addDays, cairoTime, dayNumberFor, formatDateLong } from '../../shared/date'
 import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPriceFor, unusedGifts } from '../../shared/dayPasses'
+import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPriceFor, type PassGift } from '../../shared/dayPasses'
+import { newPagePeriod } from '../../shared/meals'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
-import { CardGame } from '../components/CardGame'
+import { CardGame, gameShown } from '../components/CardGame'
 import { CheckInForm } from '../components/CheckInForm'
 import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
-import { NewPageCard } from '../components/NewPage'
+import { isNewPageDismissed, NewPageCard } from '../components/NewPage'
 import { NotificationsCard } from '../components/Notifications'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
-import { scoreLevel } from '../components/ScoreCalendar'
 import { Card, Notice, ProgressBar, ScoreRing, StatTile } from '../components/ui'
-import { formatChange, formatNumber } from '../lib/format'
+import { formatNumber } from '../lib/format'
 import { greetingFor } from '../lib/greetings'
 import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS, OVERALL_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
@@ -70,15 +68,6 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
   const dayNumber = dayNumberFor(startDate, state.today)
   const yesterday = state.days.find((day) => day.date === addDays(state.today, -1))
   const plan = planForDay(state.days, state.today, dayNumber, today?.checkin)
-  const stats = summaryStats(state)
-  const weight = measurementComparison(state, 'weight')
-  const waist = measurementComparison(state, 'waist')
-  const belly = measurementComparison(state, 'belly')
-  const rewards = nextReward(state)
-  const period = periodForDay(dayNumber)
-  const bounds = periodBounds(startDate, period)
-  const periodDays = state.days.filter((day) => day.date >= bounds.start && day.date <= state.today)
-  const periodAverage = periodDays.length ? Math.round(periodDays.reduce((sum, day) => sum + day.score.total, 0) / periodDays.length) : 0
   const recentPain = [today, yesterday].some((day) => day?.feedback?.pain)
   // The app can deploy before the Worker that sends periods; skip the card until it does.
   const cycle = state.periods ? periodForecast(state.periods, state.today) : null
@@ -94,20 +83,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       </header>
 
       {recentPain && <SafetyNote compact />}
-      {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
-      <NewPageCard state={state} />
-      <TreatCards state={state} />
-      <CardGame state={state} />
-      <NotificationsCard state={state} />
-      {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (
-        <Card className="soft-card">
-          <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
-          <p className="muted">عندك إكسبشن{passPriceFor(state, yesterday.date) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
-          <a className="button secondary" href="#/rewards/passes">استخدمي الإكسبشن</a>
-        </Card>
-      )}
-
       {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
+      <Highlight state={state} yesterday={yesterday} />
 
       <DailyTips state={state} />
 
@@ -115,71 +92,86 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
         ? <PeriodRest state={state} day={today} plan={plan} />
         : <TodayWorkout state={state} day={today} plan={plan} />}
 
-      <ScoreBreakdown day={today} />
+      <TodaySummary state={state} day={today} />
 
-      <FoodToday state={state} />
-
+      {/* Small, and where she rates pain before a period. */}
       {cycle && !isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
-
-      <Card>
-        <h2 className="card-title">ملخص سريع</h2>
-        <div className="stat-grid">
-          <StatTile label="أيام التمرين" value={stats.activeDays} unit={`/ ${stats.recordedDays}`} tone="accent" />
-          <StatTile label="متوسط النقاط" value={stats.averageScore} unit="/100" />
-          <StatTile label="دقائق التمرين" value={stats.totalMinutes} unit="دقيقة" />
-          <StatTile label="الوزن الحالي" value={formatNumber(weight.current)} unit="كجم" hint={weight.entries ? `${formatChange(weight.changeFromBaseline, 'كجم')} من البداية` : 'نقطة البداية'} />
-          <ChangeTile label="الوسط" comparison={waist} />
-          <ChangeTile label="البطن" comparison={belly} />
-        </div>
-        <a className="text-link" href="#/measurements/new">سجّلي قياس جديد <ChevronLeft /></a>
-      </Card>
-
-      <div className="two-col">
-        <Card>
-          <h2 className="card-title"><Gift /> المكافأة الجاية</h2>
-          {rewards.next ? (
-            <>
-              <p className="reward-mini"><span>{rewards.next.emoji}</span> {rewards.next.title}</p>
-              <ProgressBar value={rewards.active} max={rewards.next.thresholdDays} label="التقدم للمكافأة الجاية" />
-              <p className="muted small">{rewards.active} من {rewards.next.thresholdDays} يوم تمرين</p>
-            </>
-          ) : <p>فتحتي كل المكافآت 🎉</p>}
-          <a className="text-link" href="#/rewards/milestones">كل المكافآت <ChevronLeft /></a>
-        </Card>
-        <Card>
-          <h2 className="card-title"><CalendarDays /> الشهر {period}</h2>
-          <ProgressBar value={dayNumber - (period - 1) * PERIOD_DAYS} max={PERIOD_DAYS} label="التقدم في الشهر" />
-          <p className="muted small">يوم {dayNumber - (period - 1) * PERIOD_DAYS} من {PERIOD_DAYS} · متوسط نقاط الشهر {periodAverage}</p>
-          <RecentStrip days={state.days} today={state.today} />
-          <a className="text-link" href="#/progress">التقدم بالتفصيل <ChevronLeft /></a>
-        </Card>
-      </div>
     </div>
   )
 }
 
 /**
- * Wrapped treats. A gift she unwrapped on an earlier visit loses its chocolate
- * but stays on the home page as a short reminder until she uses its pass; one
- * she opens now keeps its chocolate until she leaves, so she can read it.
+ * At most one extra card at a time, so the home page stays calm: the most
+ * pressing of a new treat, yesterday's feedback, the card game, the fresh
+ * start after a period, a gift pass waiting, a pass for a missed yesterday,
+ * or turning on notifications. The rest wait for their turn.
  */
-function TreatCards({ state }: { state: AppState }) {
+function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord | undefined }) {
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
   const treats = treatsFor(state)
+  const fresh = treats.find((treat) => !openedBefore.has(treat.id))
+  if (fresh) return <TreatCard treat={fresh} />
+  if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
+  if (gameShown(state)) return <CardGame state={state} />
+  if (newPagePeriod(state.periods, state.today) && !isNewPageDismissed(state)) return <NewPageCard state={state} />
   const waiting = treats.flatMap((treat) => (treat.kind === 'gift' && openedBefore.has(treat.id) ? [treat.gift] : []))
+  if (waiting.length) return <GiftsWaiting gifts={waiting} />
+  if (yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date)) {
+    return (
+      <Card className="soft-card">
+        <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>
+        <p className="muted">عندك إكسبشن{passPriceFor(state, yesterday.date) === 0 ? ' ببلاش' : ''} يكمّل يوم {yesterday.dayNumber} لـ 100 ويحسبه يوم تمرين.</p>
+        <a className="button secondary" href="#/rewards/passes">استخدمي الإكسبشن</a>
+      </Card>
+    )
+  }
+  return <NotificationsCard state={state} />
+}
+
+/** Gift passes she already unwrapped but hasn't used: a short reminder with their notes. */
+function GiftsWaiting({ gifts }: { gifts: PassGift[] }) {
   return (
-    <>
-      {treats.filter((treat) => !openedBefore.has(treat.id)).map((treat) => <TreatCard key={treat.id} treat={treat} />)}
-      {waiting.length > 0 && (
-        <Card className="soft-card">
-          <h2 className="card-title">{waiting.length === 1 ? 'معاكي إكسبشن هدية 🎁' : `معاكي ${waiting.length} إكسبشن هدية 🎁`}</h2>
-          {waiting.map((gift) => <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>)}
-          <a className="button secondary" href="#/rewards/passes">استخدميه</a>
-        </Card>
-      )}
-    </>
+    <Card className="soft-card">
+      <h2 className="card-title">{gifts.length === 1 ? 'معاكي إكسبشن هدية 🎁' : `معاكي ${gifts.length} إكسبشن هدية 🎁`}</h2>
+      {gifts.map((gift) => <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>)}
+      <a className="button secondary" href="#/rewards/passes">استخدميه</a>
+    </Card>
   )
 }
+
+/** Today's points in one card: workout, water and calories, with where to log. */
+function TodaySummary({ state, day }: { state: AppState; day: DayRecord | undefined }) {
+  const score = day?.score
+  const rest = score?.rest ?? 0
+  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + rest
+  const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))
+  const passed = (score?.pass ?? 0) + (score?.makeup ?? 0)
+  const rows = [
+    { label: rest ? 'التمرين 🌸' : 'التمرين', value: workout, max: WORKOUT_SHARE },
+    { label: `المية · ${formatLitres(water)} لتر`, value: score?.water ?? 0, max: SCORE_POINTS.water },
+    { label: 'السعرات', value: score?.calories ?? 0, max: SCORE_POINTS.calories },
+    ...(passed ? [{ label: 'إكسبشن 🎟️', value: passed, max: passed }] : []),
+  ]
+  return (
+    <Card>
+      <h2 className="card-title">نقاط النهارده: {score?.total ?? 0} من 100</h2>
+      <ul className="score-rows">
+        {rows.map((row) => (
+          <li key={row.label}>
+            <span>{row.label}</span>
+            <ProgressBar value={row.value} max={row.max} label={row.label} />
+            <b>{row.value}/{row.max}</b>
+          </li>
+        ))}
+      </ul>
+      <div className="summary-actions">
+        <a className="button secondary small-button" href="#/food/add"><Utensils /> سجّلي أكل</a>
+        <a className="button secondary small-button" href="#/food/water"><Droplets /> سجّلي مية</a>
+      </div>
+    </Card>
+  )
+}
+
 
 /** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
 function useCairoHour() {
@@ -215,17 +207,6 @@ function Greeting({ state, day, dayNumber, cycle }: { state: AppState; day: DayR
   )
 }
 
-/** Shows the change from baseline once there is a measurement, otherwise the baseline itself. */
-function ChangeTile({ label, comparison }: { label: string; comparison: ReturnType<typeof measurementComparison> }) {
-  if (!comparison.entries) return <StatTile label={label} value={formatNumber(comparison.baseline)} unit="سم" hint="نقطة البداية" />
-  const change = comparison.changeFromBaseline ?? 0
-  return (
-    <StatTile
-      label={label} value={formatChange(change, 'سم')} tone={change < 0 ? 'good' : 'neutral'}
-      hint={`${formatNumber(comparison.baseline)} ← ${formatNumber(comparison.current)} سم`}
-    />
-  )
-}
 
 /** A period day: no workout to do, the day already counts. A light one is there if she wants it. */
 function PeriodRest({ state, day, plan }: { state: AppState; day: DayRecord | undefined; plan: WorkoutPlan }) {
@@ -338,25 +319,6 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
   )
 }
 
-function FoodToday({ state }: { state: AppState }) {
-  const entries = state.foodEntries.filter((entry) => entry.date === state.today)
-  const water = waterMl(entries)
-  const meals = entries.filter((entry) => entry.category !== 'drink').length
-  return (
-    <Card>
-      <div className="food-today">
-        <h2 className="card-title"><Utensils /> أكلك وشربك النهارده</h2>
-        <a className="button secondary" href="#/food/add">سجّلي</a>
-      </div>
-      <div className="stat-grid">
-        <StatTile label="وجبات وسناكس" value={meals} />
-        <StatTile label="المية" value={formatLitres(water)} unit="لتر" hint={<><Droplets className="inline-icon" /> الهدف {WATER_TARGET_ML / 1000}–2.5 لتر</>} />
-      </div>
-      <ProgressBar value={water} max={WATER_TARGET_ML} label="المية من الهدف" />
-      <a className="text-link" href="#/food/water">سجّلي مية <ChevronLeft /></a>
-    </Card>
-  )
-}
 
 function YesterdayFeedback({ day }: { day: DayRecord }) {
   const { saveFeedback } = useAppData()
@@ -372,47 +334,4 @@ function YesterdayFeedback({ day }: { day: DayRecord }) {
   )
 }
 
-function ScoreBreakdown({ day }: { day: DayRecord | undefined }) {
-  const score = day?.score
-  // A period-pain rest day fills the workout's points in, shown as part of the workout.
-  const rest = score?.rest ?? 0
-  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + rest
-  const rows = [
-    { label: rest ? 'التمرين · راحة البريود 🌸' : 'التمرين', value: workout, max: WORKOUT_SHARE, href: rest ? '#/period' : undefined as string | undefined },
-    { label: 'المية', value: score?.water ?? 0, max: SCORE_POINTS.water, href: '#/food/water' },
-    { label: 'السعرات في الرينج', value: score?.calories ?? 0, max: SCORE_POINTS.calories, href: '#/food/calories' },
-    ...(score?.pass || score?.makeup ? [{ label: 'إكسبشن 🎟️', value: (score.pass ?? 0) + (score.makeup ?? 0), max: (score.pass ?? 0) + (score.makeup ?? 0), href: '#/rewards/passes' }] : []),
-  ]
-  return (
-    <Card>
-      <h2 className="card-title">نقاط النهارده: {score?.total ?? 0} من 100</h2>
-      <ul className="score-rows">
-        {rows.map((row) => (
-          <li key={row.label}>
-            {row.href ? <a href={row.href}>{row.label}</a> : <span>{row.label}</span>}
-            <ProgressBar value={row.value} max={row.max} label={row.label} />
-            <b>{row.value}/{row.max}</b>
-          </li>
-        ))}
-      </ul>
-      <p className="muted small">٤٠ للتمرين، ٣٠ للمية، و٣٠ للأكل في رينج السعرات. التمرين الأصعب أو الأطول مش بيدي نقاط زيادة.</p>
-    </Card>
-  )
-}
 
-function RecentStrip({ days, today }: { days: DayRecord[]; today: string }) {
-  const recent = Array.from({ length: 7 }, (_, index) => addDays(today, index - 6))
-  const byDate = new Map(days.map((day) => [day.date, day]))
-  return (
-    <div className="recent-strip" aria-label="آخر ٧ أيام">
-      {recent.map((date) => {
-        const day = byDate.get(date)
-        return (
-          <m.span key={date} className={`cal-cell ${day ? scoreLevel(day.score.total, true) : 'future'} ${date === today ? 'is-today' : ''}`} title={day ? `${day.score.total} نقطة${day.score.makeup ? ` (منها ${day.score.makeup} تعويض 💧)` : ''}${day.excused ? ' · إكسبشن 🎟️' : ''}${day.score.rest ? ' · راحة البريود 🌸' : ''}` : ''} initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
-            <span className="cal-score">{day ? day.score.total : ''}</span>
-          </m.span>
-        )
-      })}
-    </div>
-  )
-}

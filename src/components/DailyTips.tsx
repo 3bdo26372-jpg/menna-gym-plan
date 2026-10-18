@@ -18,11 +18,15 @@ function useHour() {
   return hour
 }
 
+/** The home page shows only the most pressing few, so it stays calm. */
+const HOME_TIPS = 3
+
 /** طلبات النهارده: small asks for today, from her log and her cycle. */
 export function DailyTips({ state }: { state: AppState }) {
   const hour = useHour()
   const [editingSleep, setEditingSleep] = useState(false)
-  const tips = dailyTips(state, hour)
+  const [loggingSleep, setLoggingSleep] = useState(false)
+  const tips = dailyTips(state, hour).slice(0, HOME_TIPS)
   const sleep = state.days.find((day) => day.date === state.today)?.sleep ?? null
   if (!tips.length && !sleep) return null
 
@@ -36,7 +40,9 @@ export function DailyTips({ state }: { state: AppState }) {
             <div className="tip-copy">
               <strong>{tip.title}</strong>
               <p>{tip.text}</p>
-              {tip.id === 'sleep-log' && <SleepForm date={state.today} current={null} />}
+              {tip.id === 'sleep-log' && (loggingSleep
+                ? <SleepForm date={state.today} current={null} onDone={() => setLoggingSleep(false)} />
+                : <button type="button" className="button secondary small-button" onClick={() => setLoggingSleep(true)}><Moon /> سجّلي نومك</button>)}
               {tip.drink && <DrinkButton date={state.today} drink={tip.drink} />}
               {tip.href && <a className="text-link" href={tip.href}>{linkLabel(tip)} <ChevronLeft /></a>}
             </div>
