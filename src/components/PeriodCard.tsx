@@ -73,7 +73,7 @@ export function PeriodCard({ state, forecast, onPage = false }: { state: AppStat
         <span className="period-emoji" aria-hidden="true">🌸</span>
         <div>
           <h2 className="card-title">اليوم {forecast.periodDay} من البريود</h2>
-          <p className="muted small">خفّفي على نفسك: لو أي تمرين تقيل دوسي «صعب؟ أسهل»، واشربي مية كتير 💧</p>
+          <p className="muted small">طول البريود مفيش تمارين، وكل يوم بيتحسب لك لوحده 🤍 واشربي مية كتير 💧</p>
           <PainCheck state={state} />
           {!last.endDate && (
             <button type="button" className="button secondary" disabled={busy} onClick={() => void run(() => endPeriod(last.id, state.today))}>

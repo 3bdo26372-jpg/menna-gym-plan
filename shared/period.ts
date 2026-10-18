@@ -129,6 +129,25 @@ export function validatePeriodEnd(input: unknown, entry: PeriodEntry, periods: P
 }
 
 /**
+ * Period days she doesn't have to train: they count as trained and are filled
+ * up to 100 by themselves. At first only the first 3 days of a period were;
+ * from ALL_PERIOD_DAYS_FROM every day of it is. A period without an end date
+ * counts her usual length (marking the end later fixes it either way).
+ */
+export const FIRST_PERIOD_REST_DAYS = 3
+export const ALL_PERIOD_DAYS_FROM = '2026-10-18'
+
+export function periodRestDates(periods: PeriodEntry[] | undefined, today: string) {
+  const list = periods ?? []
+  const { periodDays } = periodForecast(list, today)
+  return list.flatMap((entry) => {
+    const lastDay = entry.endDate ?? addDays(entry.startDate, periodDays - 1)
+    return Array.from({ length: diffDays(entry.startDate, lastDay) + 1 }, (_, index) => addDays(entry.startDate, index))
+      .filter((date, index) => index < FIRST_PERIOD_REST_DAYS || date >= ALL_PERIOD_DAYS_FROM)
+  }).filter((date) => date <= today)
+}
+
+/**
  * Period pain, rated 1–10 for a day (0 when she says there is none). Above this, the day is a rest day: the
  * workout's points count without training, and the day counts as a workout
  * day for the rewards, streaks and score points.

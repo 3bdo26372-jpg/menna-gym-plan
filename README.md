@@ -74,7 +74,9 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The score is filled to 100 and the day counts as an active day for the milestone rewards.
   - The first pass is free. Later ones cost 50 points.
   - The home page offers one when yesterday's workout was missed.
-  - **Period days:** the first 3 days of every logged period are passed automatically (filled to 100 and counted as workout days) as soon as the period is logged, past periods included. Nothing is stored or spent (`excusedDates` in `shared/dayPasses.ts`).
+  - **Period days:** every day of a logged period is passed automatically (filled to 100 and counted as a workout day, also in the 7-day streak) as soon as the period is logged. Nothing is stored or spent (`periodRestDates` in `shared/period.ts`). Without an end date it counts her usual length.
+    - Before 2026-10-18 (`ALL_PERIOD_DAYS_FROM`) only the first 3 days of a period were passed, and those days stay as they were.
+    - On a period day the home page shows a rest card instead of the workout, with the workout one tap away if she wants to move.
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **صفحة جديدة** (`shared/meals.ts`, `src/components/NewPage.tsx`): for a week after she marks a period as ended, the home page shows a fresh-start card until she taps «يلا بينا». It reviews the last 10 days of food (fast food, sugary drinks, a first meal after 3 pm, days with nothing logged, no vegetables) and offers meal ideas.
 - **Meal ideas** (`MEAL_IDEAS` in `shared/meals.ts`): three ideas at a time for the meal she picks, «اختيارات تانية» shows the next three, and «أكلتها» logs one. They also sit on the food page for today.
