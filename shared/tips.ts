@@ -3,7 +3,7 @@ import { addDays } from './date'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
 import { cycleDay, periodForecast, type CycleDay, type HormonePhase } from './period'
 import { NICKNAMES, OVULATION_NICKNAME, PERIOD_NICKNAME, withNickname } from './nicknames'
-import { WATER_GOAL_ML } from './points'
+import { EARN, WATER_GOAL_ML } from './points'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { formatSleep, isLateBedtime, sleepMinutes, SLEEP_GOAL_HOURS } from './sleep'
 import type { AppState } from './types'
@@ -97,7 +97,7 @@ export function dailyTips(state: AppState, hour: number): Tip[] {
 
   // Sleep: ask in the morning; once logged, a word only when it was short or late.
   if (day && day.sleep === null) {
-    tips.push({ id: 'sleep-log', emoji: '😴', title: 'صباح الفل يا {nick}، نمتي امتى وصحيتي امتى؟', text: 'قوليلي نمتي كويس ولا لأ، عشان نظبط يومك على قد طاقتك 😴' })
+    tips.push({ id: 'sleep-log', emoji: '😴', title: 'صباح الفل يا {nick}، نمتي امتى وصحيتي امتى؟', text: `سجّليه كل يوم وخدي ${EARN.sleep} نقط 🎁 وقوليلي نمتي كويس ولا لأ، عشان نظبط يومك على قد طاقتك 😴` })
   } else if (day?.sleep) {
     const minutes = sleepMinutes(day.sleep)
     if (day.sleep.quality === 'bad') {

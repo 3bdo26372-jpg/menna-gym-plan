@@ -62,6 +62,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - A finished day eaten within the calorie range (1,200 up to the top): 5.
   - A finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10. This is the score she earned herself; a day pass or makeup doesn't count.
   - Every 7 workout days in a row: 15.
+  - Logging the night's sleep: 3, as soon as she logs it (from 2026-10-18, `SLEEP_POINTS_FROM`).
   - A perfect day is worth about 20. Everything is derived from the log, so deleting an entry takes its points back.
   - **Request** (30 points): Menna writes what she wants. **Surprise gift** (75): she can add a hint and the gift is chosen for her.
   - Requests and gifts start as `pending`. Fulfil them in D1 with `UPDATE water_point_spends SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = …`. Setting `status = 'cancelled'` gives the points back.
@@ -75,6 +76,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The home page offers one when yesterday's workout was missed.
   - **Period days:** the first 3 days of every logged period are passed automatically (filled to 100 and counted as workout days) as soon as the period is logged, past periods included. Nothing is stored or spent (`excusedDates` in `shared/dayPasses.ts`).
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
+- **صفحة جديدة** (`shared/meals.ts`, `src/components/NewPage.tsx`): for a week after she marks a period as ended, the home page shows a fresh-start card until she taps «يلا بينا». It reviews the last 10 days of food (fast food, sugary drinks, a first meal after 3 pm, days with nothing logged, no vegetables) and offers meal ideas.
+- **Meal ideas** (`MEAL_IDEAS` in `shared/meals.ts`): three ideas at a time for the meal she picks, «اختيارات تانية» shows the next three, and «أكلتها» logs one. They also sit on the food page for today.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
   - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.

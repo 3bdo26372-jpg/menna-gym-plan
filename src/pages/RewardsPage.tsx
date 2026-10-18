@@ -70,6 +70,7 @@ function Points() {
     { emoji: '🥗', text: `أكلك بين ${formatCalories(CALORIE_FLOOR_KCAL)} و${formatCalories(range.max)} سعرة`, points: `+${EARN.calories}`, earned: bySource.calories },
     { emoji: '⭐', text: 'نقط اليوم: فوق 60 · فوق 80 · 100', points: `${EARN.score60} · ${EARN.score80} · ${EARN.score100}`, earned: bySource.score, rtl: true },
     { emoji: '🏃‍♀️', text: `${STREAK_DAYS} أيام تمرين ورا بعض`, points: `+${EARN.streak}`, earned: bySource.streak },
+    { emoji: '😴', text: 'تسجّلي نومك كل يوم', points: `+${EARN.sleep}`, earned: bySource.sleep },
   ]
   return (
     <>

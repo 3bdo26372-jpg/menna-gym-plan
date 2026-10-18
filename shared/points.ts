@@ -14,17 +14,20 @@ import type { AppState, DayRecord } from './types'
  * - a finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10
  *   (a day pass or makeup doesn't count; a period-pain rest day's workout points do)
  * - every 7 workout days in a row: 15 (a period-pain rest day counts as one)
+ * - logging the night's sleep: 3 (counts as soon as she logs it; from SLEEP_POINTS_FROM)
  * Everything is derived from the log, so deleting an entry takes its points back.
  *
  * Days before NEW_SYSTEM_FROM keep the points they earned under the original
  * rules: a point per 250 ml of water (up to 10) plus 5 at 2 L, and 10 for a
  * finished day eaten within the calorie range. They don't earn score tiers.
  */
-export const EARN = { water: 5, calories: 5, score60: 3, score80: 6, score100: 10, streak: 15 } as const
+export const EARN = { water: 5, calories: 5, score60: 3, score80: 6, score100: 10, streak: 15, sleep: 3 } as const
 export const WATER_GOAL_ML = 2500
 export const STREAK_DAYS = 7
+/** Sleep logs earn points from this day on. */
+export const SLEEP_POINTS_FROM = '2026-10-18'
 
-export type EarningKind = 'water' | 'calories' | 'score' | 'streak'
+export type EarningKind = 'water' | 'calories' | 'score' | 'streak' | 'sleep'
 export interface Earning { date: string; kind: EarningKind; points: number }
 
 export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'item' | 'ml'>[]) {
@@ -55,6 +58,9 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
       if (legacyWaterPoints(ml)) result.push({ date, kind: 'water', points: legacyWaterPoints(ml) })
     } else if (ml >= WATER_GOAL_ML) result.push({ date, kind: 'water', points: EARN.water })
   }
+  for (const day of state.days) {
+    if (day.sleep && day.date >= SLEEP_POINTS_FROM && day.date <= state.today) result.push({ date: day.date, kind: 'sleep', points: EARN.sleep })
+  }
   let streak = 0
   for (const day of [...state.days].sort((a, b) => a.date.localeCompare(b.date))) {
     if (day.date >= state.today) break
@@ -81,7 +87,7 @@ export type PointsState = Pick<AppState, 'today' | 'days' | 'foodEntries' | 'wat
 
 export function pointsBalance(state: PointsState) {
   const list = earnings(state)
-  const bySource = { water: 0, calories: 0, score: 0, streak: 0 } satisfies Record<EarningKind, number>
+  const bySource = { water: 0, calories: 0, score: 0, streak: 0, sleep: 0 } satisfies Record<EarningKind, number>
   for (const earning of list) bySource[earning.kind] += earning.points
   const earned = list.reduce((sum, earning) => sum + earning.points, 0)
   // Cancelled requests and gifts give their points back.
