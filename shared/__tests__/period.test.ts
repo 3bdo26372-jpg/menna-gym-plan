@@ -15,7 +15,7 @@ describe('predicting the next period', () => {
   })
 
   it('uses 28 days from a single start', () => {
-    const forecast = periodForecast([entry(first)], addDays(first, 10))
+    const forecast = periodForecast([entry(first, addDays(first, 4))], addDays(first, 10))
     expect(forecast).toMatchObject({ nextStart: addDays(first, 28), daysUntil: 18, cyclesUsed: 0, phase: 'calm' })
   })
 
@@ -39,10 +39,11 @@ describe('predicting the next period', () => {
     expect(periodForecast(periods, addDays(first, 40)).periodDays).toBe(6)
   })
 
-  it('counts the days of the current period, until her usual length without an end', () => {
+  it('keeps the current period going until she marks the end, up to 14 days', () => {
     expect(periodForecast([entry(first)], first)).toMatchObject({ phase: 'period', periodDay: 1 })
-    expect(periodForecast([entry(first)], addDays(first, 4))).toMatchObject({ phase: 'period', periodDay: 5 })
-    expect(periodForecast([entry(first)], addDays(first, 5)).phase).toBe('calm')
+    expect(periodForecast([entry(first)], addDays(first, 6))).toMatchObject({ phase: 'period', periodDay: 7 })
+    expect(periodForecast([entry(first)], addDays(first, 13))).toMatchObject({ phase: 'period', periodDay: 14 })
+    expect(periodForecast([entry(first)], addDays(first, 14)).phase).toBe('calm')
   })
 
   it('stops the current period on the end she logs', () => {

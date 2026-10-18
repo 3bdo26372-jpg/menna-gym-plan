@@ -80,8 +80,8 @@ export function periodForecast(periods: PeriodEntry[], today: string): PeriodFor
 
   const nextStart = addDays(last.startDate, cycleDays)
   const daysUntil = diffDays(today, nextStart)
-  // Without an end date, assume it lasts her usual length.
-  const lastDay = last.endDate ?? addDays(last.startDate, periodDays - 1)
+  // Without an end date it goes on until she marks the end.
+  const lastDay = periodLastDay(last, logged, periodDays)
   const ongoing = today <= lastDay
   const phase: PeriodPhase = ongoing ? 'period' : daysUntil < 0 ? 'late' : daysUntil === 0 ? 'due' : daysUntil <= WARN_DAYS_BEFORE ? 'soon' : 'calm'
   return {
@@ -129,21 +129,25 @@ export function validatePeriodEnd(input: unknown, entry: PeriodEntry, periods: P
 }
 
 /**
- * Period days she doesn't have to train: they count as trained and are filled
- * up to 100 by themselves. At first only the first 3 days of a period were;
- * from ALL_PERIOD_DAYS_FROM every day of it is. A period without an end date
- * counts her usual length (marking the end later fixes it either way).
+ * The last day of a period. She decides when it ends: until she marks the
+ * end, the latest period goes on (up to MAX_PERIOD_DAYS, the longest one the
+ * app accepts). An older period she logged without an end counts her usual length.
  */
-export const FIRST_PERIOD_REST_DAYS = 3
-export const ALL_PERIOD_DAYS_FROM = '2026-10-18'
+export function periodLastDay(entry: PeriodEntry, periods: PeriodEntry[], periodDays: number) {
+  if (entry.endDate) return entry.endDate
+  return nextEntry(periods, entry) ? addDays(entry.startDate, periodDays - 1) : addDays(entry.startDate, MAX_PERIOD_DAYS - 1)
+}
 
+/**
+ * Period days she doesn't have to train: every day of every logged period
+ * counts as trained and is filled up to 100 by itself, up to today.
+ */
 export function periodRestDates(periods: PeriodEntry[] | undefined, today: string) {
   const list = periods ?? []
   const { periodDays } = periodForecast(list, today)
   return list.flatMap((entry) => {
-    const lastDay = entry.endDate ?? addDays(entry.startDate, periodDays - 1)
+    const lastDay = periodLastDay(entry, list, periodDays)
     return Array.from({ length: diffDays(entry.startDate, lastDay) + 1 }, (_, index) => addDays(entry.startDate, index))
-      .filter((date, index) => index < FIRST_PERIOD_REST_DAYS || date >= ALL_PERIOD_DAYS_FROM)
   }).filter((date) => date <= today)
 }
 
