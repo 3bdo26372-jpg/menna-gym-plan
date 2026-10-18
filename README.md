@@ -78,6 +78,13 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **صفحة جديدة** (`shared/meals.ts`, `src/components/NewPage.tsx`): for a week after she marks a period as ended, the home page shows a fresh-start card until she taps «يلا بينا». It reviews the last 10 days of food (fast food, sugary drinks, a first meal after 3 pm, days with nothing logged, no vegetables) and offers meal ideas.
 - **Meal ideas** (`MEAL_IDEAS` in `shared/meals.ts`): three ideas at a time for the meal she picks, «اختيارات تانية» shows the next three, and «أكلتها» logs one. They also sit on the food page for today.
+- **Push notifications** (`shared/reminders.ts`, `worker/src/push.ts`, `worker/src/webpush.ts`, `public/sw.js`): the home page asks her to turn them on; on an iPhone they need the app on the home screen.
+  - A cron trigger runs every 15 minutes (`[triggers]` in `worker/wrangler.toml`) and sends each reminder at most once a day, only while it still applies:
+    - sleep from 12:30 if last night isn't logged
+    - water from 17:30 if under 1 L
+    - workout from 21:00 if she hasn't trained, except on period and pain-rest days
+  - A gift pass added after she turned them on is announced once.
+  - The Worker makes its own VAPID keys the first time (`push_config` in D1), so there is no secret to set. Sent reminders are kept in `push_sent`.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
   - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.

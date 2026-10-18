@@ -9,6 +9,10 @@ compatibility_date = "2026-06-01"
 # which covers Vercel preview URLs.
 ALLOWED_ORIGINS = "https://menna-gym-plan.vercel.app,https://menna-gym-plan-*.vercel.app,http://localhost:5173,http://127.0.0.1:5173"
 
+# Push reminders: the Worker checks every 15 minutes which ones are due (shared/reminders.ts).
+[triggers]
+crons = ["*/15 * * * *"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "menna-flow"

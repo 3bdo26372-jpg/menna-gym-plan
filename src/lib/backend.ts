@@ -30,6 +30,11 @@ export interface Backend {
   deletePeriod(id: number): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
+  /** The API's VAPID public key, for pushManager.subscribe(). */
+  pushKey(): Promise<string>
+  savePushSubscription(subscription: PushSubscriptionJSON): Promise<void>
+  /** Sends a test notification to this subscription; true when the push service took it. */
+  testPush(subscription: PushSubscriptionJSON): Promise<boolean>
 }
 
 export class AuthRequiredError extends Error {
