@@ -137,9 +137,9 @@ describe('period passes', () => {
   const periods: PeriodEntry[] = [{ id: 1, startDate: addDays(start, 1), endDate: null, createdAt: '' }]
   const used = [{ date: start, points: 0, kind: 'regular' as const, createdAt: '' }]
 
-  it('passes the first three days of a period by itself, with nothing stored or spent', () => {
+  it('passes every day of a period by itself, with nothing stored or spent', () => {
     const excused = excusedDates(used, periods, addDays(start, 4))
-    expect([0, 1, 2, 3, 4].map((offset) => excused.has(addDays(start, offset)))).toEqual([true, true, true, true, false])
+    expect([0, 1, 2, 3, 4].map((offset) => excused.has(addDays(start, offset)))).toEqual([true, true, true, true, true])
     // The days are filled to 100 and count as workout days, without using a pass.
     const day2 = makeDay(2, [], { excused: excused.has(addDays(start, 1)) })
     expect(day2.score.total).toBe(100)
@@ -147,16 +147,33 @@ describe('period passes', () => {
     expect(passPrice(state(days, [], { dayPasses: [], periods }))).toBe(0)
   })
 
-  it('gives each of the first three days of a period its own free pass, up to today', () => {
+  it('counts her usual length until she marks the end, then up to the end, never past today', () => {
     expect(periodPassDates({ periods, today: addDays(start, 2) })).toEqual([addDays(start, 1), addDays(start, 2)])
-    expect(periodPassDates({ periods, today: addDays(start, 4) })).toEqual([1, 2, 3].map((offset) => addDays(start, offset)))
+    expect(periodPassDates({ periods, today: addDays(start, 9) })).toEqual([1, 2, 3, 4, 5].map((offset) => addDays(start, offset)))
+    const ended = [{ ...periods[0], endDate: addDays(start, 2) }]
+    expect(periodPassDates({ periods: ended, today: addDays(start, 9) })).toEqual([addDays(start, 1), addDays(start, 2)])
+  })
+
+  it('kept only the first three days of a period before every period day counted', () => {
+    const before = [{ id: 1, startDate: '2026-10-12', endDate: '2026-10-16', createdAt: '' }]
+    expect(periodPassDates({ periods: before, today: '2026-10-25' })).toEqual(['2026-10-12', '2026-10-13', '2026-10-14'])
+    const across = [{ id: 1, startDate: '2026-10-16', endDate: '2026-10-20', createdAt: '' }]
+    expect(periodPassDates({ periods: across, today: '2026-10-25' })).toEqual(['2026-10-16', '2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20'])
   })
 
   it('is free even when the free pass is used up and there are no points', () => {
     const s = state(days, [], { dayPasses: used, periods })
     expect(passPriceFor(s, addDays(start, 2))).toBe(0)
     expect(validatePass({ date: addDays(start, 2) }, s)).toEqual({ date: addDays(start, 2), points: 0, kind: 'period' })
-    expect(validatePass({ date: addDays(start, 4) }, s)).toBe('not enough points')
+    expect(validatePass({ date: start }, s)).toBe('not enough points')
+  })
+
+  it('counts period days in the 7-day workout streak', () => {
+    const week = [1, 2, 3, 4, 5, 6, 7, 8].map((dayNumber) => makeDay(dayNumber, [], dayNumber <= 3 ? full : {}))
+    const restWeek: PeriodEntry[] = [{ id: 1, startDate: addDays(start, 3), endDate: addDays(start, 6), createdAt: '' }]
+    const streaks = (list: PeriodEntry[]) => earnings({ ...state(week, []), periods: list }).filter((item) => item.kind === 'streak')
+    expect(streaks(restWeek)).toEqual([{ date: addDays(start, 6), kind: 'streak', points: EARN.streak }])
+    expect(streaks([])).toEqual([])
   })
 
   it("doesn't use up the free pass or a gift", () => {

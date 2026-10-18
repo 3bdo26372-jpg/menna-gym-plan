@@ -8,7 +8,7 @@ import { EXERCISE_BY_ID } from '../../shared/exercises'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { LEVELS, planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canAffordPassFor, canTakePass, missedWorkout, passPriceFor, unusedGifts } from '../../shared/dayPasses'
+import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPriceFor, unusedGifts } from '../../shared/dayPasses'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
@@ -111,7 +111,9 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       <DailyTips state={state} />
 
-      <TodayWorkout state={state} day={today} plan={plan} />
+      {isPeriodPassDate(state, state.today) && !today?.workout
+        ? <PeriodRest state={state} day={today} plan={plan} />
+        : <TodayWorkout state={state} day={today} plan={plan} />}
 
       <ScoreBreakdown day={today} />
 
@@ -222,6 +224,20 @@ function ChangeTile({ label, comparison }: { label: string; comparison: ReturnTy
       label={label} value={formatChange(change, 'سم')} tone={change < 0 ? 'good' : 'neutral'}
       hint={`${formatNumber(comparison.baseline)} ← ${formatNumber(comparison.current)} سم`}
     />
+  )
+}
+
+/** A period day: no workout to do, the day already counts. A light one is there if she wants it. */
+function PeriodRest({ state, day, plan }: { state: AppState; day: DayRecord | undefined; plan: WorkoutPlan }) {
+  const [moving, setMoving] = useState(false)
+  if (moving) return <TodayWorkout state={state} day={day} plan={plan} />
+  return (
+    <Card className="today-card soft-card">
+      <p className="eyebrow">تمرين النهارده</p>
+      <h2>النهارده راحة 🌸</h2>
+      <p className="muted">طول البريود مفيش تمارين، وكل يوم بيتحسب لك يوم تمرين كامل ونقطه 100 لوحده. ريّحي جسمك، واشربي مية وحاجة دافية 🤍</p>
+      <button type="button" className="link-button" onClick={() => setMoving(true)}>حابة تتحركي شوية؟ وريني التمرين (اختياري)</button>
+    </Card>
   )
 }
 

@@ -1,6 +1,6 @@
 import { CALORIE_FLOOR_KCAL, calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
 import { isWater, type FoodEntry } from './food'
-import { isPainRest } from './period'
+import { isPainRest, periodRestDates } from './period'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { isLegacyDay } from './scoring'
 import type { AppState, DayRecord } from './types'
@@ -13,7 +13,7 @@ import type { AppState, DayRecord } from './types'
  * - a finished day eaten within the calorie range (1,200 up to the top): 5
  * - a finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10
  *   (a day pass or makeup doesn't count; a period-pain rest day's workout points do)
- * - every 7 workout days in a row: 15 (a period-pain rest day counts as one)
+ * - every 7 workout days in a row: 15 (a period-pain rest day or a period day counts as one)
  * - logging the night's sleep: 3 (counts as soon as she logs it; from SLEEP_POINTS_FROM)
  * Everything is derived from the log, so deleting an entry takes its points back.
  *
@@ -50,8 +50,9 @@ export function scorePoints(score: number) {
 const trained = (day: Pick<DayRecord, 'workout'>) => Boolean(day.workout && day.workout.mainCompletion >= ACTIVE_DAY_MIN_COMPLETION)
 
 /** Every point she has earned, with the day it was earned on. */
-export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>): Earning[] {
+export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'> & Partial<Pick<AppState, 'periods'>>): Earning[] {
   const result: Earning[] = []
+  const periodDays = new Set(periodRestDates(state.periods, state.today))
   for (const [date, ml] of waterMlByDate(state.foodEntries)) {
     if (date > state.today) continue
     if (isLegacyDay(date)) {
@@ -73,7 +74,7 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
     }
     const fromScore = isLegacyDay(day.date) ? 0 : scorePoints(earnedScore(day))
     if (fromScore) result.push({ date: day.date, kind: 'score', points: fromScore })
-    if (trained(day) || isPainRest(day.periodPain)) streak += 1
+    if (trained(day) || isPainRest(day.periodPain) || periodDays.has(day.date)) streak += 1
     else streak = 0
     if (streak === STREAK_DAYS) {
       result.push({ date: day.date, kind: 'streak', points: EARN.streak })
@@ -83,7 +84,7 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
   return result.sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export type PointsState = Pick<AppState, 'today' | 'days' | 'foodEntries' | 'waterSpends' | 'dayPasses'>
+export type PointsState = Pick<AppState, 'today' | 'days' | 'foodEntries' | 'waterSpends' | 'dayPasses'> & Partial<Pick<AppState, 'periods'>>
 
 export function pointsBalance(state: PointsState) {
   const list = earnings(state)

@@ -1,4 +1,5 @@
-import { addDays, isIsoDate } from './date'
+import { isIsoDate } from './date'
+import { periodRestDates } from './period'
 import { pointsBalance, type PointsState } from './points'
 import { MAX_DAILY_SCORE } from './scoring'
 import type { AppState, DayRecord } from './types'
@@ -9,10 +10,11 @@ import type { AppState, DayRecord } from './types'
  * free, and so is one per gift (pass_gifts); each other one costs points from
  * the same balance as everything else.
  *
- * The first days of each logged period are passed automatically: as soon as
- * the period is logged, each of those days counts as trained and is filled
- * up to 100, with nothing to tap and nothing used up. (Passes stored with
- * kind 'period' come from before that, when she had to take them herself.)
+ * The days of each logged period are passed automatically (see
+ * periodRestDates): as soon as the period is logged, each of those days
+ * counts as trained and is filled up to 100, with nothing to tap and nothing
+ * used up. (Passes stored with kind 'period' come from before that, when she
+ * had to take them herself.)
  */
 export const PASS_PRICE = 50
 
@@ -33,7 +35,6 @@ export interface DayPass {
 }
 
 export type PassKind = 'regular' | 'period'
-export const PERIOD_PASS_DAYS = 3
 
 /** Periods can be missing while the app is newer than the API. */
 type WithPeriods = Partial<Pick<AppState, 'periods'>>
@@ -41,11 +42,8 @@ type PassState = PointsState & Pick<AppState, 'profile' | 'passGifts'> & WithPer
 
 const freePassesUsed = (state: Pick<AppState, 'dayPasses'>) => state.dayPasses.filter((pass) => pass.points === 0 && pass.kind !== 'period').length
 
-/** The first days of every logged period, up to today. Each has its own free pass. */
-export function periodPassDates(state: WithPeriods & Pick<AppState, 'today'>) {
-  return (state.periods ?? []).flatMap((entry) => Array.from({ length: PERIOD_PASS_DAYS }, (_, index) => addDays(entry.startDate, index)))
-    .filter((date) => date <= state.today)
-}
+/** The days of every logged period that are passed by themselves, up to today. */
+export const periodPassDates = (state: WithPeriods & Pick<AppState, 'today'>) => periodRestDates(state.periods, state.today)
 
 export const isPeriodPassDate = (state: WithPeriods & Pick<AppState, 'today'>, date: string) => periodPassDates(state).includes(date)
 
