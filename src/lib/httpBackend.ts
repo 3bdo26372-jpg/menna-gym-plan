@@ -52,5 +52,8 @@ export function createHttpBackend(baseUrl: string): Backend {
     deletePeriod: (id) => request<AppState>('DELETE', `/api/periods/${id}`),
     generateReport: (kind, periodIndex) => request<{ report: ReportData; state: AppState }>('POST', `/api/reports/${kind}/${periodIndex}`),
     getReport: (kind, periodIndex) => request<ReportData>('GET', `/api/reports/${kind}/${periodIndex}`),
+    pushKey: async () => (await request<{ publicKey: string }>('GET', '/api/push/key')).publicKey,
+    savePushSubscription: async (subscription) => void (await request('PUT', '/api/push/subscription', subscription)),
+    testPush: async (subscription) => (await request<{ ok: boolean }>('POST', '/api/push/test', subscription)).ok,
   }
 }

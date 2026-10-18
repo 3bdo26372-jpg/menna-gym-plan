@@ -33,6 +33,8 @@ import {
   startProgram,
 } from './db'
 import { originMatches } from './cors'
+import { notifyAll, saveSubscription, sendDueReminders, vapidKeys } from './push'
+import { validateSubscription } from './webpush'
 
 export interface Env {
   DB: D1Database
@@ -239,6 +241,21 @@ async function route(request: Request, env: Env): Promise<Response> {
     }
   }
 
+  // Push notifications: the app asks for the public key, then sends its subscription.
+  if (method === 'GET' && path === '/api/push/key') return json({ publicKey: (await vapidKeys(env.DB)).publicKey })
+  if (method === 'PUT' && path === '/api/push/subscription') {
+    const subscription = validateSubscription(await body(request))
+    if (typeof subscription === 'string') throw new HttpError(400, subscription)
+    await saveSubscription(env.DB, subscription)
+    return json({ ok: true })
+  }
+  if (method === 'POST' && path === '/api/push/test') {
+    const subscription = validateSubscription(await body(request))
+    if (typeof subscription === 'string') throw new HttpError(400, subscription)
+    const delivered = await notifyAll(env.DB, { title: 'الإشعارات اشتغلت 🎉', body: 'من هنا هفكّرك بالنوم والمية والتمرين 🤍', url: '/#/today', tag: 'test' }, [subscription])
+    return json({ ok: delivered > 0 })
+  }
+
   const report = path.match(/^\/api\/reports\/(week|month)\/(\d+)$/)
   if (report) {
     const kind = report[1] as ReportKind
@@ -276,5 +293,9 @@ export default {
       if (status === 500) console.error(error)
       return json({ error: message }, status, cors)
     }
+  },
+  /** Every 15 minutes (wrangler.toml): send the push reminders that are due. */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(sendDueReminders(env.DB))
   },
 } satisfies ExportedHandler<Env>

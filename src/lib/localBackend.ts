@@ -244,5 +244,9 @@ export function createLocalBackend(): Backend {
       return { report, state: toState(db) }
     }),
     getReport: (kind, periodIndex) => attempt(() => load().reports[reportKey(kind, periodIndex)] ?? fail(404, 'report not found')),
+    // Push needs the API to send from, so local mode has none.
+    pushKey: () => attempt(() => fail(501, 'الإشعارات بتشتغل بعد ما التطبيق يتوصل بالـ API')),
+    savePushSubscription: () => attempt(() => fail(501, 'الإشعارات بتشتغل بعد ما التطبيق يتوصل بالـ API')),
+    testPush: () => attempt(() => fail(501, 'الإشعارات بتشتغل بعد ما التطبيق يتوصل بالـ API')),
   }
 }

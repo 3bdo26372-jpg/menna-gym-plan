@@ -19,6 +19,7 @@ import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { NewPageCard } from '../components/NewPage'
+import { NotificationsCard } from '../components/Notifications'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
 import { scoreLevel } from '../components/ScoreCalendar'
@@ -97,6 +98,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       <NewPageCard state={state} />
       <TreatCards state={state} />
       <CardGame state={state} />
+      <NotificationsCard state={state} />
       {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (
         <Card className="soft-card">
           <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>

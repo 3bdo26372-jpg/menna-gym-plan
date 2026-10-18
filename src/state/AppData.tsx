@@ -37,6 +37,8 @@ interface AppDataValue {
   deletePeriod(id: number): Promise<void>
   generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
+  /** Push notifications don't touch the state, so these go straight to the backend. */
+  push: Pick<Backend, 'pushKey' | 'savePushSubscription' | 'testPush'>
 }
 
 const AppDataContext = createContext<AppDataValue | null>(null)
@@ -90,6 +92,9 @@ function createBackend(): Backend {
     deletePeriod: forward('deletePeriod'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
+    pushKey: forward('pushKey'),
+    savePushSubscription: forward('savePushSubscription'),
+    testPush: forward('testPush'),
   }
 }
 
@@ -206,6 +211,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         return result.report
       },
       getReport: (kind, periodIndex) => backend.getReport(kind, periodIndex),
+      push: backend,
     }
   }, [backend, status, state, error, reload, handleError])
 
