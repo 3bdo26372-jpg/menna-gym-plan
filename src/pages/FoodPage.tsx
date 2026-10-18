@@ -4,6 +4,7 @@ import { addDays, cairoTime, dayNumberFor, formatDateLong, formatDateShort } fro
 import { averageDailyCalories, calorieRange, dayCalories, formatCalories, hasFoodLogged, rangeStatus, type RangeStatus } from '../../shared/calories'
 import { FOOD_BACKFILL_DAYS, FOOD_CATEGORIES, formatLitres, isWater, waterMl, WATER_TARGET_ML, type FoodCategory, type FoodEntry } from '../../shared/food'
 import { EARN, pointsBalance, WATER_GOAL_ML } from '../../shared/points'
+import { MealIdeas } from '../components/NewPage'
 import { Card, ChoiceGroup, EmptyState, Notice, PageHeader, ProgressBar, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
 
@@ -43,6 +44,12 @@ export function FoodPage() {
 
       <WaterCard date={date} entries={entries} />
       <FoodForm date={date} isToday={date === state.today} />
+      {date === state.today && (
+        <Card>
+          <h2 className="card-title">🍽️ محتارة تاكلي إيه؟</h2>
+          <MealIdeas state={state} />
+        </Card>
+      )}
       <DayLog date={date} entries={entries} />
       <CaloriesCard date={date} entries={entries} start={start} />
     </div>

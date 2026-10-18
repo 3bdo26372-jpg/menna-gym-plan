@@ -18,6 +18,7 @@ import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
+import { NewPageCard } from '../components/NewPage'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
 import { scoreLevel } from '../components/ScoreCalendar'
@@ -93,6 +94,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {yesterday && yesterday.workout && !yesterday.feedback && <YesterdayFeedback day={yesterday} />}
+      <NewPageCard state={state} />
       <TreatCards state={state} />
       <CardGame state={state} />
       {yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date) && unusedGifts(state).length === 0 && (

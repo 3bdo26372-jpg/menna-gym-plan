@@ -371,3 +371,11 @@
 .game-result { display: grid; gap: 4px; justify-items: center; }
 .game-hearts { position: absolute; inset: 0; pointer-events: none; }
 .game-hearts > span { position: absolute; top: 45%; font-size: 22px; }
+
+/* "صفحة جديدة" after a period, and meal ideas */
+.new-page-card { border-color: var(--rose-200); background: linear-gradient(160deg, #fff, #fde8f1); }
+.new-page-card > p { margin: 0; }
+.new-page-notes { display: grid; gap: 6px; padding: 12px; border-radius: var(--radius-sm); background: #fff; }
+.new-page-notes ul { display: grid; gap: 6px; margin: 0; padding-inline-start: 18px; color: var(--berry-dark); font-size: 14px; }
+.meal-ideas { display: grid; gap: 10px; justify-items: stretch; }
+.meal-ideas > .link-button { justify-self: start; }

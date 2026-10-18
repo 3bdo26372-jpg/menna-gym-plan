@@ -3,7 +3,7 @@ import { addDays } from '../date'
 import { isActiveDay, newRewardUnlocks } from '../engine'
 import type { FoodCategory, FoodEntry } from '../food'
 import { PASS_PRICE, missedWorkout, passCandidates, passPrice, passPriceFor, periodPassDates, unusedGifts, validatePass, type DayPass, type PassGift, excusedDates } from '../dayPasses'
-import { EARN, earnings, legacyWaterPoints, pointsBalance, scorePoints } from '../points'
+import { EARN, earnings, legacyWaterPoints, pointsBalance, scorePoints, SLEEP_POINTS_FROM } from '../points'
 import { computeDailyScore, foodScoreInput, isLegacyDay } from '../scoring'
 import type { PeriodEntry } from '../period'
 import type { DayRecord } from '../types'
@@ -54,6 +54,15 @@ describe('earning points by reaching goals', () => {
     expect(earnings(state(days, foodEntries)).map((item) => [item.kind, item.points])).toEqual([['water', 5], ['calories', 5], ['score', 10]])
   })
 
+  it('pays for each logged night, today included, but not before sleep points started', () => {
+    const night = { sleptAt: '00:30', wokeAt: '08:00' }
+    const days = [makeDay(1, []), makeDay(2, []), makeDay(3, [])].map((day, index) => ({ ...day, sleep: index === 1 ? null : night }))
+    const sleep = earnings(state(days, [])).filter((item) => item.kind === 'sleep')
+    expect(sleep).toEqual([{ date: days[0].date, kind: 'sleep', points: EARN.sleep }, { date: days[2].date, kind: 'sleep', points: EARN.sleep }])
+    const before = { ...makeDay(1, []), date: addDays(SLEEP_POINTS_FROM, -1), sleep: night }
+    expect(earnings({ ...state([before], []), today: SLEEP_POINTS_FROM }).some((item) => item.kind === 'sleep')).toBe(false)
+  })
+
   it('needs the full 2.5 L for water points, and counts it today already', () => {
     const today = addDays(start, 1)
     const entries = [water(start, 2250), water(today, 2500)]
@@ -72,7 +81,7 @@ describe('earning points by reaching goals', () => {
   it('adds a bonus for every 7 workout days in a row', () => {
     const { days, foodEntries } = perfect(8)
     expect(earnings(state(days, foodEntries)).filter((item) => item.kind === 'streak')).toEqual([{ date: addDays(start, 6), kind: 'streak', points: EARN.streak }])
-    expect(pointsBalance(state(days, foodEntries)).bySource).toEqual({ water: 40, calories: 40, score: 80, streak: 15 })
+    expect(pointsBalance(state(days, foodEntries)).bySource).toEqual({ water: 40, calories: 40, score: 80, streak: 15, sleep: 0 })
   })
 })
 
