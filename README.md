@@ -86,6 +86,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
     - water from 17:30 if under 1 L
     - workout from 21:00 if she hasn't trained, except on period and pain-rest days
   - A gift pass added after she turned them on is announced once.
+  - A one-off message: `INSERT INTO push_messages (title, body) VALUES ('…', '…')` goes out on the next run.
   - The Worker makes its own VAPID keys the first time (`push_config` in D1), so there is no secret to set. Sent reminders are kept in `push_sent`.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
