@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { m } from 'framer-motion'
 import { formatDateShort } from '../../shared/date'
-import { currentGame, gamePrize, PRIZES } from '../../shared/game'
+import { currentGame, gamePrize, PRIZES, SPECIAL_DECKS } from '../../shared/game'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
 import { Card, Notice } from './ui'
@@ -49,7 +49,12 @@ export function CardGame({ state }: { state: AppState }) {
   return (
     <Card className="game-card" id="section-game">
       <div className="game-head">
-        <h2 className="card-title">{game.special ? '🌹 اختاري وردتك' : '🎲 اختاري كارت'}</h2>
+        {game.special ? (
+          <h2 className="card-title game-title-roses">
+            <span className="rose-trio" aria-hidden="true">{SPECIAL_DECKS[game.special.kind].map((id) => <img key={id} src={PRIZES[id].image} alt="" />)}</span>
+            اختاري وردتك يا وردتي
+          </h2>
+        ) : <h2 className="card-title">🎲 اختاري كارت</h2>}
         <p className="muted small">{game.special
           ? (played ? 'هدية من بابا عشان يصالحك 🤍' : 'تحت كل كارت وردة بلون مختلف، اختاري واحدة وهتوصلك من بابا 🤍')
           : (played ? 'كل ٥ أيام فيه لعبة جديدة.' : 'تحت كل كارت مفاجأة: فلوس أو حاجة حلوة. اختاري واحد بس!')}</p>
@@ -69,7 +74,7 @@ export function CardGame({ state }: { state: AppState }) {
                 animate={{ rotateY: played ? 180 : 0, scale: busy ? [1, 1.04, 1] : 1 }}
                 transition={played ? { ...FLIP, delay: justPlayed ? delay : 0 } : { duration: 0.6, repeat: busy ? Infinity : 0 }}
               >
-                <span className="game-face game-back" aria-hidden="true"><b>؟</b><small>{game.special ? '🌹' : '💌'}</small></span>
+                <span className="game-face game-back" aria-hidden="true"><b>؟</b>{game.special ? <img className="game-back-image" src={PRIZES['rose-red'].image} alt="" /> : <small>💌</small>}</span>
                 <span className={`game-face game-front ${prize?.pounds ? 'is-money' : ''}`} style={prize?.color ? { background: prize.color } : undefined} aria-hidden="true">
                   {prize?.pounds
                     ? <><b>{prize.pounds}</b><small>جنيه</small></>
@@ -93,7 +98,7 @@ export function CardGame({ state }: { state: AppState }) {
       </div>
       {played && (
         <m.div className="game-result" initial={justPlayed ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ delay: justPlayed ? OTHERS_DELAY + 0.6 : 0 }}>
-          <p className="gift-note">كسبتي {gamePrize(played).pounds ? gamePrize(played).label : `${gamePrize(played).emoji} ${gamePrize(played).label}`} 🎉</p>
+          <p className="gift-note">{gamePrize(played).image && <img className="game-result-image" src={gamePrize(played).image} alt="" />}كسبتي {gamePrize(played).pounds || gamePrize(played).image ? gamePrize(played).label : `${gamePrize(played).emoji} ${gamePrize(played).label}`} 🎉</p>
           <p className="muted small">هتوصلك من بابا {gamePrize(played).pounds ? '💸' : '🤍'}{game.special ? '' : ` · اللعبة الجاية يوم ${formatDateShort(game.next)}`}</p>
         </m.div>
       )}
