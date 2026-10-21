@@ -30,6 +30,8 @@ export interface Prize {
   pounds?: number
   /** A tint for the card face (roses). */
   color?: string
+  /** A picture for the card face instead of the emoji (under public/). */
+  image?: string
 }
 
 export const PRIZES: Record<PrizeId, Prize> = {
@@ -41,9 +43,9 @@ export const PRIZES: Record<PrizeId, Prize> = {
   ring: { id: 'ring', emoji: '💍', label: 'خاتم' },
   candy: { id: 'candy', emoji: '🍭', label: 'كاندي' },
   marshmallow: { id: 'marshmallow', emoji: '☁️', label: 'مارشميلو' },
-  'rose-red': { id: 'rose-red', emoji: '🌹', label: 'وردة حمرا', color: '#fde2e4' },
-  'rose-pink': { id: 'rose-pink', emoji: '🌹', label: 'وردة بينك', color: '#ffe3f1' },
-  'rose-white': { id: 'rose-white', emoji: '🌹', label: 'وردة بيضا', color: '#ffffff' },
+  'rose-red': { id: 'rose-red', emoji: '🌹', label: 'وردة حمرا', color: '#fde2e4', image: '/game/rose-red.svg' },
+  'rose-pink': { id: 'rose-pink', emoji: '🌹', label: 'وردة بينك', color: '#ffe3f1', image: '/game/rose-pink.svg' },
+  'rose-white': { id: 'rose-white', emoji: '🤍', label: 'وردة بيضا', color: '#ffffff', image: '/game/rose-white.svg' },
 }
 
 export type SpecialKind = 'roses'
