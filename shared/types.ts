@@ -3,7 +3,7 @@ import type { WaterSpend } from './waterPoints'
 import type { DayPass, PassGift } from './dayPasses'
 import type { PeriodEntry } from './period'
 import type { SleepLog } from './sleep'
-import type { GamePlay } from './game'
+import type { GamePlay, GameSpecial } from './game'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -145,6 +145,8 @@ export interface AppState {
   periods: PeriodEntry[]
   /** Missing while the app is newer than the API. */
   gamePlays?: GamePlay[]
+  /** Extra rounds he gives her, like the roses; missing while the app is newer than the API. */
+  gameSpecials?: GameSpecial[]
 }
 
 export interface MeasurementInput {

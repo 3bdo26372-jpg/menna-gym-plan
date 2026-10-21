@@ -10,12 +10,17 @@ import type { AppState } from './types'
  *
  * The first round was 100 / 50 / 5 pounds and always landed on 50. From the
  * second round the three cards are three different prizes from `PRIZES`.
+ *
+ * A special round (a row in game_specials) is an extra one he gives her, with
+ * its own three cards (`SPECIAL_DECKS`), shuffled. It comes first while she
+ * hasn't played it, and is stored as round -id so it never clashes with the
+ * regular rounds.
  */
 export const GAME_START = '2026-10-11'
 export const GAME_EVERY_DAYS = 5
 export const GAME_CARDS = 3
 
-export type PrizeId = 'money-100' | 'money-50' | 'money-5' | 'chocolate' | 'gum' | 'ring' | 'candy' | 'marshmallow'
+export type PrizeId = 'money-100' | 'money-50' | 'money-5' | 'chocolate' | 'gum' | 'ring' | 'candy' | 'marshmallow' | 'rose-red' | 'rose-pink' | 'rose-white'
 
 export interface Prize {
   id: PrizeId
@@ -23,6 +28,8 @@ export interface Prize {
   label: string
   /** Pounds, for money. */
   pounds?: number
+  /** A tint for the card face (roses). */
+  color?: string
 }
 
 export const PRIZES: Record<PrizeId, Prize> = {
@@ -34,7 +41,26 @@ export const PRIZES: Record<PrizeId, Prize> = {
   ring: { id: 'ring', emoji: '💍', label: 'خاتم' },
   candy: { id: 'candy', emoji: '🍭', label: 'كاندي' },
   marshmallow: { id: 'marshmallow', emoji: '☁️', label: 'مارشميلو' },
+  'rose-red': { id: 'rose-red', emoji: '🌹', label: 'وردة حمرا', color: '#fde2e4' },
+  'rose-pink': { id: 'rose-pink', emoji: '🌹', label: 'وردة بينك', color: '#ffe3f1' },
+  'rose-white': { id: 'rose-white', emoji: '🌹', label: 'وردة بيضا', color: '#ffffff' },
 }
+
+export type SpecialKind = 'roses'
+
+/** An extra round he gives her. */
+export interface GameSpecial {
+  id: number
+  kind: SpecialKind
+  createdAt: string
+}
+
+export const SPECIAL_DECKS: Record<SpecialKind, PrizeId[]> = {
+  roses: ['rose-red', 'rose-pink', 'rose-white'],
+}
+
+/** The round number a special round is stored under. */
+export const specialRound = (special: Pick<GameSpecial, 'id'>) => -special.id
 
 /** What later rounds deal from. Money is always 50 or 100. */
 export const PRIZE_POOL: PrizeId[] = ['money-100', 'money-50', 'chocolate', 'gum', 'ring', 'candy', 'marshmallow']
@@ -65,16 +91,31 @@ export const roundFor = (date: string) => (date < GAME_START ? null : Math.floor
 /** First day of a round. */
 export const roundStart = (round: number) => addDays(GAME_START, round * GAME_EVERY_DAYS)
 
-/** Today's round and, if she already played it, how it went. */
-export function currentGame(state: Pick<AppState, 'today' | 'profile'> & { gamePlays?: GamePlay[] }) {
+type GameState = Pick<AppState, 'today' | 'profile'> & { gamePlays?: GamePlay[]; gameSpecials?: GameSpecial[] }
+
+/**
+ * The round to show today and, if she already played it, how it went: a
+ * special round she hasn't played (or played today), else the regular one.
+ */
+export function currentGame(state: GameState) {
   if (!state.profile.programStartDate) return null
+  const plays = state.gamePlays ?? []
   const round = roundFor(state.today)
+  const next = roundStart((round ?? -1) + 1)
+  for (const special of state.gameSpecials ?? []) {
+    const played = plays.find((play) => play.round === specialRound(special)) ?? null
+    if (!played || played.date === state.today) return { round: specialRound(special), special, played, next }
+  }
   if (round === null) return null
-  return { round, played: (state.gamePlays ?? []).find((play) => play.round === round) ?? null, next: roundStart(round + 1) }
+  return { round, special: null, played: plays.find((play) => play.round === round) ?? null, next }
 }
 
-/** Three different prizes, with hers under the card she picked. */
-export function dealCards(round: number, pick: number, random: () => number = Math.random): PrizeId[] {
+/** Three different prizes, with hers under the card she picked. A special round shuffles its own deck. */
+export function dealCards(round: number, pick: number, random: () => number = Math.random, special: Pick<GameSpecial, 'kind'> | null = null): PrizeId[] {
+  if (special) {
+    const deck = [...SPECIAL_DECKS[special.kind]]
+    return Array.from({ length: GAME_CARDS }, () => deck.splice(Math.min(deck.length - 1, Math.floor(random() * deck.length)), 1)[0])
+  }
   if (round === 0) {
     const others = FIRST_ROUND.filter((id) => id !== FIRST_ROUND_PRIZE)
     if (random() < 0.5) others.reverse()
@@ -84,11 +125,11 @@ export function dealCards(round: number, pick: number, random: () => number = Ma
   return Array.from({ length: GAME_CARDS }, () => pool.splice(Math.min(pool.length - 1, Math.floor(random() * pool.length)), 1)[0])
 }
 
-export function validatePlay(input: unknown, state: Parameters<typeof currentGame>[0]): { round: number; pick: number } | string {
+export function validatePlay(input: unknown, state: GameState): { round: number; pick: number; special: GameSpecial | null } | string {
   const pick = input && typeof input === 'object' ? (input as Record<string, unknown>).pick : undefined
   if (typeof pick !== 'number' || !Number.isInteger(pick) || pick < 0 || pick >= GAME_CARDS) return 'pick must be 0, 1 or 2'
   const game = currentGame(state)
   if (!game) return 'the game has not started yet'
   if (game.played) return 'already played this round'
-  return { round: game.round, pick }
+  return { round: game.round, pick, special: game.special }
 }
