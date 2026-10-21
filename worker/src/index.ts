@@ -204,7 +204,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const state = await loadState(env.DB, today)
     const play = validatePlay(await body(request), state)
     if (typeof play === 'string') throw new HttpError(play.includes('already') ? 409 : 400, play)
-    await addGamePlay(env.DB, { round: play.round, date: today, pick: play.pick, cards: dealCards(play.round, play.pick) })
+    await addGamePlay(env.DB, { round: play.round, date: today, pick: play.pick, cards: dealCards(play.round, play.pick, Math.random, play.special) })
     return json(await afterWrite(env, today))
   }
 

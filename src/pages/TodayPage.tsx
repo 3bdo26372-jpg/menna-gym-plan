@@ -11,7 +11,7 @@ import { newPagePeriod } from '../../shared/meals'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
-import { CardGame, gameShown } from '../components/CardGame'
+import { CardGame, gameShown, specialGameOpen } from '../components/CardGame'
 import { CheckInForm } from '../components/CheckInForm'
 import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
@@ -102,7 +102,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
 /**
  * At most one extra card at a time, so the home page stays calm: the most
- * pressing of a new treat, yesterday's feedback, the card game, the fresh
+ * pressing of a special game round from him, a new treat, yesterday's feedback, the card game, the fresh
  * start after a period, a gift pass waiting, a pass for a missed yesterday,
  * or turning on notifications. The rest wait for their turn.
  */
@@ -110,6 +110,7 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
   const treats = treatsFor(state)
   const fresh = treats.find((treat) => !openedBefore.has(treat.id))
+  if (specialGameOpen(state)) return <CardGame state={state} />
   if (fresh) return <TreatCard treat={fresh} />
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
   if (gameShown(state)) return <CardGame state={state} />

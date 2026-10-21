@@ -98,6 +98,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - Above 4 the day is a rest day: the workout's 40 points are filled in (`rest` in the score) without training. The day doesn't count as a workout day for rewards, earns no score-tier points from that credit, and neither adds to nor breaks the 7-day streak. If she trains anyway (half the workout), it counts as usual.
   - On those days the workout is a tiny ~5-minute session of gentle moves and stretches. Milder pain (1–4) takes the jumps out.
   - The home page doesn't offer a pass for a missed workout on a rest day.
+- **Special card-game rounds** (`game_specials`, `SPECIAL_DECKS` in `shared/game.ts`): an extra round he gives her, with its own three cards, shuffled. It comes first on the home page until she plays it. Migration 0019 adds the first one: three roses, red, pink and white. Add another with `INSERT INTO game_specials (kind) VALUES ('roses')`.
 - **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, the workout (or the period rest card), today's points with buttons to log food and water, and the small period card at the bottom.
   - The highlight is the first that applies: a new treat to open, yesterday's feedback, the card game, the fresh start after a period, gift passes waiting, a pass for a missed yesterday, or turning on notifications.
   - The overall stats, next reward and month progress live on the progress and rewards pages.

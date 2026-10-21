@@ -19,7 +19,7 @@ import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/
 import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
-import { PRIZES, toPrizeId, type GamePlay } from '../../shared/game'
+import { PRIZES, toPrizeId, type GamePlay, type GameSpecial, type SpecialKind } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
 type Row = Record<string, unknown>
@@ -87,8 +87,9 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, note, created_at FROM pass_gifts ORDER BY id'),
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
     db.prepare('SELECT round, log_date, pick, cards, created_at FROM game_plays ORDER BY round'),
+    db.prepare('SELECT id, kind, created_at FROM game_specials ORDER BY id'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -220,6 +221,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       cards: (JSON.parse(String(row.cards)) as unknown[]).map(toPrizeId),
       createdAt: String(row.created_at),
     })),
+    gameSpecials: specials.results.map((row): GameSpecial => ({ id: Number(row.id), kind: row.kind as SpecialKind, createdAt: String(row.created_at) })),
   }
 }
 
