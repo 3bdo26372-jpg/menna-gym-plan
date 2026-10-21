@@ -71,7 +71,9 @@ export function CardGame({ state }: { state: AppState }) {
               >
                 <span className="game-face game-back" aria-hidden="true"><b>؟</b><small>{game.special ? '🌹' : '💌'}</small></span>
                 <span className={`game-face game-front ${prize?.pounds ? 'is-money' : ''}`} style={prize?.color ? { background: prize.color } : undefined} aria-hidden="true">
-                  {prize?.pounds ? <><b>{prize.pounds}</b><small>جنيه</small></> : <><b className="game-emoji">{prize?.emoji}</b><small>{prize?.label}</small></>}
+                  {prize?.pounds
+                    ? <><b>{prize.pounds}</b><small>جنيه</small></>
+                    : <>{prize?.image ? <img className="game-image" src={prize.image} alt="" /> : <b className="game-emoji">{prize?.emoji}</b>}<small>{prize?.label}</small></>}
                 </span>
               </m.span>
             </button>

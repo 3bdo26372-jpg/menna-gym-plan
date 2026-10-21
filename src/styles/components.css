@@ -380,3 +380,4 @@
 .meal-ideas { display: grid; gap: 10px; justify-items: stretch; }
 .meal-ideas > .link-button { justify-self: start; }
 .summary-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.game-front .game-image { width: 82%; height: auto; justify-self: center; }
