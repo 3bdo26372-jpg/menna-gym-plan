@@ -396,3 +396,5 @@
 .mini-steps .step-dot { width: 22px; height: 22px; font-size: 12px; }
 .workout-details summary { cursor: pointer; font-weight: 700; color: var(--berry-700); }
 .workout-details[open] { display: grid; gap: 10px; }
+.workout-link { grid-template-columns: 1fr auto; align-items: center; }
+.workout-link .card-title { font-size: 16px; }

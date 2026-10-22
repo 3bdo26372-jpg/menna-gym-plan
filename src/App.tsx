@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { LazyMotion } from 'framer-motion'
-import { CalendarCheck, ChartLine, FileText, Flower2, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
+import { CalendarCheck, ChartLine, Dumbbell, FileText, Flower2, Gift, HeartPulse, KeyRound, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
 import { TreatPopup } from './components/ChocolateGift'
 import { Card, Spinner } from './components/ui'
@@ -9,6 +9,7 @@ import { TodayPage } from './pages/TodayPage'
 import { AppDataProvider, useAppData } from './state/AppData'
 
 const WorkoutPage = lazy(() => import('./workout/WorkoutPage').then((module) => ({ default: module.WorkoutPage })))
+const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })))
 const ProgressPage = lazy(() => import('./pages/ProgressPage').then((module) => ({ default: module.ProgressPage })))
 const FoodPage = lazy(() => import('./pages/FoodPage').then((module) => ({ default: module.FoodPage })))
 const MeasurementsPage = lazy(() => import('./pages/MeasurementsPage').then((module) => ({ default: module.MeasurementsPage })))
@@ -18,6 +19,7 @@ const PeriodPage = lazy(() => import('./pages/PeriodPage').then((module) => ({ d
 
 const NAV: { route: Exclude<Route, 'workout'>; label: string; icon: typeof CalendarCheck }[] = [
   { route: 'today', label: 'اليوم', icon: CalendarCheck },
+  { route: 'training', label: 'التمرين', icon: Dumbbell },
   { route: 'progress', label: 'التقدم', icon: ChartLine },
   { route: 'food', label: 'الأكل', icon: Utensils },
   { route: 'period', label: 'البريود', icon: Flower2 },
@@ -78,6 +80,7 @@ function Shell() {
         {status === 'ready' && (
           <Suspense fallback={<div className="page center"><Spinner /></div>}>
             {route === 'today' && <TodayPage />}
+            {route === 'training' && <TrainingPage />}
             {route === 'progress' && <ProgressPage />}
             {route === 'food' && <FoodPage />}
             {route === 'measurements' && <MeasurementsPage />}

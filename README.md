@@ -27,7 +27,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - D1 schema in `worker/migrations/`, queries in `worker/src/db.ts`, routes in `worker/src/index.ts`.
   - Seeding is idempotent (`INSERT OR IGNORE`, run the first time the API is used), so deploys never reset the baseline.
 - **`src/`**: the React app.
-  - Pages: `pages/` (Today, Progress, Measurements, Rewards, Reports, Period).
+  - Pages: `pages/` (Today, Training, Progress, Food, Measurements, Rewards, Reports, Period).
   - Workout player: `workout/`.
   - Monthly PDF: `report/`, rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
   - Persistence goes through the `Backend` interface in `lib/backend.ts`:
@@ -99,7 +99,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - On those days the workout is a tiny ~5-minute session of gentle moves and stretches. Milder pain (1–4) takes the jumps out.
   - The home page doesn't offer a pass for a missed workout on a rest day.
 - **Special card-game rounds** (`game_specials`, `SPECIAL_DECKS` in `shared/game.ts`): an extra round he gives her, with its own three cards, shuffled. It comes first on the home page until she plays it. Migration 0019 adds the first one: three roses, red, pink and white. Add another with `INSERT INTO game_specials (kind) VALUES ('roses')`.
-- **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, the workout (or the period rest card), today's points with buttons to log food and water, and the small period card at the bottom.
+- **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, a one-line link to the workout (its own «التمرين» tab, `TrainingPage.tsx`, one step at a time), today's points with buttons to log food and water, and the small period card at the bottom.
   - The highlight is the first that applies: a new treat to open, yesterday's feedback, the card game, the fresh start after a period, gift passes waiting, a pass for a missed yesterday, or turning on notifications.
   - The overall stats, next reward and month progress live on the progress and rewards pages.
 - **Greeting** (`src/lib/greetings.ts`): the line at the top of the home page follows her day (a pain rest day, a full 100, the water target, the workout, a nudge from 7 pm with no workout, her period, or the time of day), with a few lines per case rotating daily.
