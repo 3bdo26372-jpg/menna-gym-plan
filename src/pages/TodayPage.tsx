@@ -24,7 +24,7 @@ import { SafetyNote } from '../components/SafetyNote'
 import { Card, Notice, ProgressBar, ScoreRing, StatTile } from '../components/ui'
 import { formatNumber } from '../lib/format'
 import { greetingFor } from '../lib/greetings'
-import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS, OVERALL_OPTIONS } from '../lib/labels'
+import { ENERGY_OPTIONS, labelOf, MOOD_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
 import { isTreatOpened, treatsFor } from '../lib/treats'
 import { useAppData, useAppState } from '../state/AppData'
@@ -63,6 +63,9 @@ function Welcome() {
   )
 }
 
+/** The small period card shows from this many days before the expected start. */
+const PRE_PERIOD_DAYS = 7
+
 function Dashboard({ state, startDate }: { state: AppState; startDate: string }) {
   const today = state.days.find((day) => day.date === state.today)
   const dayNumber = dayNumberFor(startDate, state.today)
@@ -94,8 +97,8 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       <TodaySummary state={state} day={today} />
 
-      {/* Small, and where she rates pain before a period. */}
-      {cycle && !isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
+      {/* Small, and where she rates pain in the week before a period. */}
+      {cycle && !isUrgent(cycle) && cycle.daysUntil !== null && cycle.daysUntil <= PRE_PERIOD_DAYS && <PeriodCard state={state} forecast={cycle} />}
     </div>
   )
 }
@@ -107,10 +110,12 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
  * or turning on notifications. The rest wait for their turn.
  */
 function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord | undefined }) {
+  // Decided once per visit, so the rose round stays on screen while its cards turn over.
+  const [specialFirst] = useState(() => specialGameOpen(state))
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
   const treats = treatsFor(state)
   const fresh = treats.find((treat) => !openedBefore.has(treat.id))
-  if (specialGameOpen(state)) return <CardGame state={state} />
+  if (specialFirst) return <CardGame state={state} />
   if (fresh) return <TreatCard treat={fresh} />
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
   if (gameShown(state)) return <CardGame state={state} />
@@ -250,72 +255,58 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
 
       {plan.notes.map((note) => <Notice key={note} tone="info">{note}</Notice>)}
 
-      <div className="steps">
-        <section className={`step ${checkin ? 'done' : 'current'}`}>
-          <h3><span className="step-dot">{checkin ? <Check /> : 1}</span> إحساسك قبل التمرين <small>15 نقطة</small></h3>
-          {checkin && !editingCheckin ? (
-            <div className="summary-chips">
-              <span className="chip soft">الطاقة: {labelOf(ENERGY_OPTIONS, checkin.energy)}</span>
-              <span className="chip soft">المزاج: {labelOf(MOOD_OPTIONS, checkin.mood)}</span>
-              <span className="chip soft">الجسم: {labelOf(BODY_OPTIONS, checkin.body)}</span>
-              {!day?.workout && <button type="button" className="link-button" onClick={() => setEditingCheckin(true)}>تعديل</button>}
-            </div>
-          ) : (
-            <CheckInForm initial={checkin} onSubmit={async (input) => { await saveCheckin(state.today, input); setEditingCheckin(false) }} />
-          )}
-        </section>
+      <ol className="mini-steps" aria-label="خطوات النهارده">
+        {[
+          { label: 'إحساسك', done: Boolean(checkin) },
+          { label: 'التمرين', done: Boolean(day?.workout) },
+          { label: 'التقييم', done: Boolean(day?.feedback) },
+        ].map((step, index) => (
+          <li key={step.label} className={step.done ? 'done' : ''}><span className="step-dot">{step.done ? <Check /> : index + 1}</span>{step.label}</li>
+        ))}
+      </ol>
 
-        <section className={`step ${day?.workout ? 'done' : checkin ? 'current' : 'locked'}`}>
-          <h3><span className="step-dot">{day?.workout ? <Check /> : 2}</span> التمرين <small>70 نقطة</small></h3>
-          {!day?.workout && (
-            <>
-              <ol className="block-list" aria-label="أجزاء التمرين بالترتيب">
-                {plan.blocks.map((block, index) => (
-                  <li key={block.id}>
-                    <strong><span className="block-order">{index + 1}</span> {block.title}</strong>
-                    <span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''}</span>
-                  </li>
+      {/* Only the step she is on; the others are a tick above. */}
+      {(!checkin || editingCheckin) && !day?.workout ? (
+        <CheckInForm initial={checkin} onSubmit={async (input) => { await saveCheckin(state.today, input); setEditingCheckin(false) }} />
+      ) : !day?.workout ? (
+        <>
+          <button type="button" className="button primary large" onClick={() => navigate('workout')}>
+            <Play /> {inProgress ? `كمّلي التمرين (${Math.round(workSummary(active).ratio * 100)}%)` : 'ابدئي التمرين'}
+          </button>
+          <div className="summary-chips">
+            <span className="chip soft">الطاقة: {labelOf(ENERGY_OPTIONS, checkin!.energy)}</span>
+            <span className="chip soft">المزاج: {labelOf(MOOD_OPTIONS, checkin!.mood)}</span>
+            <button type="button" className="link-button" onClick={() => setEditingCheckin(true)}>تعديل</button>
+          </div>
+          <details className="workout-details">
+            <summary>شوفي التمارين</summary>
+            <ol className="block-list" aria-label="أجزاء التمرين بالترتيب">
+              {plan.blocks.map((block, index) => (
+                <li key={block.id}>
+                  <strong><span className="block-order">{index + 1}</span> {block.title}</strong>
+                  <span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''}</span>
+                </li>
+              ))}
+            </ol>
+            {main && (
+              <div className="thumb-row" aria-label="تمارين الجزء الأساسي">
+                {main.exerciseIds.map((id) => (
+                  <div key={id} className="thumb">
+                    <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
+                    <span>{EXERCISE_BY_ID[id].name}</span>
+                  </div>
                 ))}
-              </ol>
-              <p className="muted small">التمرين بيبدأ بالتسخين وبيخلص بالإطالة. التسخين 5 نقاط والإطالة 5 نقاط (لو عملتي 80% من وقتهم)، والجزء الأساسي 60 نقطة على قد اللي تعمليه.</p>
-              {main && (
-                <div className="thumb-row" aria-label="تمارين الجزء الأساسي">
-                  {main.exerciseIds.map((id) => (
-                    <div key={id} className="thumb">
-                      <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
-                      <span>{EXERCISE_BY_ID[id].name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-          {day?.workout ? (
-            <p className="muted">
-              {Math.round(day.workout.activeSeconds / 60)} دقيقة · {Math.round(day.workout.mainCompletion * 100)}% من التمرين
-              {day.workout.status === 'completed' ? ' · خلّصتيه كله 👏' : ''}
-            </p>
-          ) : (
-            <button type="button" className="button primary large" disabled={!checkin} onClick={() => navigate('workout')}>
-              <Play /> {inProgress ? `كمّلي التمرين (${Math.round(workSummary(active).ratio * 100)}%)` : 'ابدئي التمرين'}
-            </button>
-          )}
-          {!checkin && <p className="muted small">سجّلي إحساسك الأول عشان نظبط شدة التمرين.</p>}
-        </section>
-
-        <section className={`step ${day?.feedback ? 'done' : day?.workout ? 'current' : 'locked'}`}>
-          <h3><span className="step-dot">{day?.feedback ? <Check /> : 3}</span> تقييم بعد التمرين <small>15 نقطة</small></h3>
-          {day?.feedback ? (
-            <div className="summary-chips">
-              <span className="chip soft">الصعوبة {day.feedback.difficulty}/10</span>
-              <span className="chip soft">{labelOf(OVERALL_OPTIONS, day.feedback.overall)}</span>
-              {day.feedback.favoriteExerciseId && <span className="chip soft">❤️ {EXERCISE_BY_ID[day.feedback.favoriteExerciseId]?.name}</span>}
-            </div>
-          ) : day?.workout ? (
-            <FeedbackForm exerciseIds={day.workout.exercises.map((item) => item.exerciseId)} onSubmit={(input) => saveFeedback(state.today, input)} />
-          ) : <p className="muted small">بعد ما تخلّصي التمرين.</p>}
-        </section>
-      </div>
+              </div>
+            )}
+          </details>
+        </>
+      ) : !day.feedback ? (
+        <FeedbackForm exerciseIds={day.workout.exercises.map((item) => item.exerciseId)} onSubmit={(input) => saveFeedback(state.today, input)} />
+      ) : (
+        <p className="muted">
+          خلّصتي النهارده 👏 {Math.round(day.workout.activeSeconds / 60)} دقيقة · {Math.round(day.workout.mainCompletion * 100)}% من التمرين · الصعوبة {day.feedback.difficulty}/10
+        </p>
+      )}
     </Card>
   )
 }

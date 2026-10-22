@@ -29,7 +29,12 @@ export function CardGame({ state }: { state: AppState }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [justPlayed, setJustPlayed] = useState(false)
-  const game = currentGame(state)
+  // The round on screen stays put once she picks, so she sees her prize even
+  // when it was a special round that then goes away.
+  const [shown] = useState(() => currentGame(state))
+  const game = justPlayed && shown
+    ? { ...shown, played: (state.gamePlays ?? []).find((play) => play.round === shown.round) ?? null }
+    : currentGame(state)
   if (!game || (game.played && game.played.date !== state.today && !justPlayed)) return null
   const { played } = game
 
