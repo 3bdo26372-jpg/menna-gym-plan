@@ -12,9 +12,9 @@ import type { AppState } from './types'
  * second round the three cards are three different prizes from `PRIZES`.
  *
  * A special round (a row in game_specials) is an extra one he gives her, with
- * its own three cards (`SPECIAL_DECKS`), shuffled. It comes first while she
- * hasn't played it, and is stored as round -id so it never clashes with the
- * regular rounds.
+ * its own three cards (`SPECIAL_DECKS`), shuffled. It comes first until she
+ * plays it and then goes away (she sees her prize as the cards turn over). It
+ * is stored as round -id so it never clashes with the regular rounds.
  */
 export const GAME_START = '2026-10-11'
 export const GAME_EVERY_DAYS = 5
@@ -97,7 +97,7 @@ type GameState = Pick<AppState, 'today' | 'profile'> & { gamePlays?: GamePlay[];
 
 /**
  * The round to show today and, if she already played it, how it went: a
- * special round she hasn't played (or played today), else the regular one.
+ * special round she hasn't played, else the regular one.
  */
 export function currentGame(state: GameState) {
   if (!state.profile.programStartDate) return null
@@ -105,8 +105,8 @@ export function currentGame(state: GameState) {
   const round = roundFor(state.today)
   const next = roundStart((round ?? -1) + 1)
   for (const special of state.gameSpecials ?? []) {
-    const played = plays.find((play) => play.round === specialRound(special)) ?? null
-    if (!played || played.date === state.today) return { round: specialRound(special), special, played, next }
+    // Once she has played it, it is done: the regular round comes back.
+    if (!plays.some((play) => play.round === specialRound(special))) return { round: specialRound(special), special, played: null as GamePlay | null, next }
   }
   if (round === null) return null
   return { round, special: null, played: plays.find((play) => play.round === round) ?? null, next }

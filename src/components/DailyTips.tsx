@@ -18,14 +18,16 @@ function useHour() {
   return hour
 }
 
-/** The home page shows only the most pressing few, so it stays calm. */
+/** The home page shows the most pressing one; the rest open on a tap. */
 const HOME_TIPS = 3
+const SHOWN_FIRST = 1
 
 /** طلبات النهارده: small asks for today, from her log and her cycle. */
 export function DailyTips({ state }: { state: AppState }) {
   const hour = useHour()
   const [editingSleep, setEditingSleep] = useState(false)
   const [loggingSleep, setLoggingSleep] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const tips = dailyTips(state, hour).slice(0, HOME_TIPS)
   const sleep = state.days.find((day) => day.date === state.today)?.sleep ?? null
   if (!tips.length && !sleep) return null
@@ -34,7 +36,7 @@ export function DailyTips({ state }: { state: AppState }) {
     <Card className="tips-card" id="section-tips">
       <h2 className="card-title">💌 طلبات النهارده</h2>
       <ul className="tip-list">
-        {tips.map((tip) => (
+        {(showAll ? tips : tips.slice(0, SHOWN_FIRST)).map((tip) => (
           <li key={tip.id} className={`tip tip-${tip.id}`}>
             <span className="tip-emoji" aria-hidden="true">{tip.emoji}</span>
             <div className="tip-copy">
@@ -49,6 +51,9 @@ export function DailyTips({ state }: { state: AppState }) {
           </li>
         ))}
       </ul>
+      {!showAll && tips.length > SHOWN_FIRST && (
+        <button type="button" className="link-button" onClick={() => setShowAll(true)}>كمان {tips.length - SHOWN_FIRST === 1 ? 'طلب' : `${tips.length - SHOWN_FIRST} طلبات`}</button>
+      )}
       {sleep && (editingSleep
         ? <SleepForm date={state.today} current={sleep} onDone={() => setEditingSleep(false)} />
         : (

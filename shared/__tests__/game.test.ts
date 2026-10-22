@@ -53,12 +53,12 @@ describe('card game', () => {
 describe('special rounds', () => {
   const roses = { id: 1, kind: 'roses' as const, createdAt: '' }
 
-  it('comes first while she has not played it, then gives the regular round back', () => {
+  it('comes first until she plays it, then gives the regular round back', () => {
     const open = currentGame({ today: '2026-10-21', profile, gameSpecials: [roses] })
     expect(open).toMatchObject({ round: -1, special: roses, played: null })
     expect(validatePlay({ pick: 2 }, { today: '2026-10-21', profile, gameSpecials: [roses] })).toEqual({ round: -1, pick: 2, special: roses })
     const play = { round: -1, date: '2026-10-21', pick: 2, cards: dealCards(-1, 2, () => 0, roses), createdAt: '' }
-    expect(currentGame({ today: '2026-10-21', profile, gameSpecials: [roses], gamePlays: [play] })?.played).toEqual(play)
+    expect(currentGame({ today: '2026-10-21', profile, gameSpecials: [roses], gamePlays: [play] })?.special).toBeNull()
     expect(currentGame({ today: '2026-10-22', profile, gameSpecials: [roses], gamePlays: [play] })?.special).toBeNull()
   })
 
