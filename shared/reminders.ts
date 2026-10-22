@@ -51,7 +51,7 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
   }
 
   if (inWindow('sleep', time) && !day.sleep) {
-    add({ key: 'sleep', title: 'صباح الفل يا {nick} ☀️', body: `نمتي امتى وصحيتي امتى؟ سجّلي نومك وخدي ${EARN.sleep} نقط 🎁`, url: '/#/today' })
+    add({ key: 'sleep', title: 'صباح الفل يا {nick} ☀️', body: `نمتي امتى وصحيتي امتى؟ سجّلي نومك وخدي ${EARN.sleep} نقط 🎁`, url: '/#/sleep' })
   }
 
   const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))

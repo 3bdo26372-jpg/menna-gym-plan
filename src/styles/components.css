@@ -398,3 +398,8 @@
 .workout-details[open] { display: grid; gap: 10px; }
 .workout-link { grid-template-columns: 1fr auto; align-items: center; }
 .workout-link .card-title { font-size: 16px; }
+.sleep-history { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sleep-history li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
+.sleep-history strong { min-width: 70px; }
+.sleep-history b.is-short { color: #9b2c2c; }
+.sleep-history small { flex-basis: 100%; color: var(--muted); }

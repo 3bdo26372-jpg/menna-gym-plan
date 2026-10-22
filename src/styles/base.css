@@ -64,11 +64,11 @@ svg { flex: none; }
  * Every tab fits the width, so the bar never scrolls: on iPhone a scrolled,
  * blurred fixed bar could stop drawing its tabs and show up empty.
  */
-.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 4px env(safe-area-inset-bottom); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(99, 33, 63, 0.05); }
-.nav-link { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 14px; color: var(--muted); font-size: 10.5px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 2px env(safe-area-inset-bottom); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 1px; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(99, 33, 63, 0.05); }
+.nav-link { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; color: var(--muted); font-size: 10px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .nav-link span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .nav-link svg { flex: none; width: 22px; height: 22px; }
-@media (max-width: 350px) { .nav-link { font-size: 9.5px; } .nav-link svg { width: 20px; height: 20px; } }
+@media (max-width: 370px) { .nav-link { font-size: 9px; } .nav-link svg { width: 19px; height: 19px; } }
 .nav-link[aria-current='page'] { color: var(--berry-dark); background: var(--rose-100); }
 
 .main { width: min(1080px, 100%); margin: 0 auto; padding: 16px; }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-export type Route = 'today' | 'training' | 'progress' | 'food' | 'measurements' | 'rewards' | 'reports' | 'period' | 'workout'
-const ROUTES: Route[] = ['today', 'training', 'progress', 'food', 'measurements', 'rewards', 'reports', 'period', 'workout']
+export type Route = 'today' | 'training' | 'sleep' | 'progress' | 'food' | 'measurements' | 'rewards' | 'reports' | 'period' | 'workout'
+const ROUTES: Route[] = ['today', 'training', 'sleep', 'progress', 'food', 'measurements', 'rewards', 'reports', 'period', 'workout']
 
 /** The section in "#/page/section", if any; it matches an element with id "section-<name>". */
 function readSection() {

@@ -5,12 +5,12 @@ import { addDays, cairoTime, dayNumberFor, formatDateLong } from '../../shared/d
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { planForDay, type WorkoutPlan } from '../../shared/program'
 import type { AppState, DayRecord } from '../../shared/types'
-import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPriceFor, type PassGift } from '../../shared/dayPasses'
+import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPriceFor } from '../../shared/dayPasses'
 import { newPagePeriod } from '../../shared/meals'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
-import { CardGame, gameShown, specialGameOpen } from '../components/CardGame'
+import { CardGame, gameOpen, specialGameOpen } from '../components/CardGame'
 import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { isNewPageDismissed, NewPageCard } from '../components/NewPage'
@@ -116,22 +116,22 @@ function WorkoutLink({ state, day, plan }: { state: AppState; day: DayRecord | u
 /**
  * At most one extra card at a time, so the home page stays calm: the most
  * pressing of a special game round from him, a new treat, yesterday's feedback, the card game, the fresh
- * start after a period, a gift pass waiting, a pass for a missed yesterday,
- * or turning on notifications. The rest wait for their turn.
+ * start after a period, a pass for a missed yesterday, or turning on
+ * notifications. A gift or game she already opened doesn't come back: gift
+ * passes wait on the passes page.
  */
 function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord | undefined }) {
-  // Decided once per visit, so the rose round stays on screen while its cards turn over.
+  // Decided once per visit, so a round stays on screen while its cards turn over.
   const [specialFirst] = useState(() => specialGameOpen(state))
+  const [gameFirst] = useState(() => gameOpen(state))
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
   const treats = treatsFor(state)
   const fresh = treats.find((treat) => !openedBefore.has(treat.id))
   if (specialFirst) return <CardGame state={state} />
   if (fresh) return <TreatCard treat={fresh} />
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
-  if (gameShown(state)) return <CardGame state={state} />
+  if (gameFirst) return <CardGame state={state} />
   if (newPagePeriod(state.periods, state.today) && !isNewPageDismissed(state)) return <NewPageCard state={state} />
-  const waiting = treats.flatMap((treat) => (treat.kind === 'gift' && openedBefore.has(treat.id) ? [treat.gift] : []))
-  if (waiting.length) return <GiftsWaiting gifts={waiting} />
   if (yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date)) {
     return (
       <Card className="soft-card">
@@ -142,17 +142,6 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
     )
   }
   return <NotificationsCard state={state} />
-}
-
-/** Gift passes she already unwrapped but hasn't used: a short reminder with their notes. */
-function GiftsWaiting({ gifts }: { gifts: PassGift[] }) {
-  return (
-    <Card className="soft-card">
-      <h2 className="card-title">{gifts.length === 1 ? 'معاكي إكسبشن هدية 🎁' : `معاكي ${gifts.length} إكسبشن هدية 🎁`}</h2>
-      {gifts.map((gift) => <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{gift.note ?? 'إكسبشن ببلاش'}</p>)}
-      <a className="button secondary" href="#/rewards/passes">استخدميه</a>
-    </Card>
-  )
 }
 
 /** Today's points in one card: workout, water and calories, with where to log. */
