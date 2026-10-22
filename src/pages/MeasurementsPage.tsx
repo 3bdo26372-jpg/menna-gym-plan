@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Plus, Ruler } from 'lucide-react'
 import { formatDateFull } from '../../shared/date'
 import { measurementComparison } from '../../shared/engine'
-import { BASELINE_METRICS, MEASUREMENT_FIELD_BY_KEY, MEASUREMENT_FIELDS } from '../../shared/measurements'
+import { BASELINE_METRICS, MEASUREMENT_FIELD_BY_KEY, MEASUREMENT_FIELDS, type MeasurementField } from '../../shared/measurements'
 import { Card, EmptyState, Notice, PageHeader } from '../components/ui'
 import { formatChange, formatNumber } from '../lib/format'
 import { useAppData, useAppState } from '../state/AppData'
 
 /** Lower is the goal for these; the others are shown neutrally. */
-const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly'])
+const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly', 'bmi', 'fatMass', 'visceralFat', 'bodyAge'])
 
 export function MeasurementsPage() {
   const state = useAppState()
@@ -111,6 +111,17 @@ function MeasurementForm({ today }: { today: string }) {
     }
   }
 
+  const input = (field: MeasurementField) => (
+    <label key={field.key} className="field">
+      <span>{field.label}{field.unit && <> <small>({field.unit})</small></>}</span>
+      <input
+        type="number" inputMode="decimal" step={field.step} min={field.min} max={field.max}
+        value={values[field.key] ?? ''} placeholder="—"
+        onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
+      />
+    </label>
+  )
+
   return (
     <Card id="section-new">
       <h2 className="card-title"><Plus /> قياس جديد</h2>
@@ -120,17 +131,12 @@ function MeasurementForm({ today }: { today: string }) {
           <input type="date" value={date} max={today} required onChange={(event) => setDate(event.target.value)} />
         </label>
         <div className="measure-grid">
-          {MEASUREMENT_FIELDS.map((field) => (
-            <label key={field.key} className="field">
-              <span>{field.label} <small>({field.unit})</small></span>
-              <input
-                type="number" inputMode="decimal" step={field.step} min={field.min} max={field.max}
-                value={values[field.key] ?? ''} placeholder="—"
-                onChange={(event) => setValues((current) => ({ ...current, [field.key]: event.target.value }))}
-              />
-            </label>
-          ))}
+          {MEASUREMENT_FIELDS.filter((field) => !field.scale).map(input)}
         </div>
+        <details className="scale-fields">
+          <summary>باقي أرقام الميزان الذكي (اختياري)</summary>
+          <div className="measure-grid">{MEASUREMENT_FIELDS.filter((field) => field.scale).map(input)}</div>
+        </details>
         <label className="field">
           <span>ملاحظة (اختياري)</span>
           <input type="text" value={note} maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="مثلًا: الصبح قبل الفطار" />
