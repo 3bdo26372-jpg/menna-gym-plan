@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FoodEntry } from '../food'
-import { foodNotes, foodReview, IDEAS_SHOWN, MEAL_IDEAS, mealForHour, mealIdeas, newPagePeriod } from '../meals'
+import { foodNotes, foodReview, IDEAS_SHOWN, MEAL_IDEAS, mealForHour, mealIdeas, mealsFromHistory, newPagePeriod } from '../meals'
 
 let id = 1
 const entry = (date: string, time: string, item: string, category: FoodEntry['category'] = 'lunch'): FoodEntry =>
@@ -60,5 +60,28 @@ describe('meal ideas', () => {
 
   it('suggests the meal that suits the hour', () => {
     expect([8, 14, 21, 2].map(mealForHour)).toEqual(['breakfast', 'lunch', 'dinner', 'dinner'])
+  })
+})
+
+describe('meal ideas from her own food', () => {
+  const ate = [
+    entry('2026-10-15', '13:00', 'بيضتين وعيش بلدي', 'breakfast'),
+    entry('2026-10-16', '13:00', 'بيضتين وعيش بلدي', 'breakfast'),
+    entry('2026-10-17', '14:00', 'كيس اندومي', 'breakfast'),
+    entry('2026-10-18', '12:00', 'فول وطعمية', 'breakfast'),
+    entry('2026-10-18', '20:00', 'رز وفراخ', 'lunch'),
+  ]
+
+  it('puts what she ate most first, without fast food, and marks it as hers', () => {
+    expect(mealsFromHistory(ate, 'breakfast')).toEqual([
+      { emoji: '🍳', item: 'بيضتين وعيش بلدي', mine: true },
+      { emoji: '🍳', item: 'فول وطعمية', mine: true },
+    ])
+  })
+
+  it('fills the rest with suggestions she has not had', () => {
+    const shown = mealIdeas('breakfast', 0, ate)
+    expect(shown.map((meal) => meal.item)).toEqual(['بيضتين وعيش بلدي', 'فول وطعمية', MEAL_IDEAS.breakfast[0].item])
+    expect(mealIdeas('lunch', 0, ate)[0]).toMatchObject({ item: 'رز وفراخ', mine: true })
   })
 })

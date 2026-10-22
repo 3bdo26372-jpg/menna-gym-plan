@@ -1,5 +1,5 @@
 import { addDays } from './date'
-import type { FoodCategory, FoodEntry } from './food'
+import { FOOD_CATEGORIES, type FoodCategory, type FoodEntry } from './food'
 import { normalize } from './tips'
 import type { PeriodEntry } from './period'
 
@@ -13,6 +13,8 @@ export interface MealIdea {
   emoji: string
   /** What gets logged when she eats it. */
   item: string
+  /** Something she logged herself before. */
+  mine?: boolean
 }
 
 const idea = (emoji: string, item: string): MealIdea => ({ emoji, item })
@@ -61,9 +63,42 @@ export const MEAL_IDEAS: Record<MealCategory, MealIdea[]> = {
 
 export const IDEAS_SHOWN = 3
 
-/** The `round`-th set of ideas for a meal; it wraps around once all were shown. */
-export function mealIdeas(category: MealCategory, round: number): MealIdea[] {
-  const list = MEAL_IDEAS[category]
+/** The most her own meals can fill of the list, so a few new ideas still show. */
+const MAX_MINE = 6
+
+/**
+ * Meals she already ate for this meal, most often first (then most recent),
+ * leaving out fast food and sugary drinks: she picks from food she likes.
+ */
+export function mealsFromHistory(entries: Pick<FoodEntry, 'date' | 'time' | 'category' | 'item'>[], category: MealCategory): MealIdea[] {
+  const emoji = FOOD_CATEGORIES.find((item) => item.id === category)?.emoji ?? '🍽️'
+  const seen = new Map<string, { item: string; count: number; last: string }>()
+  for (const entry of entries) {
+    if (entry.category !== category || mentions(entry, JUNK) || mentions(entry, SUGARY)) continue
+    const item = entry.item.trim()
+    if (item.length < 2) continue
+    const key = normalize(item).replace(/\s+/g, ' ')
+    const when = `${entry.date} ${entry.time}`
+    const known = seen.get(key)
+    if (known) {
+      known.count += 1
+      if (when > known.last) known.last = when
+    } else seen.set(key, { item, count: 1, last: when })
+  }
+  return [...seen.values()]
+    .sort((a, b) => b.count - a.count || b.last.localeCompare(a.last))
+    .slice(0, MAX_MINE)
+    .map(({ item }) => ({ emoji, item, mine: true }))
+}
+
+/**
+ * The `round`-th set of ideas for a meal: her own meals first, then the
+ * suggestions she hasn't had; it wraps around once all were shown.
+ */
+export function mealIdeas(category: MealCategory, round: number, history: Pick<FoodEntry, 'date' | 'time' | 'category' | 'item'>[] = []): MealIdea[] {
+  const mine = mealsFromHistory(history, category)
+  const taken = new Set(mine.map((meal) => normalize(meal.item)))
+  const list = [...mine, ...MEAL_IDEAS[category].filter((meal) => !taken.has(normalize(meal.item)))]
   const first = (round * IDEAS_SHOWN) % list.length
   return Array.from({ length: Math.min(IDEAS_SHOWN, list.length) }, (_, index) => list[(first + index) % list.length])
 }

@@ -43,6 +43,10 @@ interface AppDataValue {
 
 const AppDataContext = createContext<AppDataValue | null>(null)
 
+/** How often the open app re-reads everything, and the gap before coming back to it does. */
+const REFRESH_EVERY_MS = 2 * 60_000
+const RETURN_REFRESH_MS = 15_000
+
 /**
  * The API URL comes from VITE_API_URL or, in production builds, from
  * public/api-config.json (written by the deploy-api GitHub workflow) baked in
@@ -141,21 +145,36 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, [backend, handleError])
 
-  // A new Cairo day starts at local midnight in Cairo, whatever the phone's time zone.
+  // Keep the data fresh: a new Cairo day (at Cairo midnight, whatever the
+  // phone's time zone), every couple of minutes while the app is open, and
+  // whenever she comes back to it, so gifts, games and scores show up on
+  // their own.
   useEffect(() => {
     if (!state) return
+    let last = Date.now()
+    // Quiet: a failed background refresh (no signal) keeps what is on screen.
+    const refresh = () => {
+      last = Date.now()
+      if (cairoDate() !== state.today) return void reload()
+      backend.getState().then(setState, (caught) => {
+        if (caught instanceof AuthRequiredError) setStatus('passcode')
+      })
+    }
     const timer = window.setInterval(() => {
-      if (cairoDate() !== state.today) void reload()
-    }, 60_000)
+      if (document.visibilityState !== 'visible') return
+      if (cairoDate() !== state.today || Date.now() - last >= REFRESH_EVERY_MS) refresh()
+    }, 30_000)
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && cairoDate() !== state.today) void reload()
+      if (document.visibilityState === 'visible' && Date.now() - last >= RETURN_REFRESH_MS) refresh()
     }
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
     return () => {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
     }
-  }, [state, reload])
+  }, [state, reload, backend])
 
   const value = useMemo<AppDataValue>(() => {
     const apply = async (action: Promise<AppState>) => {

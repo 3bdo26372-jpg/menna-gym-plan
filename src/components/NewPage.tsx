@@ -77,7 +77,7 @@ export function MealIdeas({ state }: { state: AppState }) {
     <div className="meal-ideas">
       <ChoiceGroup legend="تاكلي إيه؟" options={MEAL_OPTIONS} value={category} onChange={choose} columns={4} />
       <ul className="tip-list">
-        {mealIdeas(category, round).map((meal) => <MealRow key={meal.item} date={state.today} category={category} meal={meal} />)}
+        {mealIdeas(category, round, state.foodEntries).map((meal) => <MealRow key={meal.item} date={state.today} category={category} meal={meal} />)}
       </ul>
       <button type="button" className="link-button" onClick={() => setRound((value) => value + 1)}>
         <RefreshCw /> مش عاجباني، اختيارات تانية
@@ -108,6 +108,7 @@ function MealRow({ date, category, meal }: { date: string; category: MealCategor
       <span className="tip-emoji" aria-hidden="true">{meal.emoji}</span>
       <div className="tip-copy">
         <strong>{meal.item}</strong>
+        {meal.mine && <span className="chip soft">💗 من أكلك</span>}
         {state === 'done'
           ? <span className="chip soft"><Check /> اتسجلت في أكلك</span>
           : (
