@@ -387,3 +387,6 @@
 .rose-trio img:first-child { margin-inline-start: 0; }
 .game-back .game-back-image { width: 34px; height: 34px; justify-self: center; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); }
 .game-result-image { width: 34px; height: 34px; vertical-align: middle; margin-inline-end: 6px; }
+.scale-fields { display: grid; gap: 10px; }
+.scale-fields summary { cursor: pointer; font-weight: 700; color: var(--berry-700); }
+.scale-fields[open] summary { margin-bottom: 10px; }

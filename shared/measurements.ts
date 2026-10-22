@@ -13,6 +13,8 @@ export interface MeasurementField {
   /** Smart-scale values are estimates; the UI says so. */
   estimate?: boolean
   chart?: boolean
+  /** An extra reading from the smart scale: the form keeps these folded away. */
+  scale?: boolean
 }
 
 export const MEASUREMENT_FIELDS: MeasurementField[] = [
@@ -24,6 +26,18 @@ export const MEASUREMENT_FIELDS: MeasurementField[] = [
   { key: 'thigh', label: 'الفخذ', unit: 'سم', step: 0.5, min: 30, max: 120 },
   { key: 'biceps', label: 'الذراع', unit: 'سم', step: 0.5, min: 15, max: 70 },
   { key: 'shoulders', label: 'الأكتاف', unit: 'سم', step: 0.5, min: 25, max: 200 },
+  // The rest of what the smart scale reads. The keys match the baseline, so each compares with the start.
+  { key: 'bmi', label: 'مؤشر كتلة الجسم', unit: '', step: 0.1, min: 10, max: 60, scale: true },
+  { key: 'fatMass', label: 'كتلة الدهون', unit: 'كجم', step: 0.1, min: 5, max: 100, estimate: true, scale: true },
+  { key: 'leanMass', label: 'الكتلة الخالية من الدهون', unit: 'كجم', step: 0.01, min: 20, max: 120, estimate: true, scale: true },
+  { key: 'muscleMass', label: 'كتلة العضلات', unit: 'كجم', step: 0.1, min: 15, max: 100, estimate: true, scale: true },
+  { key: 'skeletalMuscle', label: 'العضلات الهيكلية', unit: 'كجم', step: 0.1, min: 10, max: 60, estimate: true, scale: true },
+  { key: 'visceralFat', label: 'دهون الأحشاء', unit: '', step: 0.5, min: 1, max: 30, estimate: true, scale: true },
+  { key: 'bmr', label: 'معدل الحرق الأساسي', unit: 'سعر/يوم', step: 1, min: 800, max: 3500, estimate: true, scale: true },
+  { key: 'water', label: 'نسبة المية في الجسم', unit: '%', step: 0.1, min: 20, max: 80, estimate: true, scale: true },
+  { key: 'protein', label: 'نسبة البروتين', unit: '%', step: 0.1, min: 5, max: 30, estimate: true, scale: true },
+  { key: 'boneMass', label: 'كتلة العظام', unit: 'كجم', step: 0.1, min: 1, max: 8, estimate: true, scale: true },
+  { key: 'bodyAge', label: 'عمر الجسم', unit: 'سنة', step: 1, min: 10, max: 90, estimate: true, scale: true },
 ]
 
 export const MEASUREMENT_FIELD_BY_KEY = Object.fromEntries(MEASUREMENT_FIELDS.map((field) => [field.key, field]))
