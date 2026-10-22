@@ -106,7 +106,7 @@ function DrinkButton({ date, drink }: { date: string; drink: Drink }) {
   )
 }
 
-function SleepForm({ date, current, onDone }: { date: string; current: SleepLog | null; onDone?: () => void }) {
+export function SleepForm({ date, current, onDone }: { date: string; current: SleepLog | null; onDone?: () => void }) {
   const { saveSleep } = useAppData()
   const [sleptAt, setSleptAt] = useState(current?.sleptAt ?? '')
   const [wokeAt, setWokeAt] = useState(current?.wokeAt ?? '')

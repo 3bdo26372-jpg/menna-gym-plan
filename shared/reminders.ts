@@ -51,7 +51,7 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
   }
 
   if (inWindow('sleep', time) && !day.sleep) {
-    add({ key: 'sleep', title: 'صباح الفل يا {nick} ☀️', body: `نمتي امتى وصحيتي امتى؟ سجّلي نومك وخدي ${EARN.sleep} نقط 🎁`, url: '/#/today' })
+    add({ key: 'sleep', title: 'صباح الفل يا {nick} ☀️', body: `نمتي امتى وصحيتي امتى؟ سجّلي نومك وخدي ${EARN.sleep} نقط 🎁`, url: '/#/sleep' })
   }
 
   const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))
@@ -66,7 +66,7 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
   const trained = (day.workout?.mainCompletion ?? 0) >= ACTIVE_DAY_MIN_COMPLETION
   const period = periodForecast(state.periods ?? [], state.today).phase === 'period'
   if (inWindow('workout', time) && !trained && !day.excused && !period && !isPainRest(day.periodPain)) {
-    add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body: 'ربع ساعة بس وتخلصي، وبعدها نامي بدري 🌙', url: '/#/today' })
+    add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body: 'ربع ساعة بس وتخلصي، وبعدها نامي بدري 🌙', url: '/#/training' })
   }
 
   for (const gift of unusedGifts(state).filter((item) => item.createdAt > giftsAfter)) {

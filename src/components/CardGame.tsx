@@ -13,13 +13,10 @@ const HEARTS = ['💗', '💸', '🤍', '💕', '💸', '💗']
 /**
  * اللعبة: three face-down cards, each hiding money or a treat. Her card turns over
  * first, then the other two. Shown on the home page while today's round is
- * open, and on the day she played it.
+ * open; once she plays, she sees her prize and it is gone on her next visit.
  */
-/** Whether the home page shows the game: a round is open, or she played it today. */
-export function gameShown(state: AppState) {
-  const game = currentGame(state)
-  return Boolean(game && (!game.played || game.played.date === state.today))
-}
+/** A round she hasn't played yet. Once played, it leaves the home page after that visit. */
+export const gameOpen = (state: AppState) => Boolean(currentGame(state) && !currentGame(state)?.played)
 
 /** A special round (the roses) she hasn't played yet: it goes first on the home page. */
 export const specialGameOpen = (state: AppState) => Boolean(currentGame(state)?.special && !currentGame(state)?.played)
@@ -35,7 +32,7 @@ export function CardGame({ state }: { state: AppState }) {
   const game = justPlayed && shown
     ? { ...shown, played: (state.gamePlays ?? []).find((play) => play.round === shown.round) ?? null }
     : currentGame(state)
-  if (!game || (game.played && game.played.date !== state.today && !justPlayed)) return null
+  if (!game || (game.played && !justPlayed)) return null
   const { played } = game
 
   async function pick(index: number) {

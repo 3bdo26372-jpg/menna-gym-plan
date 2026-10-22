@@ -42,7 +42,7 @@ export function WorkoutPage() {
         <Card className="player-empty">
           <h2>سجّلي إحساسك الأول</h2>
           <p>الـ check-in بيحدد شدة تمرين النهارده.</p>
-          <button type="button" className="button primary" onClick={() => navigate('today')}>روحي للصفحة الرئيسية</button>
+          <button type="button" className="button primary" onClick={() => navigate('training')}>ارجعي لصفحة التمرين</button>
         </Card>
       </div>
     )
@@ -91,7 +91,7 @@ function Player({ initial }: { initial: Session }) {
     try {
       if (workSummary(session).done === 0) {
         sessionStore.clear()
-        navigate('today')
+        navigate('training')
         return
       }
       await saveWorkout(session.date, toWorkoutInput(session))
@@ -134,7 +134,7 @@ function Player({ initial }: { initial: Session }) {
     <div className="player-shell">
       <div className="player">
         <header className="player-top">
-          <button type="button" className="icon-button" onClick={() => { player.pause(); navigate('today') }} aria-label="إغلاق التمرين (هيتحفظ)">
+          <button type="button" className="icon-button" onClick={() => { player.pause(); navigate('training') }} aria-label="إغلاق التمرين (هيتحفظ)">
             <X />
           </button>
           <div className="player-top-copy">
@@ -251,7 +251,7 @@ function FinishedView({ session, phase, error, onRetry, onFeedback }: {
             <h1>كده تمام يا منّة</h1>
             <p>{Math.round(summary.done / 60)} دقيقة تمرين النهارده. اشربي مية وخدي نفس هادي.</p>
             {day?.feedback?.pain && <SafetyNote compact />}
-            <button type="button" className="button primary" onClick={() => navigate('today')}>الرجوع للصفحة الرئيسية</button>
+            <button type="button" className="button primary" onClick={() => navigate('training')}>كمّلي على صفحة التمرين</button>
           </m.div>
         ) : (
           <>

@@ -27,9 +27,9 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - D1 schema in `worker/migrations/`, queries in `worker/src/db.ts`, routes in `worker/src/index.ts`.
   - Seeding is idempotent (`INSERT OR IGNORE`, run the first time the API is used), so deploys never reset the baseline.
 - **`src/`**: the React app.
-  - Pages: `pages/` (Today, Progress, Measurements, Rewards, Reports, Period).
+  - Pages: `pages/` (Today, Training, Sleep, Progress, Food, Measurements, Rewards, Reports, Period).
   - Workout player: `workout/`.
-  - Monthly PDF: `report/`, rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
+  - Weekly and monthly PDF: `report/` (summary and score calendar; body measurements and the smart-scale readings; sleep, daily water, how she ate and the period; exercises, points by source, rewards and suggestions; then the food log), rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
   - Persistence goes through the `Backend` interface in `lib/backend.ts`:
     - `httpBackend.ts` talks to the Worker.
     - `localBackend.ts` is a **development-only fallback** (browser localStorage), used when `VITE_API_URL` is not set. A banner says so.
@@ -77,7 +77,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - **Period days:** every day of a logged period is passed automatically (filled to 100 and counted as a workout day, also in the 7-day streak) as soon as the period is logged. Nothing is stored or spent (`periodRestDates` in `shared/period.ts`).
     - She decides when it ends: until she taps «خلص النهارده» (or sets the end on the period page), the period goes on, up to 14 days. An older period logged without an end counts her usual length.
     - On a period day the home page shows a rest card instead of the workout, with the workout one tap away if she wants to move.
-  - **Gift passes:** each row in `pass_gifts` is one more free pass. Its note shows on the home page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
+  - **Gift passes:** each row in `pass_gifts` is one more free pass. It shows on the home page wrapped as a chocolate until she opens it; after that it waits on the passes page until it is used. Migration 0007 adds the first one. Add more with `INSERT INTO pass_gifts (note) VALUES ('…')`.
 - **صفحة جديدة** (`shared/meals.ts`, `src/components/NewPage.tsx`): for a week after she marks a period as ended, the home page shows a fresh-start card until she taps «يلا بينا». It reviews the last 10 days of food (fast food, sugary drinks, a first meal after 3 pm, days with nothing logged, no vegetables) and offers meal ideas.
 - **Meal ideas** (`MEAL_IDEAS` in `shared/meals.ts`): three ideas at a time for the meal she picks, «اختيارات تانية» shows the next three, and «أكلتها» logs one. They also sit on the food page for today.
 - **Push notifications** (`shared/reminders.ts`, `worker/src/push.ts`, `worker/src/webpush.ts`, `public/sw.js`): the home page asks her to turn them on; on an iPhone they need the app on the home screen.
@@ -99,8 +99,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - On those days the workout is a tiny ~5-minute session of gentle moves and stretches. Milder pain (1–4) takes the jumps out.
   - The home page doesn't offer a pass for a missed workout on a rest day.
 - **Special card-game rounds** (`game_specials`, `SPECIAL_DECKS` in `shared/game.ts`): an extra round he gives her, with its own three cards, shuffled. It comes first on the home page until she plays it. Migration 0019 adds the first one: three roses, red, pink and white. Add another with `INSERT INTO game_specials (kind) VALUES ('roses')`.
-- **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, the workout (or the period rest card), today's points with buttons to log food and water, and the small period card at the bottom.
-  - The highlight is the first that applies: a new treat to open, yesterday's feedback, the card game, the fresh start after a period, gift passes waiting, a pass for a missed yesterday, or turning on notifications.
+- **Home page** (`src/pages/TodayPage.tsx`) is kept short: the greeting and score, the period card when it needs her, **one** highlight card, up to 3 daily tips, a one-line link to the workout (its own «التمرين» tab, `TrainingPage.tsx`, one step at a time), today's points with buttons to log food and water, and the small period card at the bottom.
+  - The highlight is the first that applies: a special game round, a new treat to open, yesterday's feedback, the card game, the fresh start after a period, a pass for a missed yesterday, or turning on notifications. A gift or game she already opened doesn't come back to the home page.
   - The overall stats, next reward and month progress live on the progress and rewards pages.
 - **Greeting** (`src/lib/greetings.ts`): the line at the top of the home page follows her day (a pain rest day, a full 100, the water target, the workout, a nudge from 7 pm with no workout, her period, or the time of day), with a few lines per case rotating daily.
 - **Bottom bar**: 7 tabs don't fit on a phone, so the bar scrolls sideways; the tab cut off at the edge shows there are more. The current tab is scrolled into view when a link opens a page.
