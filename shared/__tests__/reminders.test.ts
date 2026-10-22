@@ -15,32 +15,49 @@ function state(parts: Partial<DayRecord> = {}, extra: Partial<AppState> = {}): A
   }
 }
 const keys = (list: { key: string }[]) => list.map((item) => item.key)
+/** Keys without the half-hourly water reminders, for tests about the others. */
+const others = (list: { key: string }[]) => keys(list).filter((key) => !key.startsWith('water-'))
 const none = new Set<string>()
 
 describe('push reminders', () => {
   it('asks for last night\'s sleep from 12:30 until it is logged', () => {
-    expect(keys(dueReminders(state(), '12:29', none, ''))).toEqual([])
-    expect(keys(dueReminders(state(), '12:30', none, ''))).toEqual(['sleep'])
-    expect(keys(dueReminders(state({ sleep: { sleptAt: '01:00', wokeAt: '09:00' } }), '13:00', none, ''))).toEqual([])
-    expect(keys(dueReminders(state(), '16:00', none, ''))).toEqual([])
+    expect(others(dueReminders(state(), '12:29', none, ''))).toEqual([])
+    expect(others(dueReminders(state(), '12:30', none, ''))).toEqual(['sleep'])
+    expect(others(dueReminders(state({ sleep: { sleptAt: '01:00', wokeAt: '09:00' } }), '13:00', none, ''))).toEqual([])
+    expect(others(dueReminders(state(), '16:00', none, ''))).toEqual([])
   })
 
   it('sends each reminder once a day', () => {
-    expect(dueReminders(state(), '13:00', new Set(['sleep']), '')).toEqual([])
+    expect(others(dueReminders(state(), '13:00', new Set(['sleep']), ''))).toEqual([])
   })
 
-  it('reminds about water in the evening only while under a litre', () => {
-    expect(dueReminders(state({}, { foodEntries: [water(500)] }), '18:00', none, '')[0]).toMatchObject({ key: 'water', url: '/#/food/water' })
-    expect(dueReminders(state({}, { foodEntries: [water(500)] }), '18:00', none, '')[0].body).toContain('0.5')
-    expect(keys(dueReminders(state({}, { foodEntries: [water(1000)] }), '18:00', none, ''))).toEqual([])
+  it('reminds about water every half hour until 2.5 L, skipping a half hour she just drank in', () => {
+    const at = (time: string, entries: FoodEntry[] = []) => keys(dueReminders(state({}, { foodEntries: entries }), time, none, '')).filter((key) => key.startsWith('water-'))
+    expect(at('10:59')).toEqual([])
+    expect(at('11:00')).toEqual(['water-11:00'])
+    expect(at('11:20')).toEqual(['water-11:00'])
+    expect(at('11:45')).toEqual(['water-11:30'])
+    expect(dueReminders(state({}, { foodEntries: [water(500)] }), '18:00', none, '').find((item) => item.key === 'water-18:00')?.body).toContain('0.5')
+    expect(at('12:15', [{ ...water(250), time: '12:00' }])).toEqual([])
+    expect(at('12:45', [{ ...water(250), time: '12:00' }])).toEqual(['water-12:30'])
+    expect(at('18:00', [water(2500)])).toEqual([])
+    expect(at('23:30')).toEqual([])
+  })
+
+  it('asks if she still likes his program when nothing is logged by the evening', () => {
+    const missed = dueReminders(state(), '18:00', none, '').find((item) => item.key === 'missed')
+    expect(missed?.title).toMatch(/برنامج بابا/)
+    expect(others(dueReminders(state(), '17:59', none, ''))).not.toContain('missed')
+    expect(others(dueReminders(state({}, { foodEntries: [water(250)] }), '19:00', none, ''))).not.toContain('missed')
+    expect(others(dueReminders(state({ sleep: { sleptAt: '01:00', wokeAt: '09:00' } }), '19:00', none, ''))).not.toContain('missed')
   })
 
   it('reminds about the workout at night, but not on period or pain-rest days', () => {
-    expect(keys(dueReminders(state({}, { foodEntries: [water(2000)] }), '21:00', none, ''))).toEqual(['workout'])
-    expect(keys(dueReminders(state({ periodPain: 6 }, { foodEntries: [water(2000)] }), '21:00', none, ''))).toEqual([])
+    expect(others(dueReminders(state({}, { foodEntries: [water(2500)] }), '21:00', none, ''))).toEqual(['workout'])
+    expect(others(dueReminders(state({ periodPain: 6 }, { foodEntries: [water(2500)] }), '21:00', none, ''))).toEqual([])
     const periods = [{ id: 1, startDate: '2026-10-19', endDate: null, createdAt: '' }]
-    expect(keys(dueReminders(state({}, { foodEntries: [water(2000)], periods }), '21:00', none, ''))).toEqual([])
-    expect(keys(dueReminders(state({ excused: true }, { foodEntries: [water(2000)] }), '21:00', none, ''))).toEqual([])
+    expect(others(dueReminders(state({}, { foodEntries: [water(2500)], periods }), '21:00', none, ''))).toEqual([])
+    expect(others(dueReminders(state({ excused: true }, { foodEntries: [water(2500)] }), '21:00', none, ''))).toEqual([])
   })
 
   it('announces a gift pass added after she turned notifications on, once', () => {
