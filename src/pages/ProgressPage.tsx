@@ -1,12 +1,15 @@
 import { useState } from 'react'
-import { LineChart as LineIcon } from 'lucide-react'
+import { Droplets, LineChart as LineIcon, Utensils } from 'lucide-react'
 import { dayNumberFor, periodForDay } from '../../shared/date'
 import { summaryStats } from '../../shared/engine'
 import { MEASUREMENT_FIELDS } from '../../shared/measurements'
+import { formatLitres, waterMl } from '../../shared/food'
+import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { averageSleep, formatSleep } from '../../shared/sleep'
+import type { AppState } from '../../shared/types'
 import { DailyBars, TrendChart } from '../components/Charts'
 import { ScoreCalendar, ScoreLegend } from '../components/ScoreCalendar'
-import { Card, EmptyState, PageHeader, StatTile } from '../components/ui'
+import { Card, EmptyState, PageHeader, ProgressBar, StatTile } from '../components/ui'
 import { useAppState } from '../state/AppData'
 
 export function ProgressPage() {
@@ -24,6 +27,8 @@ export function ProgressPage() {
       <PageHeader eyebrow="التقدم" title="شوفي الصورة الكبيرة">
         <p>التقدم مش الوزن بس: القياسات، الاستمرار، والدقائق اللي اتحركتيها كلها بتحسب.</p>
       </PageHeader>
+
+      <TodayPoints state={state} />
 
       <div className="stat-grid">
         <StatTile label="أيام التمرين" value={stats.activeDays} tone="accent" />
@@ -82,5 +87,38 @@ export function ProgressPage() {
         })}
       </div>
     </div>
+  )
+}
+
+/** Today's points in one card: workout, water and calories, with where to log. */
+function TodayPoints({ state }: { state: AppState }) {
+  const score = state.days.find((day) => day.date === state.today)?.score
+  const rest = score?.rest ?? 0
+  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + rest
+  const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))
+  const passed = (score?.pass ?? 0) + (score?.makeup ?? 0)
+  const rows = [
+    { label: rest ? 'التمرين 🌸' : 'التمرين', value: workout, max: WORKOUT_SHARE },
+    { label: `المية · ${formatLitres(water)} لتر`, value: score?.water ?? 0, max: SCORE_POINTS.water },
+    { label: 'السعرات', value: score?.calories ?? 0, max: SCORE_POINTS.calories },
+    ...(passed ? [{ label: 'إكسبشن 🎟️', value: passed, max: passed }] : []),
+  ]
+  return (
+    <Card>
+      <h2 className="card-title">نقاط النهارده: {score?.total ?? 0} من 100</h2>
+      <ul className="score-rows">
+        {rows.map((row) => (
+          <li key={row.label}>
+            <span>{row.label}</span>
+            <ProgressBar value={row.value} max={row.max} label={row.label} />
+            <b>{row.value}/{row.max}</b>
+          </li>
+        ))}
+      </ul>
+      <div className="summary-actions">
+        <a className="button secondary small-button" href="#/food/add"><Utensils /> سجّلي أكل</a>
+        <a className="button secondary small-button" href="#/food/water"><Droplets /> سجّلي مية</a>
+      </div>
+    </Card>
   )
 }

@@ -122,6 +122,7 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
   // Decided once per visit, so a round stays on screen while its cards turn over.
   const [specialFirst] = useState(() => specialGameOpen(state))
   const [gameFirst] = useState(() => gameOpen(state))
+  const [newPage] = useState(() => Boolean(newPagePeriod(state.periods, state.today)) && !isNewPageDismissed(state))
   const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
   const treats = treatsFor(state)
   const fresh = treats.find((treat) => !openedBefore.has(treat.id))
@@ -129,7 +130,7 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
   if (fresh) return <TreatCard treat={fresh} />
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
   if (gameFirst) return <CardGame state={state} />
-  if (newPagePeriod(state.periods, state.today) && !isNewPageDismissed(state)) return <NewPageCard state={state} />
+  if (newPage) return <NewPageCard state={state} />
   if (yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date)) {
     return (
       <Card className="soft-card">
