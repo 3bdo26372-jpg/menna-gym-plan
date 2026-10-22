@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Droplets, Dumbbell, Play, Utensils } from 'lucide-react'
-import { formatLitres, waterMl, WATER_TARGET_ML } from '../../shared/food'
+import { Dumbbell, Play } from 'lucide-react'
+import { waterMl, WATER_TARGET_ML } from '../../shared/food'
 import { addDays, cairoTime, dayNumberFor, formatDateLong } from '../../shared/date'
 import { BASELINE_METRICS } from '../../shared/measurements'
 import { planForDay, type WorkoutPlan } from '../../shared/program'
@@ -9,7 +9,6 @@ import { canAffordPassFor, canTakePass, isPeriodPassDate, missedWorkout, passPri
 import { newPagePeriod } from '../../shared/meals'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
-import { SCORE_POINTS, WORKOUT_SHARE } from '../../shared/scoring'
 import { CardGame, gameOpen, specialGameOpen } from '../components/CardGame'
 import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
@@ -18,7 +17,7 @@ import { FeedbackForm } from '../components/FeedbackForm'
 import { NotificationsCard } from '../components/Notifications'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
-import { Card, ProgressBar, ScoreRing, StatTile } from '../components/ui'
+import { Card, ScoreRing, StatTile } from '../components/ui'
 import { formatNumber } from '../lib/format'
 import { greetingFor } from '../lib/greetings'
 import { isTreatOpened, treatsFor } from '../lib/treats'
@@ -87,7 +86,6 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       <WorkoutLink state={state} day={today} plan={plan} />
 
-      <TodaySummary state={state} day={today} />
 
       {/* Small, and where she rates pain in the week before a period. */}
       {cycle && !isUrgent(cycle) && cycle.daysUntil !== null && cycle.daysUntil <= PRE_PERIOD_DAYS && <PeriodCard state={state} forecast={cycle} />}
@@ -143,40 +141,6 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
   }
   return <NotificationsCard state={state} />
 }
-
-/** Today's points in one card: workout, water and calories, with where to log. */
-function TodaySummary({ state, day }: { state: AppState; day: DayRecord | undefined }) {
-  const score = day?.score
-  const rest = score?.rest ?? 0
-  const workout = (score?.checkin ?? 0) + (score?.workout ?? 0) + (score?.warmupCooldown ?? 0) + (score?.feedback ?? 0) + rest
-  const water = waterMl(state.foodEntries.filter((entry) => entry.date === state.today))
-  const passed = (score?.pass ?? 0) + (score?.makeup ?? 0)
-  const rows = [
-    { label: rest ? 'التمرين 🌸' : 'التمرين', value: workout, max: WORKOUT_SHARE },
-    { label: `المية · ${formatLitres(water)} لتر`, value: score?.water ?? 0, max: SCORE_POINTS.water },
-    { label: 'السعرات', value: score?.calories ?? 0, max: SCORE_POINTS.calories },
-    ...(passed ? [{ label: 'إكسبشن 🎟️', value: passed, max: passed }] : []),
-  ]
-  return (
-    <Card>
-      <h2 className="card-title">نقاط النهارده: {score?.total ?? 0} من 100</h2>
-      <ul className="score-rows">
-        {rows.map((row) => (
-          <li key={row.label}>
-            <span>{row.label}</span>
-            <ProgressBar value={row.value} max={row.max} label={row.label} />
-            <b>{row.value}/{row.max}</b>
-          </li>
-        ))}
-      </ul>
-      <div className="summary-actions">
-        <a className="button secondary small-button" href="#/food/add"><Utensils /> سجّلي أكل</a>
-        <a className="button secondary small-button" href="#/food/water"><Droplets /> سجّلي مية</a>
-      </div>
-    </Card>
-  )
-}
-
 
 /** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
 function useCairoHour() {

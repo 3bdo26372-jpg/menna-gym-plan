@@ -4,6 +4,7 @@ import { cairoTime } from '../../shared/date'
 import { formatSleep, SLEEP_NOTE_MAX, SLEEP_QUALITIES, sleepMinutes, validateSleep, type SleepLog, type SleepQuality } from '../../shared/sleep'
 import { dailyTips, type Drink, type Tip } from '../../shared/tips'
 import type { AppState } from '../../shared/types'
+import { storage } from '../lib/storage'
 import { useAppData } from '../state/AppData'
 import { Card, ChoiceGroup, Notice } from './ui'
 
@@ -18,6 +19,9 @@ function useHour() {
   return hour
 }
 
+/** Tips she marked as read stay hidden for the rest of the day (on this phone). */
+const readKey = (date: string) => `menna-flow:tips-read:${date}`
+
 /** The home page shows the most pressing one; the rest open on a tap. */
 const HOME_TIPS = 3
 const SHOWN_FIRST = 1
@@ -28,9 +32,16 @@ export function DailyTips({ state }: { state: AppState }) {
   const [editingSleep, setEditingSleep] = useState(false)
   const [loggingSleep, setLoggingSleep] = useState(false)
   const [showAll, setShowAll] = useState(false)
-  const tips = dailyTips(state, hour).slice(0, HOME_TIPS)
+  const [read, setRead] = useState<string[]>(() => storage.getJson<string[]>(readKey(state.today)) ?? [])
+  const tips = dailyTips(state, hour).filter((tip) => !read.includes(tip.id)).slice(0, HOME_TIPS)
   const sleep = state.days.find((day) => day.date === state.today)?.sleep ?? null
   if (!tips.length && !sleep) return null
+
+  function markRead(id: string) {
+    const next = [...read, id]
+    storage.setJson(readKey(state.today), next)
+    setRead(next)
+  }
 
   return (
     <Card className="tips-card" id="section-tips">
@@ -47,6 +58,7 @@ export function DailyTips({ state }: { state: AppState }) {
                 : <button type="button" className="button secondary small-button" onClick={() => setLoggingSleep(true)}><Moon /> سجّلي نومك</button>)}
               {tip.drink && <DrinkButton date={state.today} drink={tip.drink} />}
               {tip.href && <a className="text-link" href={tip.href}>{linkLabel(tip)} <ChevronLeft /></a>}
+              {tip.id !== 'sleep-log' && <button type="button" className="link-button tip-read" onClick={() => markRead(tip.id)}><Check /> قريته</button>}
             </div>
           </li>
         ))}
