@@ -5,7 +5,10 @@ import { MEASUREMENT_FIELDS } from './measurements'
 import { DAY_TYPE_LABEL } from './program'
 import { averageDailyCalories, calorieRange, roundCalories } from './calories'
 import { formatLitres, waterMl, WATER_TARGET_ML, type FoodEntry } from './food'
-import { earnings } from './points'
+import { earnings, type EarningKind } from './points'
+import { foodNotes, foodReview, type FoodReview } from './meals'
+import { periodForecast, periodRestDates } from './period'
+import { isLateBedtime, sleepMinutes, SLEEP_GOAL_HOURS } from './sleep'
 import type { AppState, DayType, Energy, ReportKind } from './types'
 
 /**
@@ -44,6 +47,20 @@ export interface ReportData {
     /** Rough daily average from the food log, over finished days (missing in older saved reports). */
     averageCalories?: number | null
   }
+  /** Missing in reports saved before these sections existed. */
+  sleep?: {
+    nights: number
+    averageMinutes: number | null
+    /** Nights she went to sleep from 2 am on. */
+    lateNights: number
+    /** Nights under the goal by more than an hour. */
+    shortNights: number
+    byDay: { date: string; minutes: number | null; sleptAt: string | null }[]
+  }
+  period?: { restDays: number; painDays: number; averagePain: number | null; nextStart: string | null }
+  quality?: FoodReview & { notes: string[] }
+  water?: { date: string; ml: number }[]
+  points?: { total: number; bySource: Record<EarningKind, number> }
   summary: string[]
   suggestions: string[]
 }
@@ -147,6 +164,23 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
   const calories = averageDailyCalories(state.foodEntries, dateRange(start, lastRecorded).filter((date) => date < state.today)).average
 
   const activeDays = days.filter((day) => day.active).length
+  const recordedDates = days.filter((day) => day.recorded).map((day) => day.date)
+
+  // Sleep: each day holds the night before it.
+  const sleepByDay = recordedDates.map((date) => {
+    const sleep = byDate.get(date)?.sleep ?? null
+    return { date, minutes: sleep ? sleepMinutes(sleep) : null, sleptAt: sleep?.sleptAt ?? null }
+  })
+  const nights = periodDays.flatMap((day) => (day.sleep ? [day.sleep] : []))
+  const nightMinutes = nights.map(sleepMinutes)
+
+  const restDates = new Set(periodRestDates(state.periods, lastRecorded))
+  const pains = periodDays.map((day) => day.periodPain ?? 0).filter((pain) => pain > 0)
+  const review = foodReview(state.foodEntries, recordedDates.filter((date) => date < state.today || date === lastRecorded))
+  const periodEarnings = earnings(state).filter((earning) => earning.date >= start && earning.date <= lastRecorded)
+  const bySource = { water: 0, calories: 0, score: 0, streak: 0, sleep: 0 } satisfies Record<EarningKind, number>
+  for (const earning of periodEarnings) bySource[earning.kind] += earning.points
+
   const report: ReportData = {
     programName: 'Menna Flow',
     kind,
@@ -178,11 +212,27 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
       waterTargetMl: WATER_TARGET_ML,
       averageCalories: calories === null ? null : roundCalories(calories),
     },
+    sleep: {
+      nights: nights.length,
+      averageMinutes: nightMinutes.length ? Math.round(nightMinutes.reduce((sum, minutes) => sum + minutes, 0) / nightMinutes.length) : null,
+      lateNights: nights.filter(isLateBedtime).length,
+      shortNights: nightMinutes.filter((minutes) => minutes < (SLEEP_GOAL_HOURS - 1) * 60).length,
+      byDay: sleepByDay,
+    },
+    period: {
+      restDays: recordedDates.filter((date) => restDates.has(date)).length,
+      painDays: pains.length,
+      averagePain: pains.length ? round1(pains.reduce((sum, pain) => sum + pain, 0) / pains.length) : null,
+      nextStart: state.periods ? periodForecast(state.periods, lastRecorded).nextStart : null,
+    },
+    quality: { ...review, notes: foodNotes(review) },
+    water: recordedDates.map((date) => ({ date, ml: waterMl(foodInPeriod.filter((entry) => entry.date === date)) })),
+    points: { total: periodEarnings.reduce((sum, earning) => sum + earning.points, 0), bySource },
     summary: [],
     suggestions: [],
   }
   report.summary = writeSummary(report, recordedCount, withWorkout.map((day) => day.workout!.dayType))
-  const points = earnings(state).filter((earning) => earning.date >= start && earning.date <= lastRecorded).reduce((sum, earning) => sum + earning.points, 0)
+  const points = report.points!.total
   const passes = state.dayPasses.filter((pass) => pass.date >= start && pass.date <= end).length
   if (points) report.summary.push(`كسبتي ${points} نقطة في الفترة دي.`)
   if (passes) report.summary.push(`استخدمتي ${passes} إكسبشن.`)
@@ -206,6 +256,8 @@ function writeSummary(report: ReportData, recordedCount: number, dayTypes: DayTy
   else if (weight?.change) lines.push(`الوزن اتغير ${signed(weight.change, 'كجم')}؛ الوزن بيتذبذب طبيعي، والقياسات بتوضح الصورة أكتر.`)
   if (waist?.change !== null && waist?.change !== undefined && waist.change < 0) lines.push(`مقاس الوسط قلّ ${Math.abs(waist.change)} سم.`)
   if (report.favoriteExercises[0]) lines.push(`التمرين المفضّل: ${report.favoriteExercises[0].name}.`)
+  if (report.sleep?.nights) lines.push(`سجّلتي نومك ${report.sleep.nights} ليلة، ومتوسط نومك ${Math.floor(report.sleep.averageMinutes! / 60)} ساعات و${report.sleep.averageMinutes! % 60} دقيقة.`)
+  if (report.period?.restDays) lines.push(`${report.period.restDays} يوم كانوا بريود واتحسبوا لك أيام تمرين لوحدهم 🌸`)
   if (report.food.loggedDays) {
     lines.push(`سجّلتي أكلك وشربك في ${report.food.loggedDays} يوم (${report.food.entries} تسجيل).`)
     if (report.food.averageWaterMl !== null) lines.push(`متوسط شرب المية ${formatLitres(report.food.averageWaterMl)} لتر في اليوم.`)
@@ -230,6 +282,9 @@ function writeSuggestions(report: ReportData, recordedCount: number, painCount: 
   if (painCount > 0) suggestions.push('لو الألم اتكرر في نفس المكان، خففي الحركة دي واستشيري مختص لو استمر.')
   if (recordedCount && report.food.loggedDays < recordedCount * 0.5) suggestions.push('سجّلي أكلك وشربك كل يوم ولو باختصار؛ ده بيوضح إيه اللي بيساعدك.')
   if (report.food.averageWaterMl !== null && report.food.averageWaterMl < report.food.waterTargetMl) suggestions.push('زوّدي المية تدريجيًا لحد ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.')
+  if (report.sleep && report.sleep.nights < recordedCount * 0.5) suggestions.push('سجّلي نومك كل يوم الصبح؛ كل ليلة عليها نقط، وبتوضح إيه اللي بيتعبك.')
+  else if (report.sleep?.lateNights) suggestions.push('حاولي تنامي قبل الساعة ٢؛ النوم بدري بيقلل الجوع بالليل ويرفع طاقة التمرين.')
+  if (report.quality?.notes[0]) suggestions.push(report.quality.notes[0])
   suggestions.push('نوم كفاية ومية وأكل متوازن بيساعدوا جسمك يستفيد من كل تمرين.')
-  return suggestions.slice(0, 6)
+  return suggestions.slice(0, 7)
 }

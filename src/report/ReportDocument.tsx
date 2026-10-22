@@ -2,10 +2,13 @@ import { forwardRef } from 'react'
 import { formatDateFull, formatDateShort } from '../../shared/date'
 import { FOOD_CATEGORIES, formatLitres } from '../../shared/food'
 import { energyLabel, REPORT_LABEL, type ReportData } from '../../shared/report'
+import { MEASUREMENT_FIELD_BY_KEY } from '../../shared/measurements'
+import { formatSleep, SLEEP_GOAL_HOURS } from '../../shared/sleep'
 import { formatChange, formatNumber } from '../lib/format'
 import { scoreLevel } from '../components/ScoreCalendar'
 
-const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly'])
+const LOWER_IS_PROGRESS = new Set(['weight', 'bodyFat', 'waist', 'belly', 'bmi', 'fatMass', 'visceralFat', 'bodyAge'])
+const POINT_LABELS = { water: '💧 المية', calories: '🥗 السعرات', score: '⭐ نقط اليوم', streak: '🏃‍♀️ أيام ورا بعض', sleep: '😴 تسجيل النوم' } as const
 const FOOD_EMOJI = Object.fromEntries(FOOD_CATEGORIES.map((category) => [category.id, `${category.emoji} ${category.label}`]))
 /** Rows that fit on one food-log page (a day heading counts as two). */
 const FOOD_ROWS_PER_PAGE = 30
@@ -48,7 +51,10 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
   const label = REPORT_LABEL[kind]
   const food = report.food ?? { days: [], loggedDays: 0, entries: 0, averageWaterMl: null, waterTargetMl: 2000 }
   const foodPages = paginateFood(food.days)
-  const totalPages = 2 + Math.max(1, foodPages.length)
+  const health = Boolean(report.sleep)
+  const totalPages = 3 + (health ? 1 : 0) + Math.max(1, foodPages.length)
+  const body = report.measurements.filter((row) => !MEASUREMENT_FIELD_BY_KEY[row.key]?.scale)
+  const scale = report.measurements.filter((row) => MEASUREMENT_FIELD_BY_KEY[row.key]?.scale)
   const footer = (page: number) => <footer className="report-footer">Menna Flow · تقرير شخصي للمتابعة، مش تقرير طبي · صفحة {page} من {totalPages}</footer>
   return (
     <div className="report-doc" ref={ref} dir="rtl" lang="ar">
@@ -94,24 +100,23 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
 
       <section className="report-page">
         <h2>القياسات: بداية {label} ← نهايته</h2>
-        <table className="report-table">
-          <thead><tr><th>القياس</th><th>البداية</th><th>النهاية</th><th>الفرق</th></tr></thead>
-          <tbody>
-            {report.measurements.map((row) => (
-              <tr key={row.key}>
-                <th>{row.label} <small>{row.unit}{row.estimate ? ' · تقدير' : ''}</small></th>
-                <td>{formatNumber(row.start)}</td>
-                <td>{formatNumber(row.end)}</td>
-                <td className={row.change !== null && row.change < 0 && LOWER_IS_PROGRESS.has(row.key) ? 'change-good' : ''}>{formatChange(row.change, row.unit)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <MeasureTable rows={body} />
+        {scale.some((row) => row.start !== null || row.end !== null) && (
+          <>
+            <h2>تكوين الجسم من الميزان الذكي</h2>
+            <MeasureTable rows={scale} />
+          </>
+        )}
         <p className="report-note">
           اتجاه نسبة الدهون: {report.bodyFatTrend.length ? report.bodyFatTrend.map((point) => `${formatDateShort(point.date)}: ${point.value}%`).join(' ← ') : 'مفيش قياسات للدهون في الفترة دي.'}
-          {' '}(قيم الميزان الذكي تقديرية.)
+          {' '}(قيم الميزان الذكي تقديرية؛ تتابع كاتجاه.)
         </p>
+        {footer(2)}
+      </section>
 
+      {health && <HealthPage report={report} footer={footer(3)} />}
+
+      <section className="report-page">
         <div className="report-columns">
           <div>
             <h3>أكتر التمارين تكرارًا</h3>
@@ -127,6 +132,17 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
           </div>
         </div>
 
+        {report.points && (
+          <>
+            <h2>النقط: {report.points.total} نقطة</h2>
+            <div className="report-points">
+              {(Object.keys(POINT_LABELS) as (keyof typeof POINT_LABELS)[]).map((key) => (
+                <div key={key}><span>{POINT_LABELS[key]}</span><b>{report.points!.bySource[key] ?? 0}</b></div>
+              ))}
+            </div>
+          </>
+        )}
+
         <h2>المكافآت</h2>
         {report.rewardsUnlocked.length
           ? <ul className="report-bullets">{report.rewardsUnlocked.map((reward) => <li key={reward.title}>{reward.emoji} {reward.title} — {formatDateFull(reward.unlockedOn)}</li>)}</ul>
@@ -136,7 +152,7 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
         <ul className="report-bullets">
           {report.suggestions.map((line) => <li key={line}>{line}</li>)}
         </ul>
-        {footer(2)}
+        {footer(health ? 4 : 3)}
       </section>
 
       {(foodPages.length ? foodPages : [[]]).map((page, index) => (
@@ -168,12 +184,98 @@ export const ReportDocument = forwardRef<HTMLDivElement, { report: ReportData }>
               </table>
             </div>
           ))}
-          {footer(3 + index)}
+          {footer((health ? 5 : 4) + index)}
         </section>
       ))}
     </div>
   )
 })
+
+function MeasureTable({ rows }: { rows: ReportData['measurements'] }) {
+  return (
+    <table className="report-table">
+      <thead><tr><th>القياس</th><th>البداية</th><th>النهاية</th><th>الفرق</th></tr></thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key}>
+            <th>{row.label} <small>{row.unit}{row.estimate ? ' · تقدير' : ''}</small></th>
+            <td>{formatNumber(row.start)}</td>
+            <td>{formatNumber(row.end)}</td>
+            <td className={row.change !== null && row.change < 0 && LOWER_IS_PROGRESS.has(row.key) ? 'change-good' : ''}>{formatChange(row.change, row.unit)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+/** Bars for each day of the period, tallest at `max`; an empty day shows as a dash. */
+function DayBars({ values, max, goal, label }: { values: { date: string; value: number | null; text: string }[]; max: number; goal: number; label: string }) {
+  return (
+    <div className="report-bars" aria-label={label}>
+      <span className="report-bars-goal" style={{ bottom: `${(Math.min(goal, max) / max) * 100}%` }} />
+      {values.map((day) => (
+        <div key={day.date} className="report-bar">
+          <span className="report-bar-fill" style={{ height: `${day.value === null ? 0 : Math.max(4, (Math.min(day.value, max) / max) * 100)}%` }} />
+          <small>{day.value === null ? '—' : day.text}</small>
+          <i>{formatDateShort(day.date).split(' ')[0]}</i>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Sleep, water, how she ate, and the period: one page of how her days went. */
+function HealthPage({ report, footer }: { report: ReportData; footer: React.ReactNode }) {
+  const sleep = report.sleep!
+  const quality = report.quality
+  const period = report.period
+  const water = report.water ?? []
+  return (
+    <section className="report-page">
+      <h2>😴 النوم</h2>
+      <div className="report-kpis report-food-kpis">
+        <div><span>ليالي متسجلة</span><strong>{sleep.nights}<small> / {sleep.byDay.length}</small></strong></div>
+        <div><span>متوسط النوم</span><strong className="kpi-text">{sleep.averageMinutes === null ? '—' : formatSleep(sleep.averageMinutes)}</strong></div>
+        <div><span>سهر بعد ٢</span><strong>{sleep.lateNights}</strong></div>
+        <div><span>أقل من {SLEEP_GOAL_HOURS - 1} ساعات</span><strong>{sleep.shortNights}</strong></div>
+      </div>
+      {sleep.nights > 0 && (
+        <DayBars label="ساعات النوم" max={10 * 60} goal={SLEEP_GOAL_HOURS * 60}
+          values={sleep.byDay.map((day) => ({ date: day.date, value: day.minutes, text: day.minutes === null ? '' : `${Math.round(day.minutes / 30) / 2}` }))} />
+      )}
+
+      <h2>💧 المية كل يوم</h2>
+      <DayBars label="المية باللتر" max={3000} goal={report.food.waterTargetMl}
+        values={water.map((day) => ({ date: day.date, value: day.ml || null, text: formatLitres(day.ml) }))} />
+
+      {quality && (
+        <>
+          <h2>🍽️ الأكل</h2>
+          <div className="report-kpis report-food-kpis">
+            <div><span>أكل جاهز وإندومي</span><strong>{quality.junk}<small> مرة</small></strong></div>
+            <div><span>مشروبات بالسكر</span><strong>{quality.sugary}<small> مرة</small></strong></div>
+            <div><span>أول أكلة بعد العصر</span><strong>{quality.lateFirstMeal}<small> يوم</small></strong></div>
+            <div><span>وجبات فيها خضار</span><strong>{quality.veg}</strong></div>
+          </div>
+          {quality.notes.length > 0 && <ul className="report-bullets">{quality.notes.map((note) => <li key={note}>{note}</li>)}</ul>}
+        </>
+      )}
+
+      {period && (
+        <>
+          <h2>🌸 البريود</h2>
+          <ul className="report-bullets">
+            <li>{period.restDays ? `${period.restDays} يوم بريود اتحسبوا أيام تمرين لوحدهم.` : 'مفيش أيام بريود في الفترة دي.'}</li>
+            {period.painDays > 0 && <li>اتسجل وجع في {period.painDays} يوم، ومتوسطه {period.averagePain} من 10.</li>}
+            {period.nextStart && <li>البريود الجاي متوقع يوم {formatDateFull(period.nextStart)}.</li>}
+          </ul>
+        </>
+      )}
+      {footer}
+    </section>
+  )
+}
 
 function ExerciseList({ items, unit, empty }: { items: { id: string; name: string; count: number }[]; unit: string; empty: string }) {
   if (!items.length) return <p className="report-note">{empty}</p>

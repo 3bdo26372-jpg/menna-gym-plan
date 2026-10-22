@@ -40,3 +40,13 @@
 .food-time-cell { width: 58px; direction: ltr; text-align: left !important; color: var(--muted); font-variant-numeric: tabular-nums; }
 .food-cat-cell { width: 92px; white-space: nowrap; }
 .food-qty-cell { color: var(--muted); width: 150px; }
+.report-bars { position: relative; height: 150px; display: flex; align-items: stretch; gap: 3px; padding: 0 2px 30px; border-bottom: 1px solid var(--line); }
+.report-bars-goal { position: absolute; inset-inline: 0; height: 0; border-top: 2px dashed rgba(159, 45, 100, 0.45); margin-bottom: 30px; }
+.report-bar { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+.report-bar-fill { width: 70%; border-radius: 6px 6px 2px 2px; background: linear-gradient(180deg, #d9709f, #9f2d64); }
+.report-bar small { position: absolute; bottom: -16px; font: 700 9px var(--font-num); color: var(--ink); white-space: nowrap; }
+.report-bar i { position: absolute; bottom: -28px; font: 600 9px var(--font-num); font-style: normal; color: var(--muted); }
+.report-points { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.report-points div { padding: 10px; border-radius: 12px; background: #faf5f7; display: grid; gap: 2px; text-align: center; }
+.report-points span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.report-points b { font: 800 22px var(--font-num); color: var(--berry-dark); }

@@ -29,7 +29,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - **`src/`**: the React app.
   - Pages: `pages/` (Today, Training, Sleep, Progress, Food, Measurements, Rewards, Reports, Period).
   - Workout player: `workout/`.
-  - Monthly PDF: `report/`, rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
+  - Weekly and monthly PDF: `report/` (summary and score calendar; body measurements and the smart-scale readings; sleep, daily water, how she ate and the period; exercises, points by source, rewards and suggestions; then the food log), rendered in the browser so Arabic text shapes correctly, then exported with `html-to-image` + `jsPDF`.
   - Persistence goes through the `Backend` interface in `lib/backend.ts`:
     - `httpBackend.ts` talks to the Worker.
     - `localBackend.ts` is a **development-only fallback** (browser localStorage), used when `VITE_API_URL` is not set. A banner says so.
