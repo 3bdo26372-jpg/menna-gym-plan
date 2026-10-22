@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, RefreshCw } from 'lucide-react'
 import { addDays, cairoTime } from '../../shared/date'
 import { FOOD_CATEGORIES } from '../../shared/food'
@@ -13,52 +13,52 @@ import { Card, ChoiceGroup, Notice } from './ui'
 const MEAL_OPTIONS = FOOD_CATEGORIES.filter((category) => category.id !== 'drink')
   .map((category) => ({ value: category.id as MealCategory, label: category.label, emoji: category.emoji }))
 
-const dismissedKey = (periodId: number) => `menna-flow:new-page:${periodId}`
+const seenKey = (periodId: number) => `menna-flow:new-page:${periodId}`
 /** The card keeps to the few notes that matter most. */
 const MAX_NOTES = 3
 
-/** Whether she already tapped "يلا بينا" for the latest period, on this phone. */
+/** What the card says after a period, one line per visit, in this order. */
+function newPageMessages(state: AppState) {
+  const dates = Array.from({ length: REVIEW_DAYS }, (_, index) => addDays(state.today, -(index + 1)))
+    .filter((date) => state.days.some((day) => day.date === date))
+  const notes = foodNotes(foodReview(state.foodEntries, dates)).slice(0, MAX_NOTES)
+  return [
+    'جسمك دلوقتي في أحلى أيامه: طاقة أعلى وبيحرق أحسن 💪',
+    ...(notes.length ? notes.map((note) => `🍽️ ${note}`) : ['🍽️ أكلك الأيام اللي فاتت كان حلو، كمّلي كده 😍']),
+    `😴 تسجيل النوم بقى عليه ${EARN.sleep} نقط كل يوم 🎁`,
+  ]
+}
+
+/** How many of the card's lines she has seen for the latest period, on this phone. */
+const seenCount = (periodId: number) => Number(storage.get(seenKey(periodId)) ?? 0) || 0
+
+/** Whether she has already seen every line of the card for the latest period. */
 export function isNewPageDismissed(state: AppState) {
   const period = newPagePeriod(state.periods, state.today)
-  return period ? storage.get(dismissedKey(period.id)) === '1' : false
+  return period ? seenCount(period.id) >= newPageMessages(state).length : false
 }
 
 /**
  * "صفحة جديدة": once she marks a period as ended, the home page starts the
- * next days fresh: a word on how she ate lately, and meals to pick from one
- * tap away. It stays until she taps "يلا بينا", for up to a week after the end.
+ * next days fresh. Each visit shows one short line, the next one each time
+ * she comes back, until she has seen them all; then the card is gone.
  */
 export function NewPageCard({ state }: { state: AppState }) {
   const period = newPagePeriod(state.periods, state.today)
-  const [dismissed, setDismissed] = useState(() => isNewPageDismissed(state))
-  const [showMeals, setShowMeals] = useState(false)
-  if (!period || dismissed) return null
+  // The line for this visit is fixed when the card appears; the next visit gets the next one.
+  const [index] = useState(() => (period ? seenCount(period.id) : 0))
+  useEffect(() => {
+    if (period) storage.set(seenKey(period.id), String(index + 1))
+  }, [period, index])
+  const messages = newPageMessages(state)
+  if (!period || index >= messages.length) return null
 
   const seed = [...state.today].reduce((sum, char) => sum + char.charCodeAt(0), 0)
   const nick = NICKNAMES[seed % NICKNAMES.length]
-  const dates = Array.from({ length: REVIEW_DAYS }, (_, index) => addDays(state.today, -(index + 1)))
-    .filter((date) => state.days.some((day) => day.date === date))
-  const notes = foodNotes(foodReview(state.foodEntries, dates)).slice(0, MAX_NOTES)
-
-  function dismiss() {
-    storage.set(dismissedKey(period!.id), '1')
-    setDismissed(true)
-  }
-
   return (
     <Card className="new-page-card">
       <h2 className="card-title">{withNickname('خلص البريود، يلا نبدأ صفحة جديدة يا {nick} 🤍', nick)}</h2>
-      <p>جسمك دلوقتي في أحلى أيامه: طاقة أعلى وبيحرق أحسن 💪 وتسجيل النوم بقى عليه {EARN.sleep} نقط كل يوم 🎁</p>
-      {notes.length > 0 ? (
-        <div className="new-page-notes">
-          <strong>🍽️ بس خليني أقولك على الأكل بصراحة:</strong>
-          <ul>{notes.map((note) => <li key={note}>{note}</li>)}</ul>
-        </div>
-      ) : <p className="muted">أكلك الأيام اللي فاتت كان حلو، كمّلي كده 😍</p>}
-      {showMeals
-        ? <MealIdeas state={state} />
-        : <button type="button" className="button secondary" onClick={() => setShowMeals(true)}>🍽️ اختاري أكلك النهارده</button>}
-      <button type="button" className="button primary" onClick={dismiss}>يلا بينا 💪</button>
+      <p>{messages[index]}</p>
     </Card>
   )
 }
