@@ -2,6 +2,7 @@ import { unusedGifts } from './dayPasses'
 import { waterMl } from './food'
 import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest, periodForecast } from './period'
+import { PILL_SLOTS, pillsOn, pillTaken } from './pills'
 import { EARN, WATER_GOAL_ML } from './points'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import type { AppState } from './types'
@@ -18,9 +19,12 @@ import type { AppState } from './types'
  * - workout, from 21:00: no workout yet, and not a period or pain-rest day
  * - missed, from 18:00: nothing at all logged today, so she hears that his
  *   program misses her
+ * - pills: until she has said when to be reminded, she is asked at 18:00 and
+ *   once more at 21:00; then each pill at the time she picked, every day up to
+ *   her last day, and once more 45 minutes later if she hasn't ticked it off
  * A gift pass added after she turned notifications on is announced once, any time of day.
  */
-export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed'
+export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed' | 'pillsAsk'
 
 export interface Reminder {
   /** Key for "already sent": the reminder kind, or `gift-<id>`. */
@@ -37,7 +41,13 @@ export const REMINDER_WINDOWS: Record<ReminderKind, { from: string; until: strin
   water: { from: '05:00', until: '23:30' },
   workout: { from: '21:00', until: '23:30' },
   missed: { from: '18:00', until: '23:30' },
+  pillsAsk: { from: '18:00', until: '23:30' },
 }
+/** The second ask, when she hasn't answered the first. */
+const PILLS_ASK_AGAIN = '21:00'
+/** A pill's reminder goes out up to this long after its time, and the nudge this long after it. */
+const PILL_WINDOW_MIN = 3 * 60
+const PILL_AGAIN_MIN = 45
 /** The day's water as glasses, spread from waking up to the end of the water window. */
 export const GLASS_ML = 250
 export const GLASSES = WATER_GOAL_ML / GLASS_ML
@@ -117,6 +127,26 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
   const period = periodForecast(state.periods ?? [], state.today).phase === 'period'
   if (inWindow('workout', time) && !trained && !day.excused && !period && !isPainRest(day.periodPain)) {
     add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body: 'ربع ساعة بس وتخلصي، وبعدها نامي بدري 🌙', url: '/#/training' })
+  }
+
+  // Pills: ask when to remind her until she says, then remind her of each one.
+  if (state.pillPlan === null && inWindow('pillsAsk', time)) {
+    add({ key: 'pills-ask', title: 'عندك برشامتين يا {nick} 💊', body: 'واحدة بعد الفطار وواحدة بعد الغدا. قوليلي أفكرك بيهم الساعة كام وهتاخديهم لحد امتى، وأنا هفكرك كل يوم 🤍', url: '/#/pills' })
+    if (time >= PILLS_ASK_AGAIN && sent.has('pills-ask')) {
+      add({ key: 'pills-ask-again', title: 'لسه مستني ردك يا {nick} 💊', body: 'أفكرك بالبرشام امتى؟ اختاري الميعاد وأنا عليا الباقي 🤍', url: '/#/pills' })
+    }
+  }
+  const pills = state.pillPlan
+  if (pillsOn(pills, state.today)) {
+    PILL_SLOTS.forEach((slot, index) => {
+      const since = now - minutesOf(pills.times[index])
+      if (since < 0 || since >= PILL_WINDOW_MIN || pillTaken(state.pillDoses, state.today, index)) return
+      const last = pills.until === state.today ? ' النهارده آخر يوم 🎉' : ''
+      add({ key: `pill-${index}`, title: `وقت برشامة ${slot.label} يا {nick} 💊`, body: `خديها دلوقتي ودوسي «خدتها» في البرنامج ✅${last}`, url: '/#/pills' })
+      if (since >= PILL_AGAIN_MIN && sent.has(`pill-${index}`)) {
+        add({ key: `pill-${index}-again`, title: `خدتي برشامة ${slot.label}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
+      }
+    })
   }
 
   for (const gift of unusedGifts(state).filter((item) => item.createdAt > giftsAfter)) {

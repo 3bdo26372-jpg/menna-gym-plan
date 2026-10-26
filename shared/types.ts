@@ -4,6 +4,7 @@ import type { DayPass, PassGift } from './dayPasses'
 import type { PeriodEntry } from './period'
 import type { SleepLog } from './sleep'
 import type { GamePlay, GameSpecial } from './game'
+import type { PillDose, PillPlan } from './pills'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -147,6 +148,10 @@ export interface AppState {
   gamePlays?: GamePlay[]
   /** Extra rounds he gives her, like the roses; missing while the app is newer than the API. */
   gameSpecials?: GameSpecial[]
+  /** When to remind her of her pills; null until she says. Missing while the app is newer than the API. */
+  pillPlan?: PillPlan | null
+  /** The pills she ticked off. */
+  pillDoses?: PillDose[]
 }
 
 export interface MeasurementInput {

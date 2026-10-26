@@ -19,6 +19,7 @@ import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/
 import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasses'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
+import type { PillDose, PillPlan } from '../../shared/pills'
 import { PRIZES, toPrizeId, type GamePlay, type GameSpecial, type SpecialKind } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
@@ -88,8 +89,11 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
     db.prepare('SELECT round, log_date, pick, cards, created_at FROM game_plays ORDER BY round'),
     db.prepare('SELECT id, kind, created_at FROM game_specials ORDER BY id'),
+    db.prepare('SELECT times, until_date, updated_at FROM pill_plan WHERE id = 1'),
+    db.prepare('SELECT log_date, slot, taken_at FROM pill_doses ORDER BY log_date, slot'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses] = fill ? results.slice(1) : results
+  const plan = pillPlan.results[0]
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -222,7 +226,20 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       createdAt: String(row.created_at),
     })),
     gameSpecials: specials.results.map((row): GameSpecial => ({ id: Number(row.id), kind: row.kind as SpecialKind, createdAt: String(row.created_at) })),
+    pillPlan: plan ? { times: JSON.parse(String(plan.times)) as string[], until: (plan.until_date as string | null) ?? null, updatedAt: String(plan.updated_at) } satisfies PillPlan : null,
+    pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), slot: Number(row.slot), takenAt: String(row.taken_at) })),
   }
+}
+
+export async function savePillPlan(db: D1Database, plan: Omit<PillPlan, 'updatedAt'>) {
+  await db.prepare('INSERT INTO pill_plan (id, times, until_date, updated_at) VALUES (1, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET times = excluded.times, until_date = excluded.until_date, updated_at = excluded.updated_at')
+    .bind(JSON.stringify(plan.times), plan.until, now()).run()
+}
+
+export async function savePillDose(db: D1Database, date: string, slot: number, taken: boolean) {
+  await (taken
+    ? db.prepare('INSERT OR IGNORE INTO pill_doses (log_date, slot, taken_at) VALUES (?, ?, ?)').bind(date, slot, now())
+    : db.prepare('DELETE FROM pill_doses WHERE log_date = ? AND slot = ?').bind(date, slot)).run()
 }
 
 /** Store the day's score and unlock any rewards it earned. */

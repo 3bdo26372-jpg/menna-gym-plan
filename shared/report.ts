@@ -152,11 +152,11 @@ export function buildReport(state: AppState, kind: ReportKind, periodIndex: numb
   const foodInPeriod = state.foodEntries.filter((entry) => entry.date >= start && entry.date <= lastRecorded)
   const foodDays = dateRange(start, lastRecorded)
     .map((date) => {
-      const entries = foodInPeriod
-        .filter((entry) => entry.date === date)
+      const day = foodInPeriod.filter((entry) => entry.date === date)
+      const entries = [...day]
         .sort((a, b) => a.time.localeCompare(b.time) || a.id - b.id)
         .map(({ time, category, item, quantity, ml }) => ({ time, category, item, quantity, ml }))
-      return { date, entries, waterMl: waterMl(entries) }
+      return { date, entries, waterMl: waterMl(day) }
     })
     .filter((day) => day.entries.length > 0)
   const waterDays = foodDays.filter((day) => day.waterMl > 0)

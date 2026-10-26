@@ -8,6 +8,7 @@ import { validatePass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared/period'
 import { validateSleep } from '../../shared/sleep'
 import { dealCards, validatePlay } from '../../shared/game'
+import { validatePillDose, validatePillPlan } from '../../shared/pills'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
@@ -25,6 +26,8 @@ import {
   markCelebrated,
   refreshDerived,
   saveCheckin,
+  savePillDose,
+  savePillPlan,
   saveFeedback,
   savePeriodPain,
   saveSleep,
@@ -239,6 +242,23 @@ async function route(request: Request, env: Env): Promise<Response> {
       await deletePeriod(env.DB, entry.id)
       return json(await afterWrite(env, today))
     }
+  }
+
+  // Pills don't touch the score either.
+  if (method === 'PUT' && path === '/api/pills') {
+    const plan = validatePillPlan(await body(request), today)
+    if (typeof plan === 'string') throw new HttpError(400, plan)
+    await savePillPlan(env.DB, plan)
+    return json(await afterWrite(env, today))
+  }
+  const pill = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/pills$/)
+  if (pill && method === 'PUT') {
+    const state = await loadState(env.DB, today)
+    requireWritable(state, pill[1])
+    const dose = validatePillDose(await body(request))
+    if (typeof dose === 'string') throw new HttpError(400, dose)
+    await savePillDose(env.DB, pill[1], dose.slot, dose.taken)
+    return json(await afterWrite(env, today))
   }
 
   // Push notifications: the app asks for the public key, then sends its subscription.

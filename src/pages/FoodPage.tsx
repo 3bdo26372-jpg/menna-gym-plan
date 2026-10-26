@@ -74,7 +74,7 @@ function WaterCard({ date, entries }: { date: string; entries: FoodEntry[] }) {
     <Card id="section-water">
       <h2 className="card-title"><Droplets /> المية: {formatLitres(total)} لتر</h2>
       <ProgressBar value={total} max={WATER_TARGET_ML} label="المية من الهدف" />
-      <p className="muted small">الهدف ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم.</p>
+      <p className="muted small">الهدف ٢–٢٫٥ لتر في اليوم، رشفات على مدار اليوم. أي مشروب بتشربيه بيتحسب معاكي هنا (شاي، لمون، عصير…)، ولو مكتبتيش الكمية بيتحسب كوباية 💧</p>
       <p className="water-points-line">
         💧 {total >= WATER_GOAL_ML ? `وصلتي 2.5 لتر: +${EARN.water} نقط ✓` : `وصلي 2.5 لتر = +${EARN.water} نقط (فاضل ${formatLitres(WATER_GOAL_ML - total)} لتر)`} · رصيدك {balance} · <a href="#/rewards/points">نقطك</a>
       </p>

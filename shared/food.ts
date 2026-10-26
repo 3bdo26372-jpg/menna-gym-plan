@@ -38,8 +38,33 @@ export function isWater(entry: Pick<FoodEntry, 'category' | 'item'>) {
   return entry.category === 'drink' && WATER_WORDS.some((word) => entry.item.toLowerCase().includes(word))
 }
 
-export function waterMl(entries: Pick<FoodEntry, 'category' | 'item' | 'ml'>[]) {
-  return entries.filter(isWater).reduce((sum, entry) => sum + (entry.ml ?? 0), 0)
+/**
+ * From this day on every drink counts toward her water, not only plain water:
+ * tea, juice, lemon with honey… A drink logged without millilitres counts as a
+ * cup, or a can or a bottle when it says so.
+ */
+export const FLUIDS_FROM = '2026-10-26'
+export const CUP_ML = 250
+const SIZES: { words: string[]; ml: number }[] = [
+  { words: ['كانز', 'كانس', 'علبه', 'علبة', 'can'], ml: 330 },
+  { words: ['ازازه', 'ازازة', 'إزازة', 'زجاجه', 'زجاجة', 'بوتل', 'bottle'], ml: 500 },
+]
+
+type DrinkFields = Pick<FoodEntry, 'date' | 'category' | 'item' | 'quantity' | 'ml'>
+
+/** Whether a log entry counts toward the day's water. */
+export const countsAsWater = (entry: Pick<FoodEntry, 'date' | 'category' | 'item'>) => isWater(entry) || (entry.category === 'drink' && entry.date >= FLUIDS_FROM)
+
+/** How much a drink counts for: its millilitres, or a guess from how it was described. */
+export function drinkMl(entry: DrinkFields) {
+  if (entry.ml) return entry.ml
+  if (entry.date < FLUIDS_FROM) return 0
+  const text = `${entry.item} ${entry.quantity ?? ''}`.toLowerCase()
+  return SIZES.find((size) => size.words.some((word) => text.includes(word)))?.ml ?? CUP_ML
+}
+
+export function waterMl(entries: DrinkFields[]) {
+  return entries.filter(countsAsWater).reduce((sum, entry) => sum + drinkMl(entry), 0)
 }
 
 export function validateFood(input: unknown): Omit<FoodInput, 'quantity' | 'ml'> & { quantity: string | null; ml: number | null } | string {
