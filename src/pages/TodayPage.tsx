@@ -15,6 +15,7 @@ import { DailyTips } from '../components/DailyTips'
 import { isNewPageDismissed, NewPageCard } from '../components/NewPage'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { NotificationsCard } from '../components/Notifications'
+import { PillsCard } from '../components/Pills'
 import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
 import { Card, ScoreRing, StatTile } from '../components/ui'
@@ -81,6 +82,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       {recentPain && <SafetyNote compact />}
       {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
       <Highlight state={state} yesterday={yesterday} />
+      <PillsCard state={state} />
 
       <DailyTips state={state} />
 

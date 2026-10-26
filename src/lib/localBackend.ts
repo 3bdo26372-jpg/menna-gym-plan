@@ -11,6 +11,7 @@ import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } 
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { validateSleep, type SleepLog } from '../../shared/sleep'
 import { dealCards, toPrizeId, validatePlay, type GamePlay, type GameSpecial } from '../../shared/game'
+import { validatePillDose, validatePillPlan, type PillDose, type PillPlan } from '../../shared/pills'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -34,6 +35,8 @@ interface LocalDb {
   periods?: PeriodEntry[]
   gamePlays?: GamePlay[]
   gameSpecials?: GameSpecial[]
+  pillPlan?: PillPlan | null
+  pillDoses?: PillDose[]
 }
 
 function freshDb(): LocalDb {
@@ -86,6 +89,8 @@ function toState(db: LocalDb): AppState {
     periods: [...(db.periods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     gamePlays: (db.gamePlays ?? []).map((play) => ({ ...play, cards: play.cards.map(toPrizeId) })),
     gameSpecials: db.gameSpecials ?? [],
+    pillPlan: db.pillPlan ?? null,
+    pillDoses: db.pillDoses ?? [],
   }
 }
 
@@ -234,6 +239,25 @@ export function createLocalBackend(): Backend {
     deletePeriod: (id) => attempt(() => {
       const db = load()
       db.periods = (db.periods ?? []).filter((item) => item.id !== id)
+      save(db)
+      return toState(db)
+    }),
+    savePillPlan: (input) => attempt(() => {
+      const db = load()
+      const plan = validatePillPlan(input, cairoDate())
+      if (typeof plan === 'string') return fail(400, plan)
+      db.pillPlan = { ...plan, updatedAt: new Date().toISOString() }
+      save(db)
+      return toState(db)
+    }),
+    savePillDose: (date, slot, taken) => attempt(() => {
+      const db = load()
+      const problem = checkWritableDate(date, cairoDate(), db.programStartDate)
+      if (problem) return fail(400, problem)
+      const dose = validatePillDose({ slot, taken })
+      if (typeof dose === 'string') return fail(400, dose)
+      const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.slot !== dose.slot)
+      db.pillDoses = dose.taken ? [...others, { date, slot: dose.slot, takenAt: new Date().toISOString() }] : others
       save(db)
       return toState(db)
     }),

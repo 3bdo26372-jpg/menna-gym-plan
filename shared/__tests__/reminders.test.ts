@@ -87,4 +87,35 @@ describe('push reminders', () => {
     const [sleep] = dueReminders(state(), '13:00', none, '')
     expect(sleep.title).not.toContain('{nick}')
   })
+
+  describe('pills', () => {
+    const plan = { times: ['16:00', '22:00'], until: null, updatedAt: '' }
+    const pills = (list: { key: string }[]) => keys(list).filter((key) => key.startsWith('pill'))
+
+    it('asks when to remind her at 18:00, and once more at 21:00, until she says', () => {
+      expect(pills(dueReminders(state({}, { pillPlan: null }), '17:45', none, ''))).toEqual([])
+      expect(pills(dueReminders(state({}, { pillPlan: null }), '18:00', none, ''))).toEqual(['pills-ask'])
+      expect(pills(dueReminders(state({}, { pillPlan: null }), '21:00', new Set(['pills-ask']), ''))).toEqual(['pills-ask-again'])
+      // An API without pills yet never asks.
+      expect(pills(dueReminders(state(), '18:00', none, ''))).toEqual([])
+      expect(pills(dueReminders(state({}, { pillPlan: plan }), '18:00', none, ''))).not.toContain('pills-ask')
+    })
+
+    it('reminds her of each pill at her time, then once more 45 minutes later', () => {
+      expect(pills(dueReminders(state({}, { pillPlan: plan }), '15:45', none, ''))).toEqual([])
+      const first = dueReminders(state({}, { pillPlan: plan }), '16:00', none, '').find((item) => item.key === 'pill-0')!
+      expect(first.title).toContain('بعد الفطار')
+      expect(first.url).toBe('/#/pills')
+      expect(pills(dueReminders(state({}, { pillPlan: plan }), '16:45', none, ''))).toEqual(['pill-0'])
+      expect(pills(dueReminders(state({}, { pillPlan: plan }), '16:45', new Set(['pill-0']), ''))).toEqual(['pill-0-again'])
+      expect(pills(dueReminders(state({}, { pillPlan: plan }), '22:15', new Set(['pill-0', 'pill-0-again']), ''))).toEqual(['pill-1'])
+    })
+
+    it('stays quiet once she took it, and after her last day', () => {
+      const taken = { pillPlan: plan, pillDoses: [{ date: today, slot: 0, takenAt: '' }] }
+      expect(pills(dueReminders(state({}, taken), '16:15', none, ''))).toEqual([])
+      expect(pills(dueReminders(state({}, { pillPlan: { ...plan, until: '2026-10-19' } }), '16:15', none, ''))).toEqual([])
+      expect(dueReminders(state({}, { pillPlan: { ...plan, until: today } }), '16:15', none, '').find((item) => item.key === 'pill-0')!.body).toContain('آخر يوم')
+    })
+  })
 })

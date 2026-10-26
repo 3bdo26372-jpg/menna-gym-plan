@@ -2,6 +2,7 @@ import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
+import type { PillPlan } from '../../shared/pills'
 import type { AppState, CheckIn, Feedback, MeasurementInput, ReportKind, WorkoutResult } from '../../shared/types'
 
 export type CheckInInput = Pick<CheckIn, 'energy' | 'mood' | 'body'>
@@ -28,6 +29,8 @@ export interface Backend {
   addPeriod(startDate: string, endDate?: string): Promise<AppState>
   endPeriod(id: number, endDate: string): Promise<AppState>
   deletePeriod(id: number): Promise<AppState>
+  savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<AppState>
+  savePillDose(date: string, slot: number, taken: boolean): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   /** The API's VAPID public key, for pushManager.subscribe(). */

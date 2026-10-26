@@ -403,3 +403,12 @@
 .sleep-history strong { min-width: 70px; }
 .sleep-history b.is-short { color: #9b2c2c; }
 .sleep-history small { flex-basis: 100%; color: var(--muted); }
+
+/* Pills: one row per pill, "خدتها" on the side. */
+.pill-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pill-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #fbf6f8; }
+.pill-row > span { font-size: 22px; }
+.pill-row div { display: grid; gap: 2px; }
+.pill-row small { color: var(--muted); }
+.pill-row.is-taken { opacity: 0.75; }
+.pill-row .notice { grid-column: 1 / -1; }

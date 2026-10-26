@@ -50,6 +50,8 @@ export function createHttpBackend(baseUrl: string): Backend {
     addPeriod: (startDate, endDate) => request<AppState>('POST', '/api/periods', { startDate, endDate }),
     endPeriod: (id, endDate) => request<AppState>('PUT', `/api/periods/${id}/end`, { endDate }),
     deletePeriod: (id) => request<AppState>('DELETE', `/api/periods/${id}`),
+    savePillPlan: (plan) => request<AppState>('PUT', '/api/pills', plan),
+    savePillDose: (date, slot, taken) => request<AppState>('PUT', `/api/days/${date}/pills`, { slot, taken }),
     generateReport: (kind, periodIndex) => request<{ report: ReportData; state: AppState }>('POST', `/api/reports/${kind}/${periodIndex}`),
     getReport: (kind, periodIndex) => request<ReportData>('GET', `/api/reports/${kind}/${periodIndex}`),
     pushKey: async () => (await request<{ publicKey: string }>('GET', '/api/push/key')).publicKey,

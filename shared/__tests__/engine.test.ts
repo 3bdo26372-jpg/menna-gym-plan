@@ -142,7 +142,17 @@ describe('food log', () => {
     expect(typeof validateFood({ category: 'drink', item: '', time: '09:15' })).toBe('string')
     expect(typeof validateFood({ category: 'brunch', item: 'x', time: '09:15' })).toBe('string')
     expect(typeof validateFood({ category: 'snack', item: 'x', time: '25:00' })).toBe('string')
-    expect(waterMl([{ category: 'drink', item: 'مية', ml: 300 }, { category: 'drink', item: 'شاي', ml: 200 }, { category: 'snack', item: 'مية', ml: 100 }])).toBe(300)
+    const before = { date: '2026-10-20', quantity: null }
+    expect(waterMl([{ ...before, category: 'drink', item: 'مية', ml: 300 }, { ...before, category: 'drink', item: 'شاي', ml: 200 }, { ...before, category: 'snack', item: 'مية', ml: 100 }])).toBe(300)
+    // From FLUIDS_FROM every drink counts: its ml, or a cup, can or bottle by its description.
+    const after = { date: '2026-10-27', quantity: null, ml: null }
+    expect(waterMl([
+      { ...after, category: 'drink', item: 'مية', ml: 250 },
+      { ...after, category: 'drink', item: 'شاي اخضر', quantity: 'كوب' },
+      { ...after, category: 'drink', item: 'كانز شويبس اناناس' },
+      { ...after, category: 'drink', item: 'عصير', ml: 400 },
+      { ...after, category: 'snack', item: 'زبادي' },
+    ])).toBe(250 + 250 + 330 + 400)
     expect(checkFoodDate('2026-09-22', '2026-09-28', '2026-09-01', diffDays)).toBeNull()
     expect(checkFoodDate('2026-09-21', '2026-09-28', '2026-09-01', diffDays)).not.toBeNull()
   })

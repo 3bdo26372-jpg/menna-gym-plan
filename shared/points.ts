@@ -1,5 +1,5 @@
 import { CALORIE_FLOOR_KCAL, calorieRange, dayCalories, hasFoodLogged, roundCalories } from './calories'
-import { isWater, type FoodEntry } from './food'
+import { countsAsWater, drinkMl, type FoodEntry } from './food'
 import { isPainRest, periodRestDates } from './period'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import { isLegacyDay } from './scoring'
@@ -30,9 +30,9 @@ export const SLEEP_POINTS_FROM = '2026-10-18'
 export type EarningKind = 'water' | 'calories' | 'score' | 'streak' | 'sleep'
 export interface Earning { date: string; kind: EarningKind; points: number }
 
-export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'item' | 'ml'>[]) {
+export function waterMlByDate(entries: Pick<FoodEntry, 'date' | 'category' | 'item' | 'quantity' | 'ml'>[]) {
   const byDate = new Map<string, number>()
-  for (const entry of entries.filter(isWater)) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + (entry.ml ?? 0))
+  for (const entry of entries.filter(countsAsWater)) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + drinkMl(entry))
   return byDate
 }
 

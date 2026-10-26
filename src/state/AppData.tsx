@@ -4,6 +4,7 @@ import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
+import type { PillPlan } from '../../shared/pills'
 import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
@@ -35,6 +36,8 @@ interface AppDataValue {
   addPeriod(startDate: string, endDate?: string): Promise<void>
   endPeriod(id: number, endDate: string): Promise<void>
   deletePeriod(id: number): Promise<void>
+  savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<void>
+  savePillDose(date: string, slot: number, taken: boolean): Promise<void>
   generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   /** Push notifications don't touch the state, so these go straight to the backend. */
@@ -94,6 +97,8 @@ function createBackend(): Backend {
     addPeriod: forward('addPeriod'),
     endPeriod: forward('endPeriod'),
     deletePeriod: forward('deletePeriod'),
+    savePillPlan: forward('savePillPlan'),
+    savePillDose: forward('savePillDose'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
     pushKey: forward('pushKey'),
@@ -224,6 +229,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addPeriod: async (startDate, endDate) => void (await apply(backend.addPeriod(startDate, endDate))),
       endPeriod: async (id, endDate) => void (await apply(backend.endPeriod(id, endDate))),
       deletePeriod: async (id) => void (await apply(backend.deletePeriod(id))),
+      savePillPlan: async (plan) => void (await apply(backend.savePillPlan(plan))),
+      savePillDose: async (date, slot, taken) => void (await apply(backend.savePillDose(date, slot, taken))),
       async generateReport(kind, periodIndex) {
         const result = await backend.generateReport(kind, periodIndex)
         setState(result.state)
