@@ -119,7 +119,7 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
                 {main.exerciseIds.map((id) => (
                   <div key={id} className="thumb">
                     <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
-                    <span>{EXERCISE_BY_ID[id].nameAr}</span>
+                    <span>{EXERCISE_BY_ID[id].nameAr}<small>{EXERCISE_BY_ID[id].name}</small></span>
                   </div>
                 ))}
               </div>
