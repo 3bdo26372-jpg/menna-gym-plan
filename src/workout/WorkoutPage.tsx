@@ -11,7 +11,6 @@ import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { SafetyNote } from '../components/SafetyNote'
 import { Card, ProgressBar, ScoreRing } from '../components/ui'
-import { formatClock } from '../lib/format'
 import { navigate } from '../lib/router'
 import { useAppData, useAppState } from '../state/AppData'
 import { createSession, exerciseForStep, resumableSession, sessionStore, toWorkoutInput, workSummary, type Session } from './session'
@@ -52,6 +51,34 @@ export function WorkoutPage() {
 
 type Phase = 'play' | 'saving' | 'feedback' | 'done'
 
+/** "0:28", "1:05": the step's time left, without a leading zero. */
+function formatTimer(totalSeconds: number) {
+  const seconds = Math.max(0, Math.ceil(totalSeconds))
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
+/** The first start counts down from this, so she has a moment to get in place. */
+const GET_READY_SECONDS = 3
+/** The timer says she's nearly there for the last few seconds of a move. */
+const ALMOST_SECONDS = 5
+
+/** The time left, inside a ring that empties as the step goes. */
+function TimerRing({ remaining, seconds, kind, label }: { remaining: number; seconds: number; kind: 'work' | 'rest'; label: string }) {
+  const radius = 46
+  const length = 2 * Math.PI * radius
+  const left = seconds > 0 ? Math.min(1, Math.max(0, remaining / 1000 / seconds)) : 0
+  return (
+    <div className={`player-timer ${kind}`} aria-live="off">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle className="ring-track" cx="50" cy="50" r={radius} />
+        <circle className="ring-fill" cx="50" cy="50" r={radius} strokeDasharray={length} strokeDashoffset={length * (1 - left)} />
+      </svg>
+      <span className="timer-digits">{formatTimer(remaining / 1000)}</span>
+      <span className="timer-label">{label}</span>
+    </div>
+  )
+}
+
 function Player({ initial }: { initial: Session }) {
   const { saveWorkout, saveFeedback, state } = useAppData()
   const player = useSession(initial)
@@ -61,6 +88,7 @@ function Player({ initial }: { initial: Session }) {
   const [confirmFinish, setConfirmFinish] = useState(false)
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [getReady, setGetReady] = useState<number | null>(null)
   const savingRef = useRef(false)
   const hardest = useMemo(() => hardestExerciseIds(state?.days ?? []), [state?.days])
   const cheers = useMemo(() => planCheers(session, hardest), [session, hardest])
@@ -81,6 +109,26 @@ function Player({ initial }: { initial: Session }) {
   const elapsed = session.steps.slice(0, session.stepIndex).reduce((sum, item) => sum + item.seconds, 0) + (step.seconds - remaining / 1000)
   const total = session.steps.reduce((sum, item) => sum + item.seconds, 0)
   const halfway = exercise.bothSides && step.kind === 'work' && remaining / 1000 <= step.seconds / 2
+  const minutesLeft = Math.max(1, Math.ceil((total - elapsed) / 60))
+  const nextExercise = nextWork ? getExercise(exerciseForStep(session, nextWork.item)) : null
+  const timerLabel = step.kind === 'rest' ? 'خدي نفس 🌬️'
+    : !running ? 'واقف' : remaining / 1000 <= ALMOST_SECONDS ? 'قربتي 💪' : halfway ? 'الجهة التانية' : 'تحركي'
+
+  // 3, 2, 1, then the timer starts. Leaving the page cancels the count.
+  const readyTimers = useRef<number[]>([])
+  useEffect(() => () => readyTimers.current.forEach((timer) => window.clearTimeout(timer)), [])
+
+  function start() {
+    if (session.startedAt) return player.play()
+    player.unlockAudio()
+    navigator.vibrate?.(40)
+    setGetReady(GET_READY_SECONDS)
+    readyTimers.current = Array.from({ length: GET_READY_SECONDS }, (_, index) => window.setTimeout(() => {
+      const left = GET_READY_SECONDS - index - 1
+      setGetReady(left || null)
+      if (!left) player.play()
+    }, (index + 1) * 1000))
+  }
 
   // A finished session that is not saved yet shows the saving view until the request settles.
   const view: Phase = phase === 'play' && session.finished ? 'saving' : phase
@@ -139,7 +187,7 @@ function Player({ initial }: { initial: Session }) {
           </button>
           <div className="player-top-copy">
             <strong>{step.blockTitle}</strong>
-            <span>تمرين {Math.max(1, workPosition)} من {workSteps.length}{step.rounds > 1 ? ` · جولة ${step.round} من ${step.rounds}` : ''}</span>
+            <span>تمرين {Math.max(1, workPosition)} من {workSteps.length}{step.rounds > 1 ? ` · جولة ${step.round} من ${step.rounds}` : ''} · فاضل {minutesLeft} د</span>
           </div>
           <button type="button" className="icon-button" onClick={player.toggleSound} aria-label={player.soundOn ? 'كتم الصوت' : 'تشغيل الصوت'}>
             {player.soundOn ? <Volume2 /> : <VolumeX />}
@@ -149,44 +197,45 @@ function Player({ initial }: { initial: Session }) {
 
         <div className={`player-stage ${step.kind === 'rest' ? 'is-rest' : ''}`}>
           <div className="player-media">
-            <ExerciseMedia exercise={exercise} size="lg" eager />
-            {step.kind === 'rest' && <span className="rest-badge">راحة · استعدي</span>}
-            {halfway && <span className="switch-side-badge">بدّلي الجهة</span>}
+            {/* Each new move fades in gently instead of jumping. */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              <m.div key={`${session.stepIndex}:${exercise.id}`} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
+                <ExerciseMedia exercise={exercise} size="lg" eager />
+              </m.div>
+            </AnimatePresence>
+            {step.kind === 'rest' && <span className="rest-badge">راحة · ده اللي جاي</span>}
+            {halfway && <span className="switch-side-badge">بدّلي الجهة 🔄</span>}
             <CheerBubble cheer={cheer} />
           </div>
           <div className="player-info">
-            <div className="player-name">
-              <h1>{exercise.name}</h1>
-              <span>{exercise.nameAr}{usingAlternative && ' · البديل الأسهل'}</span>
-            </div>
-            <div className={`player-timer ${step.kind}`} aria-live="off">
-              <span className="timer-digits">{formatClock(remaining / 1000)}</span>
-              <span className="timer-label">{step.kind === 'work' ? (running ? 'تحركي' : 'متوقف') : 'راحة'}</span>
-            </div>
+            <m.div key={`${session.stepIndex}:${exercise.id}`} className="player-name" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }}>
+              <h1>{exercise.nameAr}</h1>
+              <span>{exercise.name}{usingAlternative && ' · البديل الأسهل 🍃'}</span>
+            </m.div>
+            <TimerRing remaining={remaining} seconds={step.seconds} kind={step.kind} label={timerLabel} />
           </div>
           <p className="player-instruction">{exercise.instruction}</p>
         </div>
 
         <div className="player-side">
         <div className="player-controls">
-          <button type="button" className="control-main" onClick={running ? player.pause : player.play}>
-            {running ? <><Pause /> إيقاف مؤقت</> : <><Play /> {session.startedAt ? 'كمّلي' : 'ابدئي'}</>}
+          <button type="button" className="control-main" onClick={running ? player.pause : start} disabled={getReady !== null}>
+            {running ? <><Pause /> {step.kind === 'rest' ? 'وقّفي الوقت' : 'استريحي شوية'}</> : <><Play /> {session.startedAt ? 'نكمّل' : 'يلا نبدأ'}</>}
           </button>
-          <button type="button" className="control" onClick={player.skip}><SkipForward /> تخطي</button>
+          <button type="button" className={`control${!usingAlternative && !alternative ? ' wide' : ''}`} onClick={player.skip}><SkipForward /> {step.kind === 'rest' ? 'جاهزة، يلا' : 'اللي بعده'}</button>
           {usingAlternative ? (
             <button type="button" className="control" onClick={() => player.switchTo(null)}><Undo2 /> الأساسي</button>
-          ) : alternative ? (
-            <button type="button" className="control easier" onClick={() => player.switchTo(alternative.id)}><ArrowDownUp /> صعب؟ أسهل</button>
-          ) : (
-            <button type="button" className="control" disabled title="التمرين ده منخفض الشدة؛ خففي السرعة أو المدى"><ArrowDownUp /> أسهل</button>
+          ) : alternative && (
+            <button type="button" className="control easier" onClick={() => player.switchTo(alternative.id)}><ArrowDownUp /> أسهل شوية 🍃</button>
           )}
         </div>
-        {!usingAlternative && alternative && <p className="alt-hint">البديل: {alternative.name} — {alternative.nameAr}</p>}
+        {!usingAlternative && alternative && <p className="alt-hint">الأسهل: {alternative.nameAr}</p>}
 
-        {nextWork && (
+        {/* A rest already shows what comes next. */}
+        {nextExercise && step.kind === 'work' && (
           <div className="next-up">
-            <ExerciseMedia exercise={getExercise(exerciseForStep(session, nextWork.item))} size="sm" />
-            <div><span>التالي</span><strong>{getExercise(exerciseForStep(session, nextWork.item)).name}</strong></div>
+            <ExerciseMedia exercise={nextExercise} size="sm" />
+            <div><span>اللي بعده</span><strong>{nextExercise.nameAr}</strong></div>
           </div>
         )}
 
@@ -196,6 +245,16 @@ function Player({ initial }: { initial: Session }) {
         </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {getReady !== null && getReady > 0 && (
+          <m.div className="get-ready" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <p>خدي مكانك… 🌸</p>
+            <m.strong key={getReady} initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14, stiffness: 220 }}>{getReady}</m.strong>
+            <span>{exercise.nameAr}</span>
+          </m.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {(confirmFinish || safetyOpen) && (
@@ -216,7 +275,7 @@ function Player({ initial }: { initial: Session }) {
               ) : (
                 <>
                   <h2>تنهي التمرين دلوقتي؟</h2>
-                  <p>هيتحفظ اللي عملتيه، والنقاط بتتحسب على الجزء اللي خلص.</p>
+                  <p>عادي خالص 🤍 اللي عملتيه هيتحفظ، والنقط بتتحسب على الجزء اللي خلص.</p>
                   <div className="sheet-actions">
                     <button type="button" className="button secondary" onClick={() => setConfirmFinish(false)}>لا، كمّلي</button>
                     <button type="button" className="button primary" onClick={() => { setConfirmFinish(false); player.finish() }}>أيوه، إنهاء</button>

@@ -70,6 +70,10 @@ export function useSession(initial: Session) {
         return !value
       })
     },
+    /** Audio may only start after a user gesture; call this from one before a delayed play(). */
+    unlockAudio() {
+      if (!audio.current && typeof AudioContext !== 'undefined') audio.current = new AudioContext()
+    },
     play() {
       // Audio may only start after a user gesture.
       if (!audio.current && typeof AudioContext !== 'undefined') audio.current = new AudioContext()

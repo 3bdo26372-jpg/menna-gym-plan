@@ -9,7 +9,7 @@ import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { Card, EmptyState, Notice, PageHeader } from '../components/ui'
-import { ENERGY_OPTIONS, labelOf, MOOD_OPTIONS } from '../lib/labels'
+import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
 import { useAppData, useAppState } from '../state/AppData'
 import { resumableSession, workSummary } from '../workout/session'
@@ -94,21 +94,23 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
         <CheckInForm initial={checkin} onSubmit={async (input) => { await saveCheckin(state.today, input); setEditingCheckin(false) }} />
       ) : !day?.workout ? (
         <>
-          <button type="button" className="button primary large" onClick={() => navigate('workout')}>
-            <Play /> {inProgress ? `كمّلي التمرين (${Math.round(workSummary(active).ratio * 100)}%)` : 'ابدئي التمرين'}
+          <button type="button" className="button primary large start-workout" onClick={() => navigate('workout')}>
+            <Play /> {inProgress ? `كمّلي من مكانك (${Math.round(workSummary(active).ratio * 100)}%)` : 'يلا نبدأ'}
           </button>
+          <p className="gentle-note">🤍 على راحتك: توقفي في أي وقت، أو خدي البديل الأسهل لو حاجة تقيلة عليكي. اللي تعمليه بيتحسب.</p>
           <div className="summary-chips">
-            <span className="chip soft">الطاقة: {labelOf(ENERGY_OPTIONS, checkin!.energy)}</span>
-            <span className="chip soft">المزاج: {labelOf(MOOD_OPTIONS, checkin!.mood)}</span>
+            <span className="chip soft">{ENERGY_OPTIONS.find((option) => option.value === checkin!.energy)?.emoji} {labelOf(ENERGY_OPTIONS, checkin!.energy)}</span>
+            <span className="chip soft">{MOOD_OPTIONS.find((option) => option.value === checkin!.mood)?.emoji} {labelOf(MOOD_OPTIONS, checkin!.mood)}</span>
+            <span className="chip soft">{BODY_OPTIONS.find((option) => option.value === checkin!.body)?.emoji} {labelOf(BODY_OPTIONS, checkin!.body)}</span>
             <button type="button" className="link-button" onClick={() => setEditingCheckin(true)}>تعديل</button>
           </div>
           <details className="workout-details">
-            <summary>شوفي التمارين</summary>
+            <summary>شوفي هتعملي إيه النهارده</summary>
             <ol className="block-list" aria-label="أجزاء التمرين بالترتيب">
               {plan.blocks.map((block, index) => (
                 <li key={block.id}>
                   <strong><span className="block-order">{index + 1}</span> {block.title}</strong>
-                  <span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''}</span>
+                  <span>{block.exerciseIds.length} تمارين{block.rounds > 1 ? ` × ${block.rounds} جولات` : ''} · {Math.max(1, Math.round((block.exerciseIds.length * block.rounds * block.workSeconds) / 60))} دقيقة</span>
                 </li>
               ))}
             </ol>
@@ -117,7 +119,7 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
                 {main.exerciseIds.map((id) => (
                   <div key={id} className="thumb">
                     <ExerciseMedia exercise={EXERCISE_BY_ID[id]} size="sm" />
-                    <span>{EXERCISE_BY_ID[id].name}</span>
+                    <span>{EXERCISE_BY_ID[id].nameAr}</span>
                   </div>
                 ))}
               </div>
@@ -125,11 +127,18 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
           </details>
         </>
       ) : !day.feedback ? (
-        <FeedbackForm exerciseIds={day.workout.exercises.map((item) => item.exerciseId)} onSubmit={(input) => saveFeedback(state.today, input)} />
+        <>
+          <p className="gentle-note">🌸 خلّصتي التمرين! فاضل تقولي حسيتي بإيه، عشان التمرين الجاي يبقى على مقاسك.</p>
+          <FeedbackForm exerciseIds={day.workout.exercises.map((item) => item.exerciseId)} onSubmit={(input) => saveFeedback(state.today, input)} />
+        </>
       ) : (
-        <p className="muted">
-          خلّصتي النهارده 👏 {Math.round(day.workout.activeSeconds / 60)} دقيقة · {Math.round(day.workout.mainCompletion * 100)}% من التمرين · الصعوبة {day.feedback.difficulty}/10
-        </p>
+        <div className="workout-done">
+          <span aria-hidden="true">🌸</span>
+          <div>
+            <strong>خلّصتي تمرين النهارده، برافو عليكي 👏</strong>
+            <p className="muted">{Math.round(day.workout.activeSeconds / 60)} دقيقة · {Math.round(day.workout.mainCompletion * 100)}% من التمرين · الصعوبة {day.feedback.difficulty}/10</p>
+          </div>
+        </div>
       )}
     </Card>
   )
