@@ -427,13 +427,13 @@
 .gentle-note { margin: 0; padding: 10px 14px; border-radius: 16px; background: var(--rose-50); color: var(--muted); font-size: 14px; }
 .start-workout { min-height: 60px; font-size: 18px; border-radius: 20px; }
 .scale-ends { display: flex; justify-content: space-between; margin-top: -6px; }
-.feedback-more summary { cursor: pointer; font-weight: 700; color: var(--berry-700); }
-.feedback-more[open] summary { margin-bottom: 10px; }
-.feedback-more small { color: var(--muted); font-weight: 600; }
+.feedback-more { display: grid; gap: 10px; }
+.feedback-more > p { margin: 0; }
 .workout-done { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; background: var(--green-soft); }
 .workout-done > span { font-size: 30px; }
 .workout-done strong { color: var(--green); }
 .workout-done p { margin: 0; }
 .thumb span { line-height: 1.35; }
+.thumb small { display: block; color: var(--muted); font: 600 11px var(--font-num); }
 /* The exercise strip scrolls inside the card instead of widening the page. */
 .today-card { grid-template-columns: minmax(0, 1fr); }

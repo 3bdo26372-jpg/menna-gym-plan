@@ -34,7 +34,6 @@
 .player-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .control-main, .control { min-height: 54px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; font-weight: 800; font-size: 15px; }
 .control-main svg, .control svg { width: 20px; }
-.control.wide { grid-column: 1 / -1; }
 .control-main { grid-column: 1 / -1; transition: transform 0.15s ease, background 0.2s ease; min-height: 60px; border: 0; color: #fff; background: var(--berry-dark); font-size: 17px; box-shadow: 0 12px 26px rgba(99, 33, 63, 0.2); }
 .control { border: 1px solid var(--line); background: #fff; color: var(--ink); transition: transform 0.15s ease, background 0.2s ease; }
 .control-main:active:not(:disabled), .control:active:not(:disabled) { transform: scale(0.98); }
@@ -47,6 +46,7 @@
 .next-up div { display: grid; line-height: 1.35; }
 .next-up span { color: var(--muted); font-size: 12px; }
 .next-up strong { font-size: 15px; }
+.next-up small { color: var(--muted); font: 600 12px var(--font-num); }
 .player-footer { display: flex; justify-content: space-between; }
 .player-empty { margin: auto; width: min(420px, calc(100% - 32px)); text-align: center; }
 

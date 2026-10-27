@@ -48,29 +48,29 @@ export function FeedbackForm({ exerciseIds, onSubmit }: { exerciseIds: string[];
       <ChoiceGroup legend="عرقتي قد إيه؟" options={SWEAT_OPTIONS} value={sweating} onChange={setSweating} columns={3} />
       <ChoiceGroup legend="حسيتي بأي وجع؟" options={[...PAIN]} value={pain} onChange={setPain} columns={2} />
       {pain === 'yes' && <SafetyNote />}
-      <details className="feedback-more">
-        <summary>حابة تقولي أكتر؟ <small>(اختياري)</small></summary>
+      <div className="feedback-more">
+        <p className="muted small">قيّمي التمارين نفسها (اختياري)</p>
         <div className="field-row">
           <label className="field">
             <span>أكتر تمرين حبيتيه 💗</span>
             <select value={favorite} onChange={(event) => setFavorite(event.target.value)}>
               <option value="">—</option>
-              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr}</option>)}
+              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr} — {EXERCISE_BY_ID[id].name}</option>)}
             </select>
           </label>
           <label className="field">
             <span>أتقل تمرين عليكي</span>
             <select value={hardest} onChange={(event) => setHardest(event.target.value)}>
               <option value="">—</option>
-              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr}</option>)}
+              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr} — {EXERCISE_BY_ID[id].name}</option>)}
             </select>
           </label>
         </div>
         <label className="field">
-          <span>ملاحظة</span>
+          <span>ملاحظة (اختياري)</span>
           <textarea rows={2} value={note} maxLength={1000} onChange={(event) => setNote(event.target.value)} placeholder="أي حاجة حابة تفتكريها عن تمرين النهارده" />
         </label>
-      </details>
+      </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button type="submit" className="button primary large" disabled={!ready || saving}>{saving ? 'لحظة…' : ready ? 'خلاص، احفظي 🌸' : 'جاوبي على الأسئلة اللي فوق'}</button>
     </form>

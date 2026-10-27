@@ -110,7 +110,10 @@ function Player({ initial }: { initial: Session }) {
   const total = session.steps.reduce((sum, item) => sum + item.seconds, 0)
   const halfway = exercise.bothSides && step.kind === 'work' && remaining / 1000 <= step.seconds / 2
   const minutesLeft = Math.max(1, Math.ceil((total - elapsed) / 60))
-  const nextExercise = nextWork ? getExercise(exerciseForStep(session, nextWork.item)) : null
+  // A rest already shows the move that comes next, so its card shows the one after that.
+  const upcoming = step.kind === 'rest' && nextWork ? workSteps.find(({ index }) => index > nextWork.index) : nextWork
+  const nextExercise = upcoming ? getExercise(exerciseForStep(session, upcoming.item)) : null
+  const [lightTip, setLightTip] = useState(false)
   const timerLabel = step.kind === 'rest' ? 'خدي نفس 🌬️'
     : !running ? 'واقف' : remaining / 1000 <= ALMOST_SECONDS ? 'قربتي 💪' : halfway ? 'الجهة التانية' : 'تحركي'
 
@@ -222,20 +225,23 @@ function Player({ initial }: { initial: Session }) {
           <button type="button" className="control-main" onClick={running ? player.pause : start} disabled={getReady !== null}>
             {running ? <><Pause /> {step.kind === 'rest' ? 'وقّفي الوقت' : 'استريحي شوية'}</> : <><Play /> {session.startedAt ? 'نكمّل' : 'يلا نبدأ'}</>}
           </button>
-          <button type="button" className={`control${!usingAlternative && !alternative ? ' wide' : ''}`} onClick={player.skip}><SkipForward /> {step.kind === 'rest' ? 'جاهزة، يلا' : 'اللي بعده'}</button>
+          <button type="button" className="control" onClick={player.skip}><SkipForward /> {step.kind === 'rest' ? 'جاهزة، يلا' : 'اللي بعده'}</button>
           {usingAlternative ? (
             <button type="button" className="control" onClick={() => player.switchTo(null)}><Undo2 /> الأساسي</button>
-          ) : alternative && (
+          ) : alternative ? (
             <button type="button" className="control easier" onClick={() => player.switchTo(alternative.id)}><ArrowDownUp /> أسهل شوية 🍃</button>
+          ) : (
+            // No easier version of this move: the button says how to make it lighter instead.
+            <button type="button" className="control" aria-expanded={lightTip} onClick={() => setLightTip((open) => !open)}><ArrowDownUp /> أسهل</button>
           )}
         </div>
-        {!usingAlternative && alternative && <p className="alt-hint">الأسهل: {alternative.nameAr}</p>}
+        {!usingAlternative && alternative && <p className="alt-hint">البديل الأسهل: {alternative.nameAr} — {alternative.name}</p>}
+        {!usingAlternative && !alternative && lightTip && <p className="alt-hint">التمرين ده خفيف أصلًا 🤍 بطّئي الحركة أو صغّري المدى على راحتك</p>}
 
-        {/* A rest already shows what comes next. */}
-        {nextExercise && step.kind === 'work' && (
+        {nextExercise && (
           <div className="next-up">
             <ExerciseMedia exercise={nextExercise} size="sm" />
-            <div><span>اللي بعده</span><strong>{nextExercise.nameAr}</strong></div>
+            <div><span>{step.kind === 'rest' ? 'وبعده' : 'اللي بعده'}</span><strong>{nextExercise.nameAr}</strong><small>{nextExercise.name}</small></div>
           </div>
         )}
 
