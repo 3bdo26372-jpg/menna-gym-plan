@@ -7,7 +7,7 @@ import { SafetyNote } from './SafetyNote'
 import { ChoiceGroup } from './ui'
 
 const DIFFICULTY = Array.from({ length: 10 }, (_, index) => ({ value: index + 1, label: String(index + 1) }))
-const PAIN = [{ value: 'no', label: 'لا' }, { value: 'yes', label: 'أيوه' }] as const
+const PAIN = [{ value: 'no', label: 'لا، تمام', emoji: '🤍' }, { value: 'yes', label: 'أيوه شوية', emoji: '🩹' }] as const
 
 export function FeedbackForm({ exerciseIds, onSubmit }: { exerciseIds: string[]; onSubmit: (input: FeedbackInput) => Promise<void> }) {
   const [difficulty, setDifficulty] = useState<number | null>(null)
@@ -41,34 +41,38 @@ export function FeedbackForm({ exerciseIds, onSubmit }: { exerciseIds: string[];
 
   return (
     <form className="form-stack" onSubmit={(event) => { event.preventDefault(); void submit() }}>
-      <ChoiceGroup legend="التمرين كان صعب قد إيه؟ (1 سهل جدًا — 10 صعب جدًا)" options={DIFFICULTY} value={difficulty} onChange={setDifficulty} columns={5} />
-      <ChoiceGroup legend="إحساسك بشكل عام" options={OVERALL_OPTIONS} value={overall} onChange={setOverall} columns={3} />
-      <ChoiceGroup legend="طاقتك بعد التمرين" options={ENERGY_OPTIONS} value={energyAfter} onChange={setEnergyAfter} columns={3} />
-      <ChoiceGroup legend="العرق" options={SWEAT_OPTIONS} value={sweating} onChange={setSweating} columns={3} />
-      <ChoiceGroup legend="حسيتي بأي ألم؟" options={[...PAIN]} value={pain} onChange={setPain} columns={2} />
+      <ChoiceGroup legend="كان صعب عليكي قد إيه؟" options={DIFFICULTY} value={difficulty} onChange={setDifficulty} columns={5} />
+      <p className="scale-ends muted small"><span>1 = سهل خالص 🍃</span><span>10 = صعب جدًا 🔥</span></p>
+      <ChoiceGroup legend="وبشكل عام كان؟" options={OVERALL_OPTIONS} value={overall} onChange={setOverall} columns={3} />
+      <ChoiceGroup legend="طاقتك دلوقتي؟" options={ENERGY_OPTIONS} value={energyAfter} onChange={setEnergyAfter} columns={3} />
+      <ChoiceGroup legend="عرقتي قد إيه؟" options={SWEAT_OPTIONS} value={sweating} onChange={setSweating} columns={3} />
+      <ChoiceGroup legend="حسيتي بأي وجع؟" options={[...PAIN]} value={pain} onChange={setPain} columns={2} />
       {pain === 'yes' && <SafetyNote />}
-      <div className="field-row">
+      <details className="feedback-more">
+        <summary>حابة تقولي أكتر؟ <small>(اختياري)</small></summary>
+        <div className="field-row">
+          <label className="field">
+            <span>أكتر تمرين حبيتيه 💗</span>
+            <select value={favorite} onChange={(event) => setFavorite(event.target.value)}>
+              <option value="">—</option>
+              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>أتقل تمرين عليكي</span>
+            <select value={hardest} onChange={(event) => setHardest(event.target.value)}>
+              <option value="">—</option>
+              {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].nameAr}</option>)}
+            </select>
+          </label>
+        </div>
         <label className="field">
-          <span>أكتر تمرين حبيتيه</span>
-          <select value={favorite} onChange={(event) => setFavorite(event.target.value)}>
-            <option value="">—</option>
-            {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].name}</option>)}
-          </select>
+          <span>ملاحظة</span>
+          <textarea rows={2} value={note} maxLength={1000} onChange={(event) => setNote(event.target.value)} placeholder="أي حاجة حابة تفتكريها عن تمرين النهارده" />
         </label>
-        <label className="field">
-          <span>أصعب تمرين</span>
-          <select value={hardest} onChange={(event) => setHardest(event.target.value)}>
-            <option value="">—</option>
-            {unique.map((id) => <option key={id} value={id}>{EXERCISE_BY_ID[id].name}</option>)}
-          </select>
-        </label>
-      </div>
-      <label className="field">
-        <span>ملاحظة (اختياري)</span>
-        <textarea rows={2} value={note} maxLength={1000} onChange={(event) => setNote(event.target.value)} placeholder="أي حاجة حابة تفتكريها عن تمرين النهارده" />
-      </label>
+      </details>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <button type="submit" className="button primary" disabled={!ready || saving}>{saving ? 'جاري الحفظ…' : 'حفظ التقييم'}</button>
+      <button type="submit" className="button primary large" disabled={!ready || saving}>{saving ? 'لحظة…' : ready ? 'خلاص، احفظي 🌸' : 'جاوبي على الأسئلة اللي فوق'}</button>
     </form>
   )
 }

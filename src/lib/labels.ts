@@ -7,7 +7,7 @@ export const ENERGY_OPTIONS: ChoiceOption<Energy>[] = [
   { value: 'high', label: 'عالية', emoji: '⚡' },
 ]
 export const MOOD_OPTIONS: ChoiceOption<Mood>[] = [
-  { value: 'bad', label: 'مش أحسن حاجة', emoji: '🌧️' },
+  { value: 'bad', label: 'مش قوي', emoji: '🌧️' },
   { value: 'okay', label: 'تمام', emoji: '⛅' },
   { value: 'good', label: 'حلو', emoji: '☀️' },
 ]
@@ -17,9 +17,9 @@ export const BODY_OPTIONS: ChoiceOption<BodyFeeling>[] = [
   { value: 'tired', label: 'تعبانة', emoji: '😮‍💨' },
 ]
 export const SWEAT_OPTIONS: ChoiceOption<Sweating>[] = [
-  { value: 'low', label: 'قليل' },
-  { value: 'medium', label: 'متوسط' },
-  { value: 'high', label: 'كتير' },
+  { value: 'low', label: 'قليل', emoji: '💧' },
+  { value: 'medium', label: 'متوسط', emoji: '💦' },
+  { value: 'high', label: 'كتير', emoji: '🌊' },
 ]
 export const OVERALL_OPTIONS: ChoiceOption<Overall>[] = [
   { value: 'easy', label: 'سهل', emoji: '🍃' },

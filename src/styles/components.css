@@ -395,7 +395,7 @@
 .mini-steps li.done { color: var(--berry-dark); }
 .mini-steps .step-dot { width: 22px; height: 22px; font-size: 12px; }
 .workout-details summary { cursor: pointer; font-weight: 700; color: var(--berry-700); }
-.workout-details[open] { display: grid; gap: 10px; }
+.workout-details[open] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .workout-link { grid-template-columns: 1fr auto; align-items: center; }
 .workout-link .card-title { font-size: 16px; }
 .sleep-history { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
@@ -412,3 +412,28 @@
 .pill-row small { color: var(--muted); }
 .pill-row.is-taken { opacity: 0.75; }
 .pill-row .notice { grid-column: 1 / -1; }
+
+/* Training: soft choices, one check-in question at a time, and gentle notes. */
+.today-card .choice, .player .choice { min-height: 54px; border-radius: 18px; transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease; }
+.today-card .choice:active, .player .choice:active { transform: scale(0.97); }
+.today-card .choice[aria-pressed='true'], .player .choice[aria-pressed='true'] { color: var(--berry-dark); border-color: var(--berry); background: var(--rose-100); box-shadow: 0 0 0 3px var(--rose-50); }
+.today-card .choice-group legend, .player .choice-group legend { font-size: 16px; color: var(--berry-dark); }
+.checkin-form { gap: 12px; }
+.checkin-answers { display: flex; flex-wrap: wrap; gap: 6px; }
+.checkin-answers:empty { display: none; }
+.checkin-answers .chip { border: 0; cursor: pointer; }
+.checkin-count { text-align: center; }
+.checkin-done { padding: 12px 14px; border-radius: 16px; background: var(--rose-50); color: var(--berry-dark); font-weight: 700; }
+.gentle-note { margin: 0; padding: 10px 14px; border-radius: 16px; background: var(--rose-50); color: var(--muted); font-size: 14px; }
+.start-workout { min-height: 60px; font-size: 18px; border-radius: 20px; }
+.scale-ends { display: flex; justify-content: space-between; margin-top: -6px; }
+.feedback-more summary { cursor: pointer; font-weight: 700; color: var(--berry-700); }
+.feedback-more[open] summary { margin-bottom: 10px; }
+.feedback-more small { color: var(--muted); font-weight: 600; }
+.workout-done { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; background: var(--green-soft); }
+.workout-done > span { font-size: 30px; }
+.workout-done strong { color: var(--green); }
+.workout-done p { margin: 0; }
+.thumb span { line-height: 1.35; }
+/* The exercise strip scrolls inside the card instead of widening the page. */
+.today-card { grid-template-columns: minmax(0, 1fr); }
