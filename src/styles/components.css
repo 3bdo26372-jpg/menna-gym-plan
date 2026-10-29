@@ -437,3 +437,38 @@
 .thumb small { display: block; color: var(--muted); font: 600 11px var(--font-num); }
 /* The exercise strip scrolls inside the card instead of widening the page. */
 .today-card { grid-template-columns: minmax(0, 1fr); }
+
+/* Prayer: the rows reuse the pill rows; a later prayer is quieter. */
+.prayer-row.is-later { opacity: 0.6; }
+.prayer-row .prayer-earlier, .prayer-row .prayer-pick { grid-column: 2 / -1; justify-self: start; }
+.prayer-pick { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.prayer-pick input { min-height: 40px; }
+.prayer-week-score { margin-bottom: 8px; color: var(--muted); }
+.prayer-week-score strong { color: var(--berry-dark); font: 800 28px var(--font-num); }
+.prayer-gift { display: grid; gap: 10px; }
+.prayer-history b { margin-inline-start: auto; font-family: var(--font-num); }
+.prayer-rules { display: grid; gap: 6px; margin: 0 0 10px; padding-inline-start: 20px; font-size: 14px; }
+
+/* A verse or hadith: the words large, the source small underneath. */
+.quote { margin: 0; padding: 16px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.quote blockquote { margin: 0; font-size: 19px; line-height: 2; color: var(--ink); }
+.quote-lead { color: var(--muted); font-size: 15px; }
+.quote figcaption { margin-top: 6px; color: var(--muted); font-size: 13px; }
+.card .quote { margin-top: 12px; padding: 12px 14px; background: var(--rose-50); border: 0; }
+.card .quote blockquote { font-size: 17px; }
+
+/* Adhkar: one card per dhikr, the counter on the side. */
+.adhkar { display: grid; gap: 10px; }
+.adhkar-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.adhkar-tabs .chip { border: 0; white-space: nowrap; }
+.adhkar-tabs .chip.is-active { color: #fff; background: var(--berry); }
+.dhikr-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.dhikr { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--radius-sm); background: #fbf6f8; }
+.dhikr.is-done { opacity: 0.6; }
+.dhikr-text { font-size: 18px; line-height: 2; white-space: pre-line; }
+.dhikr-virtue { color: var(--green); font-size: 14px; }
+.dhikr-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dhikr-foot small { color: var(--muted); font-size: 12px; }
+.dhikr-count { flex: none; min-width: 72px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; color: #fff; background: var(--berry); font: 800 15px var(--font-num); }
+.dhikr-count.is-done { color: var(--green); background: var(--green-soft); }
+.prayer-row > .chip { font-size: 13px; }

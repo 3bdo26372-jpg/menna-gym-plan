@@ -20,6 +20,7 @@ import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasse
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
 import type { PillDose, PillPlan } from '../../shared/pills'
+import type { PrayerGift, PrayerGiftStatus, PrayerLog } from '../../shared/prayer'
 import { PRIZES, toPrizeId, type GamePlay, type GameSpecial, type SpecialKind } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
@@ -91,8 +92,10 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, kind, created_at FROM game_specials ORDER BY id'),
     db.prepare('SELECT times, until_date, updated_at FROM pill_plan WHERE id = 1'),
     db.prepare('SELECT log_date, slot, taken_at FROM pill_doses ORDER BY log_date, slot'),
+    db.prepare('SELECT log_date, prayer, prayed_at FROM prayers ORDER BY log_date, prayer'),
+    db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_gifts ORDER BY week_start'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses, prayers, prayerGifts] = fill ? results.slice(1) : results
   const plan = pillPlan.results[0]
 
   const valuesByEntry = new Map<number, Record<string, number>>()
@@ -228,6 +231,14 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     gameSpecials: specials.results.map((row): GameSpecial => ({ id: Number(row.id), kind: row.kind as SpecialKind, createdAt: String(row.created_at) })),
     pillPlan: plan ? { times: JSON.parse(String(plan.times)) as string[], until: (plan.until_date as string | null) ?? null, updatedAt: String(plan.updated_at) } satisfies PillPlan : null,
     pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), slot: Number(row.slot), takenAt: String(row.taken_at) })),
+    prayers: prayers.results.map((row): PrayerLog => ({ date: String(row.log_date), prayer: Number(row.prayer), prayedAt: String(row.prayed_at) })),
+    prayerGifts: prayerGifts.results.map((row): PrayerGift => ({
+      weekStart: String(row.week_start),
+      note: (row.note as string | null) ?? null,
+      status: row.status as PrayerGiftStatus,
+      createdAt: String(row.created_at),
+      doneAt: (row.done_at as string | null) ?? null,
+    })),
   }
 }
 
@@ -240,6 +251,19 @@ export async function savePillDose(db: D1Database, date: string, slot: number, t
   await (taken
     ? db.prepare('INSERT OR IGNORE INTO pill_doses (log_date, slot, taken_at) VALUES (?, ?, ?)').bind(date, slot, now())
     : db.prepare('DELETE FROM pill_doses WHERE log_date = ? AND slot = ?').bind(date, slot)).run()
+}
+
+/** Ticking a prayer again moves it to the new time. */
+export async function savePrayer(db: D1Database, date: string, prayer: number, prayedAt: string | null) {
+  await (prayedAt
+    ? db.prepare('INSERT INTO prayers (log_date, prayer, prayed_at) VALUES (?, ?, ?) ON CONFLICT (log_date, prayer) DO UPDATE SET prayed_at = excluded.prayed_at').bind(date, prayer, prayedAt)
+    : db.prepare('DELETE FROM prayers WHERE log_date = ? AND prayer = ?').bind(date, prayer)).run()
+}
+
+/** A cancelled gift can be opened again. */
+export async function openPrayerGift(db: D1Database, weekStart: string, note: string | null) {
+  await db.prepare("INSERT INTO prayer_gifts (week_start, note, status, created_at) VALUES (?, ?, 'pending', ?) ON CONFLICT (week_start) DO UPDATE SET note = excluded.note, status = 'pending', created_at = excluded.created_at, done_at = NULL")
+    .bind(weekStart, note, now()).run()
 }
 
 /** Store the day's score and unlock any rewards it earned. */

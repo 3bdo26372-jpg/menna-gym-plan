@@ -31,6 +31,9 @@ export interface Backend {
   deletePeriod(id: number): Promise<AppState>
   savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<AppState>
   savePillDose(date: string, slot: number, taken: boolean): Promise<AppState>
+  /** `at` is when she prayed (ISO); the API uses now when it is left out. */
+  savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<AppState>
+  openPrayerGift(weekStart: string, note?: string): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   /** The API's VAPID public key, for pushManager.subscribe(). */

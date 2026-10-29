@@ -9,6 +9,7 @@ import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared
 import { validateSleep } from '../../shared/sleep'
 import { dealCards, validatePlay } from '../../shared/game'
 import { validatePillDose, validatePillPlan } from '../../shared/pills'
+import { validatePrayerGift, validatePrayerMark } from '../../shared/prayer'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
@@ -24,10 +25,12 @@ import {
   loadReport,
   loadState,
   markCelebrated,
+  openPrayerGift,
   refreshDerived,
   saveCheckin,
   savePillDose,
   savePillPlan,
+  savePrayer,
   saveFeedback,
   savePeriodPain,
   saveSleep,
@@ -258,6 +261,25 @@ async function route(request: Request, env: Env): Promise<Response> {
     const dose = validatePillDose(await body(request))
     if (typeof dose === 'string') throw new HttpError(400, dose)
     await savePillDose(env.DB, pill[1], dose.slot, dose.taken)
+    return json(await afterWrite(env, today))
+  }
+
+  // Prayers have their own points and don't touch the score.
+  const prayer = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/prayers$/)
+  if (prayer && method === 'PUT') {
+    const state = await loadState(env.DB, today)
+    requireWritable(state, prayer[1])
+    const mark = validatePrayerMark(await body(request), prayer[1], Date.now())
+    if (typeof mark === 'string') throw new HttpError(400, mark)
+    await savePrayer(env.DB, prayer[1], mark.prayer, mark.prayed ? mark.prayedAt : null)
+    return json(await afterWrite(env, today))
+  }
+  const prayerGift = path.match(/^\/api\/prayer-gifts\/(\d{4}-\d{2}-\d{2})$/)
+  if (prayerGift && method === 'POST') {
+    const state = await loadState(env.DB, today)
+    const gift = validatePrayerGift(await body(request), prayerGift[1], state)
+    if (typeof gift === 'string') throw new HttpError(400, gift)
+    await openPrayerGift(env.DB, prayerGift[1], gift.note)
     return json(await afterWrite(env, today))
   }
 
