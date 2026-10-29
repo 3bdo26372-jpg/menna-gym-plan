@@ -5,7 +5,7 @@ import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest, periodForecast } from './period'
 import { PILL_SLOTS, pillsOn, pillTaken } from './pills'
 import { EARN, WATER_GOAL_ML } from './points'
-import { ASR, FAJR, ON_TIME_MIN, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, unopenedPrayerGifts } from './prayer'
+import { ASR, BIG_GIFT_WEEKS, FAJR, ON_TIME_MIN, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, unopenedBigGifts, unopenedPrayerGifts } from './prayer'
 import { ASR_QUOTES, DHIKR_QUOTES, FAJR_QUOTES, PRAYER_QUOTES, quoteLine, quoteOfDay } from './prayerTexts'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import type { AppState } from './types'
@@ -30,7 +30,8 @@ import type { AppState } from './types'
  *   going down, if she hasn't ticked it. None on her period days.
  * - adhkar: the morning ones two hours before Dhuhr, the evening ones half an
  *   hour after Asr, and one short dhikr two hours after Dhuhr
- * - a weekly prayer gift, the day after the week that earned it, from 12:00
+ * - a weekly prayer gift, the day after the week that earned it, from 12:00,
+ *   and the big one the day after every 4 kept weeks in a row
  * A gift pass added after she turned notifications on is announced once, any time of day.
  */
 export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed' | 'pillsAsk'
@@ -198,6 +199,9 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
     if (time >= PRAYER_GIFT_FROM) {
       for (const week of unopenedPrayerGifts(state).filter((item) => addDays(item.end, 1) === state.today)) {
         add({ key: `prayer-gift-${week.start}`, title: 'كسبتي هدية أسبوع الصلاة 🎁', body: `${week.earned} نقطة من ${week.possible} الأسبوع ده، ربنا يتقبّل يا {nick} 🤍 افتحي هديتك`, url: '/#/prayer' })
+      }
+      for (const week of unopenedBigGifts(state).filter((item) => addDays(item.end, 1) === state.today)) {
+        add({ key: `prayer-big-${week.start}`, title: `${BIG_GIFT_WEEKS} أسابيع صلاة ورا بعض 🏆`, body: 'كسبتي الهدية الكبيرة يا {nick}، ربنا يثبّتك 🤍 افتحيها من صفحة الصلاة', url: '/#/prayer' })
       }
     }
   }

@@ -1,8 +1,9 @@
 import { BookOpen, MoonStar } from 'lucide-react'
 import { addDays, formatDateLong } from '../../shared/date'
-import { cairoInstant, FAJR, LATE_FLOOR, LATE_STEP_MIN, ON_TIME_MIN, PRAYER_PLACE, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, prayerWeeks } from '../../shared/prayer'
+import { BIG_GIFT_WEEKS, cairoInstant, FAJR, LATE_FLOOR, LATE_STEP_MIN, ON_TIME_MIN, PRAYER_PLACE, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, prayerWeeks } from '../../shared/prayer'
 import { CONSTANCY, PRAYER_QUOTES, quoteOfDay } from '../../shared/prayerTexts'
 import { Adhkar } from '../components/Adhkar'
+import { PrayerShop, PrayerStreakCard } from '../components/PrayerShop'
 import { PrayerGifts, PrayerHistory, PrayerRow, PrayerWeekCard, QuoteBlock, useNow } from '../components/Prayer'
 import { Card, Notice, PageHeader } from '../components/ui'
 import { useAppState } from '../state/AppData'
@@ -71,6 +72,10 @@ export function PrayerPage() {
         </Card>
       )}
 
+      {week && <PrayerStreakCard state={state} />}
+
+      <PrayerShop state={state} />
+
       {weeks[0] && weeks[0].start < state.today && (
         <Card>
           <h2 className="card-title">آخر {HISTORY_DAYS} أيام</h2>
@@ -91,6 +96,8 @@ export function PrayerPage() {
           <li>الفجر ليه الـ {PRAYER_POINTS} نقط كاملين في أي وقت.</li>
           <li>تقدري تسجّلي الصلاة لحد فجر اليوم اللي بعده، ولو نسيتي تدوسي في وقتها اختاري الساعة اللي صليتي فيها.</li>
           <li>الأسبوع 7 أيام من أول يوم سجّلتي فيه صلاة. 300 نقطة من 350 = هدية 🎁 وأيام البريود بتتشال من الحساب.</li>
+          <li>{BIG_GIFT_WEEKS} أسابيع هدية ورا بعض = الهدية الكبيرة 🏆</li>
+          <li>كل نقط الصلاة اللي بتجمعيها بتتصرف في محل الصلاة، والهدايا مش بتاخد منها حاجة.</li>
         </ul>
         <p className="muted small">الآيات من نص المصحف في موقع تنزيل، والأحاديث من صحيح البخاري ومسلم وسنن أبي داود (اللي صححها الألباني)، والأذكار من حصن المسلم، وكل واحدة مكتوب جنبها مصدرها.</p>
       </Card>

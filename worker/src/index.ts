@@ -9,7 +9,7 @@ import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared
 import { validateSleep } from '../../shared/sleep'
 import { dealCards, validatePlay } from '../../shared/game'
 import { validatePillDose, validatePillPlan } from '../../shared/pills'
-import { validatePrayerGift, validatePrayerMark } from '../../shared/prayer'
+import { validatePrayerBuy, validatePrayerGift, validatePrayerMark } from '../../shared/prayer'
 import type { AppState, ReportKind } from '../../shared/types'
 import {
   addFood,
@@ -17,6 +17,7 @@ import {
   addDayPass,
   addGamePlay,
   addPeriod,
+  addPrayerBuy,
   addWaterSpend,
   deleteFood,
   deletePeriod,
@@ -274,12 +275,21 @@ async function route(request: Request, env: Env): Promise<Response> {
     await savePrayer(env.DB, prayer[1], mark.prayer, mark.prayed ? mark.prayedAt : null)
     return json(await afterWrite(env, today))
   }
-  const prayerGift = path.match(/^\/api\/prayer-gifts\/(\d{4}-\d{2}-\d{2})$/)
+  const prayerGift = path.match(/^\/api\/prayer-(gifts|big-gifts)\/(\d{4}-\d{2}-\d{2})$/)
   if (prayerGift && method === 'POST') {
+    const kind = prayerGift[1] === 'big-gifts' ? 'big' : 'week'
     const state = await loadState(env.DB, today)
-    const gift = validatePrayerGift(await body(request), prayerGift[1], state)
+    const gift = validatePrayerGift(await body(request), prayerGift[2], state, kind)
     if (typeof gift === 'string') throw new HttpError(400, gift)
-    await openPrayerGift(env.DB, prayerGift[1], gift.note)
+    await openPrayerGift(env.DB, prayerGift[2], gift.note, kind)
+    return json(await afterWrite(env, today))
+  }
+  const prayerBuy = path.match(/^\/api\/prayer-shop\/([\w-]+)$/)
+  if (prayerBuy && method === 'POST') {
+    const state = await loadState(env.DB, today)
+    const buy = validatePrayerBuy(await body(request), prayerBuy[1], state)
+    if (typeof buy === 'string') throw new HttpError(400, buy)
+    await addPrayerBuy(env.DB, buy)
     return json(await afterWrite(env, today))
   }
 

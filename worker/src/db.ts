@@ -20,7 +20,7 @@ import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasse
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
 import type { PillDose, PillPlan } from '../../shared/pills'
-import type { PrayerGift, PrayerGiftStatus, PrayerLog } from '../../shared/prayer'
+import type { PrayerBuy, PrayerGift, PrayerGiftKind, PrayerGiftStatus, PrayerLog, PrayerShopItem } from '../../shared/prayer'
 import { PRIZES, toPrizeId, type GamePlay, type GameSpecial, type SpecialKind } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
 
@@ -94,8 +94,11 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT log_date, slot, taken_at FROM pill_doses ORDER BY log_date, slot'),
     db.prepare('SELECT log_date, prayer, prayed_at FROM prayers ORDER BY log_date, prayer'),
     db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_gifts ORDER BY week_start'),
+    db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_big_gifts ORDER BY week_start'),
+    db.prepare('SELECT id, title, emoji, price, note_required, sort_order FROM prayer_shop_items WHERE active = 1 ORDER BY sort_order, id'),
+    db.prepare('SELECT id, item_id, title, points, note, status, created_at, done_at FROM prayer_shop_buys ORDER BY id'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses, prayers, prayerGifts] = fill ? results.slice(1) : results
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses, prayers, prayerGifts, prayerBigGifts, prayerShop, prayerBuys] = fill ? results.slice(1) : results
   const plan = pillPlan.results[0]
 
   const valuesByEntry = new Map<number, Record<string, number>>()
@@ -232,8 +235,21 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     pillPlan: plan ? { times: JSON.parse(String(plan.times)) as string[], until: (plan.until_date as string | null) ?? null, updatedAt: String(plan.updated_at) } satisfies PillPlan : null,
     pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), slot: Number(row.slot), takenAt: String(row.taken_at) })),
     prayers: prayers.results.map((row): PrayerLog => ({ date: String(row.log_date), prayer: Number(row.prayer), prayedAt: String(row.prayed_at) })),
-    prayerGifts: prayerGifts.results.map((row): PrayerGift => ({
-      weekStart: String(row.week_start),
+    prayerGifts: prayerGifts.results.map(toPrayerGift),
+    prayerBigGifts: prayerBigGifts.results.map(toPrayerGift),
+    prayerShop: prayerShop.results.map((row): PrayerShopItem => ({
+      id: String(row.id),
+      title: String(row.title),
+      emoji: String(row.emoji),
+      price: Number(row.price),
+      noteRequired: Boolean(row.note_required),
+      sortOrder: Number(row.sort_order),
+    })),
+    prayerBuys: prayerBuys.results.map((row): PrayerBuy => ({
+      id: Number(row.id),
+      itemId: String(row.item_id),
+      title: String(row.title),
+      points: Number(row.points),
       note: (row.note as string | null) ?? null,
       status: row.status as PrayerGiftStatus,
       createdAt: String(row.created_at),
@@ -260,9 +276,22 @@ export async function savePrayer(db: D1Database, date: string, prayer: number, p
     : db.prepare('DELETE FROM prayers WHERE log_date = ? AND prayer = ?').bind(date, prayer)).run()
 }
 
+const toPrayerGift = (row: Row): PrayerGift => ({
+  weekStart: String(row.week_start),
+  note: (row.note as string | null) ?? null,
+  status: row.status as PrayerGiftStatus,
+  createdAt: String(row.created_at),
+  doneAt: (row.done_at as string | null) ?? null,
+})
+
+export async function addPrayerBuy(db: D1Database, buy: Pick<PrayerBuy, 'itemId' | 'title' | 'points' | 'note'>) {
+  await db.prepare('INSERT INTO prayer_shop_buys (item_id, title, points, note, created_at) VALUES (?, ?, ?, ?, ?)').bind(buy.itemId, buy.title, buy.points, buy.note, now()).run()
+}
+
 /** A cancelled gift can be opened again. */
-export async function openPrayerGift(db: D1Database, weekStart: string, note: string | null) {
-  await db.prepare("INSERT INTO prayer_gifts (week_start, note, status, created_at) VALUES (?, ?, 'pending', ?) ON CONFLICT (week_start) DO UPDATE SET note = excluded.note, status = 'pending', created_at = excluded.created_at, done_at = NULL")
+export async function openPrayerGift(db: D1Database, weekStart: string, note: string | null, kind: PrayerGiftKind = 'week') {
+  const table = kind === 'big' ? 'prayer_big_gifts' : 'prayer_gifts'
+  await db.prepare(`INSERT INTO ${table} (week_start, note, status, created_at) VALUES (?, ?, 'pending', ?) ON CONFLICT (week_start) DO UPDATE SET note = excluded.note, status = 'pending', created_at = excluded.created_at, done_at = NULL`)
     .bind(weekStart, note, now()).run()
 }
 

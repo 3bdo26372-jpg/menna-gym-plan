@@ -12,7 +12,10 @@ import {
   prayerPoints,
   PRAYERS,
   prayerTimes,
+  unopenedBigGifts,
   unopenedPrayerGifts,
+  BIG_GIFT_WEEKS,
+  type PrayerGiftKind,
   type PrayerWeek,
 } from '../../shared/prayer'
 import type { Quote } from '../../shared/prayerTexts'
@@ -131,18 +134,21 @@ export function PrayerWeekCard({ week, state, children }: { week: PrayerWeek; st
 
 /** Weeks that earned a gift: she opens it, with a hint if she likes, and then sees where it is. */
 export function PrayerGifts({ state }: { state: AppState }) {
-  const waiting = unopenedPrayerGifts(state)
-  const opened = (state.prayerGifts ?? []).filter((gift) => gift.status !== 'cancelled').slice(-3).reverse()
+  const waiting = [...unopenedBigGifts(state).map((week) => ({ week, kind: 'big' as const })), ...unopenedPrayerGifts(state).map((week) => ({ week, kind: 'week' as const }))]
+  const opened = [
+    ...(state.prayerBigGifts ?? []).map((gift) => ({ gift, kind: 'big' as const })),
+    ...(state.prayerGifts ?? []).map((gift) => ({ gift, kind: 'week' as const })),
+  ].filter(({ gift }) => gift.status !== 'cancelled').sort((a, b) => b.gift.createdAt.localeCompare(a.gift.createdAt)).slice(0, 4)
   if (!waiting.length && !opened.length) return null
   return (
     <Card className="soft-card">
       <h2 className="card-title"><Gift /> هدايا الصلاة 🎁</h2>
-      {waiting.map((week) => <OpenGift key={week.start} week={week} />)}
+      {waiting.map(({ week, kind }) => <OpenGift key={`${kind}-${week.start}`} week={week} kind={kind} />)}
       {opened.length > 0 && (
         <ul className="sleep-history">
-          {opened.map((gift) => (
-            <li key={gift.weekStart}>
-              <strong>أسبوع {formatDateShort(gift.weekStart)}</strong>
+          {opened.map(({ gift, kind }) => (
+            <li key={`${kind}-${gift.weekStart}`}>
+              <strong>{kind === 'big' ? `الهدية الكبيرة 🏆 ${formatDateShort(gift.weekStart)}` : `أسبوع ${formatDateShort(gift.weekStart)}`}</strong>
               <span>{gift.status === 'done' ? 'وصلتك 🎉' : 'في الطريق 🎁'}</span>
               {gift.note && <small>تلميحتك: {gift.note}</small>}
             </li>
@@ -153,7 +159,7 @@ export function PrayerGifts({ state }: { state: AppState }) {
   )
 }
 
-function OpenGift({ week }: { week: PrayerWeek }) {
+function OpenGift({ week, kind }: { week: PrayerWeek; kind: PrayerGiftKind }) {
   const { openPrayerGift } = useAppData()
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -162,7 +168,7 @@ function OpenGift({ week }: { week: PrayerWeek }) {
     setBusy(true)
     setError(null)
     try {
-      await openPrayerGift(week.start, note.trim() || undefined)
+      await openPrayerGift(week.start, note.trim() || undefined, kind)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'تعذّر الحفظ')
       setBusy(false)
@@ -170,7 +176,9 @@ function OpenGift({ week }: { week: PrayerWeek }) {
   }
   return (
     <form className="prayer-gift" onSubmit={(event) => { event.preventDefault(); void open() }}>
-      <p>كسبتي هدية أسبوع {formatDateShort(week.start)}: {week.earned} نقطة من {week.possible} 🤍</p>
+      <p>{kind === 'big'
+        ? `🏆 ${BIG_GIFT_WEEKS} أسابيع صلاة ورا بعض لحد ${formatDateShort(week.end)}! دي الهدية الكبيرة، ربنا يثبّتك 🤍`
+        : `كسبتي هدية أسبوع ${formatDateShort(week.start)}: ${week.earned} نقطة من ${week.possible} 🤍`}</p>
       <label className="field">
         <span>نفسك في حاجة؟ اكتبيها تلميحة (مش لازم)</span>
         <input type="text" value={note} maxLength={300} onChange={(event) => setNote(event.target.value)} placeholder="أو سيبيها مفاجأة" />
@@ -220,6 +228,16 @@ export function PrayerHistory({ state, days }: { state: AppState; days: number }
 export function PrayerCard({ state }: { state: AppState }) {
   const now = useNow()
   if (state.prayers === undefined || !state.profile.programStartDate) return null
+  const big = unopenedBigGifts(state)
+  if (big.length) {
+    return (
+      <Card className="soft-card">
+        <h2 className="card-title"><Gift /> كسبتي الهدية الكبيرة 🏆</h2>
+        <p className="muted">{BIG_GIFT_WEEKS} أسابيع صلاة ورا بعض، ربنا يثبّتك 🤍</p>
+        <a className="button primary" href="#/prayer">افتحيها</a>
+      </Card>
+    )
+  }
   const gifts = unopenedPrayerGifts(state)
   if (gifts.length) {
     return (

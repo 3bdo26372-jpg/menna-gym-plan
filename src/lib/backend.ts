@@ -3,6 +3,7 @@ import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
 import type { PillPlan } from '../../shared/pills'
+import type { PrayerGiftKind } from '../../shared/prayer'
 import type { AppState, CheckIn, Feedback, MeasurementInput, ReportKind, WorkoutResult } from '../../shared/types'
 
 export type CheckInInput = Pick<CheckIn, 'energy' | 'mood' | 'body'>
@@ -33,7 +34,8 @@ export interface Backend {
   savePillDose(date: string, slot: number, taken: boolean): Promise<AppState>
   /** `at` is when she prayed (ISO); the API uses now when it is left out. */
   savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<AppState>
-  openPrayerGift(weekStart: string, note?: string): Promise<AppState>
+  openPrayerGift(weekStart: string, note?: string, kind?: PrayerGiftKind): Promise<AppState>
+  buyPrayerItem(itemId: string, note?: string): Promise<AppState>
   generateReport(kind: ReportKind, periodIndex: number): Promise<{ report: ReportData; state: AppState }>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   /** The API's VAPID public key, for pushManager.subscribe(). */

@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { CalculationMethod, Coordinates, PrayerTimes } from 'adhan'
 import { addDays } from '../date'
 import {
+  BIG_GIFT_WEEKS,
   cairoInstant,
+  DEFAULT_PRAYER_SHOP,
+  prayerBalance,
+  prayerStreak,
+  unopenedBigGifts,
+  validatePrayerBuy,
   cairoOffsetMinutes,
   PRAYER_PLACE,
   prayerPoints,
@@ -97,6 +103,45 @@ describe('prayer weeks', () => {
     const opened = { ...state, prayerGifts: [{ weekStart: start, note: null, status: 'pending' as const, createdAt: '', doneAt: null }] }
     expect(unopenedPrayerGifts(opened)).toEqual([])
     expect(typeof validatePrayerGift({}, start, opened)).toBe('string')
+  })
+})
+
+describe('the big gift and the shop', () => {
+  const start = '2026-09-01'
+  const week = (index: number, kept: boolean) => Array.from({ length: 7 }, (_, day) => fullDay(addDays(start, index * 7 + day))).flat().slice(kept ? 0 : 10)
+
+  it('comes after every 4 kept weeks in a row, and a missed week starts the count again', () => {
+    const run = (kept: boolean[]) => prayerStreak({ today: addDays(start, kept.length * 7), prayers: kept.flatMap((keep, index) => week(index, keep)) })
+    expect(run([true, true, true, true]).milestones.map((item) => item.start)).toEqual([addDays(start, 21)])
+    expect(run([true, true, false, true, true, true]).milestones).toEqual([])
+    expect(run([true, true, false, true, true, true]).run).toBe(3)
+    expect(run([true, true, true, true, true, true, true, true]).milestones).toHaveLength(2)
+    // Weeks with no prayers at all break the run too.
+    expect(prayerStreak({ today: addDays(start, 9 * 7), prayers: [0, 1, 2].flatMap((index) => week(index, true)) }).run).toBe(0)
+    expect(BIG_GIFT_WEEKS).toBe(4)
+  })
+
+  it('skips a week that was all period days', () => {
+    const today = addDays(start, 6 * 7)
+    const prayers = [0, 1, 3, 4].flatMap((index) => week(index, true))
+    const periods = [{ id: 1, startDate: addDays(start, 14), endDate: addDays(start, 20), createdAt: '' }]
+    expect(prayerStreak({ today, prayers, periods }).milestones.map((item) => item.start)).toEqual([addDays(start, 28)])
+    const state = { today, prayers, periods, prayerBigGifts: [] }
+    expect(unopenedBigGifts(state)).toHaveLength(1)
+    expect(validatePrayerGift({}, addDays(start, 28), state, 'big')).toEqual({ note: null })
+  })
+
+  it('spends prayer points in the shop, and a cancelled buy gives them back', () => {
+    const state = { today: addDays(start, 7), prayers: week(0, true), prayerShop: DEFAULT_PRAYER_SHOP, prayerBuys: [] }
+    expect(prayerBalance(state).balance).toBe(350)
+    expect(validatePrayerBuy({}, 'treat', state)).toEqual({ itemId: 'treat', title: 'حاجة حلوة تختاريها', points: 150, note: null })
+    expect(typeof validatePrayerBuy({}, 'request', state)).toBe('string')
+    expect(validatePrayerBuy({ note: 'كتاب' }, 'request', state)).toMatchObject({ points: 300, note: 'كتاب' })
+    expect(typeof validatePrayerBuy({}, 'mat', state)).toBe('string')
+    expect(typeof validatePrayerBuy({}, 'nothing', state)).toBe('string')
+    const buy = { id: 1, itemId: 'request', title: '', points: 300, note: 'كتاب', status: 'pending' as const, createdAt: '', doneAt: null }
+    expect(prayerBalance({ ...state, prayerBuys: [buy] }).balance).toBe(50)
+    expect(prayerBalance({ ...state, prayerBuys: [{ ...buy, status: 'cancelled' as const }] }).balance).toBe(350)
   })
 })
 

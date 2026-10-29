@@ -12,7 +12,7 @@ import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, Workou
 import { validateSleep, type SleepLog } from '../../shared/sleep'
 import { dealCards, toPrizeId, validatePlay, type GamePlay, type GameSpecial } from '../../shared/game'
 import { validatePillDose, validatePillPlan, type PillDose, type PillPlan } from '../../shared/pills'
-import { validatePrayerGift, validatePrayerMark, type PrayerGift, type PrayerLog } from '../../shared/prayer'
+import { DEFAULT_PRAYER_SHOP, validatePrayerBuy, validatePrayerGift, validatePrayerMark, type PrayerBuy, type PrayerGift, type PrayerLog } from '../../shared/prayer'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -40,6 +40,8 @@ interface LocalDb {
   pillDoses?: PillDose[]
   prayers?: PrayerLog[]
   prayerGifts?: PrayerGift[]
+  prayerBigGifts?: PrayerGift[]
+  prayerBuys?: PrayerBuy[]
 }
 
 function freshDb(): LocalDb {
@@ -96,6 +98,9 @@ function toState(db: LocalDb): AppState {
     pillDoses: db.pillDoses ?? [],
     prayers: db.prayers ?? [],
     prayerGifts: db.prayerGifts ?? [],
+    prayerBigGifts: db.prayerBigGifts ?? [],
+    prayerShop: DEFAULT_PRAYER_SHOP,
+    prayerBuys: db.prayerBuys ?? [],
   }
 }
 
@@ -277,12 +282,22 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    openPrayerGift: (weekStart, note) => attempt(() => {
+    openPrayerGift: (weekStart, note, kind = 'week') => attempt(() => {
       const db = load()
-      const gift = validatePrayerGift({ note }, weekStart, toState(db))
+      const gift = validatePrayerGift({ note }, weekStart, toState(db), kind)
       if (typeof gift === 'string') return fail(400, gift)
-      const others = (db.prayerGifts ?? []).filter((item) => item.weekStart !== weekStart)
-      db.prayerGifts = [...others, { weekStart, note: gift.note, status: 'pending', createdAt: new Date().toISOString(), doneAt: null }]
+      const key = kind === 'big' ? 'prayerBigGifts' : 'prayerGifts'
+      const others = (db[key] ?? []).filter((item) => item.weekStart !== weekStart)
+      db[key] = [...others, { weekStart, note: gift.note, status: 'pending', createdAt: new Date().toISOString(), doneAt: null }]
+      save(db)
+      return toState(db)
+    }),
+    buyPrayerItem: (itemId, note) => attempt(() => {
+      const db = load()
+      const buy = validatePrayerBuy({ note }, itemId, toState(db))
+      if (typeof buy === 'string') return fail(400, buy)
+      const buys = db.prayerBuys ?? []
+      db.prayerBuys = [...buys, { ...buy, id: buys.length + 1, status: 'pending', createdAt: new Date().toISOString(), doneAt: null }]
       save(db)
       return toState(db)
     }),

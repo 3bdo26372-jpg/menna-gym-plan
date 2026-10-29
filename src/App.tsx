@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { LazyMotion } from 'framer-motion'
 import { CalendarCheck, ChartLine, Dumbbell, Moon, FileText, Flower2, Gift, HeartPulse, KeyRound, MoonStar, Pill, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
+import { NavWheel } from './components/NavWheel'
 import { TreatPopup } from './components/ChocolateGift'
 import { Card, Spinner } from './components/ui'
 import { useRoute, type Route } from './lib/router'
@@ -61,13 +62,7 @@ function Shell() {
           <span className="brand-mark"><HeartPulse /></span>
           <span><strong>Menna Flow</strong><small>تمرين كل يوم</small></span>
         </a>
-        <nav className="nav" aria-label="الأقسام">
-          {NAV.map(({ route: target, label, icon: Icon }) => (
-            <a key={target} href={`#/${target}`} className="nav-link" aria-current={route === target ? 'page' : undefined}>
-              <Icon aria-hidden="true" /><span>{label}</span>
-            </a>
-          ))}
-        </nav>
+        <NavWheel items={NAV} current={route} />
       </header>
       {mode === 'local' && (
         <p className="mode-banner">وضع تجربة محلي: البيانات محفوظة على الجهاز ده بس لحد ما يتوصل الـ API (VITE_API_URL).</p>

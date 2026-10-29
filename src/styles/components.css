@@ -472,3 +472,7 @@
 .dhikr-count { flex: none; min-width: 72px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; color: #fff; background: var(--berry); font: 800 15px var(--font-num); }
 .dhikr-count.is-done { color: var(--green); background: var(--green-soft); }
 .prayer-row > .chip { font-size: 13px; }
+
+/* The prayer shop: one row per item, the confirm form under it. */
+.shop-list { display: grid; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+.shop-item .shop-confirm { grid-column: 1 / -1; display: grid; gap: 8px; }

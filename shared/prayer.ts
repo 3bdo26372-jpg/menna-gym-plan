@@ -11,8 +11,13 @@ import { periodRestDates, type PeriodEntry } from './period'
  * Every 7 days from the day she first ticks a prayer is a week; a week with
  * WEEK_GOAL of its possible points earns a gift. She opens it on the prayer
  * page, optionally with a hint, and it waits as "pending" until it is marked
- * done in the database. Prayer points are their own tally: they decide the
- * weekly gift and are not added to نقطها.
+ * done in the database. Every BIG_GIFT_WEEKS such weeks in a row earn a bigger
+ * gift the same way.
+ *
+ * Prayer points are their own tally, not added to نقطها: besides deciding the
+ * gifts, they are spent in the prayer shop (محل الصلاة) on items set in the
+ * database. A purchase waits as "pending" too; a cancelled one gives its
+ * points back.
  */
 export const PRAYERS = [
   { name: 'الفجر', emoji: '🌅' },
@@ -206,9 +211,88 @@ export function prayerWeeks(state: PrayerState): PrayerWeek[] {
   return weeks
 }
 
+const opened = (gifts: PrayerGift[] | undefined, weekStart: string) => (gifts ?? []).some((gift) => gift.weekStart === weekStart && gift.status !== 'cancelled')
+
 /** Finished weeks that earned a gift she hasn't opened yet. */
 export const unopenedPrayerGifts = (state: PrayerState & { prayerGifts?: PrayerGift[] }) =>
-  prayerWeeks(state).filter((week) => week.finished && week.reached && !(state.prayerGifts ?? []).some((gift) => gift.weekStart === week.start && gift.status !== 'cancelled'))
+  prayerWeeks(state).filter((week) => week.finished && week.reached && !opened(state.prayerGifts, week.start))
+
+// --- The big gift -----------------------------------------------------------
+
+/** Kept weeks in a row for the big gift; it comes again after every run. */
+export const BIG_GIFT_WEEKS = 4
+
+/**
+ * Her runs of kept weeks: `run` is how many in a row so far, and `milestones`
+ * the week that completed each run of BIG_GIFT_WEEKS. A week that was all
+ * period days is skipped: it neither counts nor breaks the run.
+ */
+export function prayerStreak(state: PrayerState) {
+  const milestones: PrayerWeek[] = []
+  let run = 0
+  for (const week of prayerWeeks(state).filter((item) => item.finished && item.possible > 0)) {
+    run = week.reached ? run + 1 : 0
+    if (run === BIG_GIFT_WEEKS) {
+      milestones.push(week)
+      run = 0
+    }
+  }
+  return { run, milestones }
+}
+
+/** Big gifts earned and not opened yet, keyed by the week that completed the run. */
+export const unopenedBigGifts = (state: PrayerState & { prayerBigGifts?: PrayerGift[] }) =>
+  prayerStreak(state).milestones.filter((week) => !opened(state.prayerBigGifts, week.start))
+
+// --- The prayer shop --------------------------------------------------------
+
+export interface PrayerShopItem {
+  id: string
+  title: string
+  emoji: string
+  price: number
+  /** She has to write what she wants (a request). */
+  noteRequired: boolean
+  sortOrder: number
+}
+
+export interface PrayerBuy {
+  id: number
+  itemId: string
+  /** The item's title and price when she bought it. */
+  title: string
+  points: number
+  note: string | null
+  status: PrayerGiftStatus
+  createdAt: string
+  doneAt: string | null
+}
+
+/** The shop until the database says otherwise; migration 0022 seeds the same items. */
+export const DEFAULT_PRAYER_SHOP: PrayerShopItem[] = [
+  { id: 'treat', title: 'حاجة حلوة تختاريها', emoji: '🍫', price: 150, noteRequired: false, sortOrder: 1 },
+  { id: 'request', title: 'طلب تكتبيه بنفسك', emoji: '✍️', price: 300, noteRequired: true, sortOrder: 2 },
+  { id: 'mat', title: 'سجادة صلاة جديدة', emoji: '🕌', price: 600, noteRequired: false, sortOrder: 3 },
+  { id: 'outing', title: 'خروجة تختاريها', emoji: '🎡', price: 1000, noteRequired: false, sortOrder: 4 },
+]
+
+type ShopState = PrayerState & { prayerShop?: PrayerShopItem[]; prayerBuys?: PrayerBuy[] }
+
+/** Everything she earned with her prayers, minus what she spent in the shop. */
+export function prayerBalance(state: ShopState) {
+  const earned = (state.prayers ?? []).filter((log) => log.date <= state.today).reduce((sum, log) => sum + pointsFor(log), 0)
+  const spent = (state.prayerBuys ?? []).filter((buy) => buy.status !== 'cancelled').reduce((sum, buy) => sum + buy.points, 0)
+  return { earned, spent, balance: earned - spent }
+}
+
+export function validatePrayerBuy(input: unknown, itemId: string, state: ShopState): Pick<PrayerBuy, 'itemId' | 'title' | 'points' | 'note'> | string {
+  const item = (state.prayerShop ?? []).find((candidate) => candidate.id === itemId)
+  if (!item) return 'unknown item'
+  const note = input && typeof input === 'object' && typeof (input as Record<string, unknown>).note === 'string' ? ((input as Record<string, unknown>).note as string).trim().slice(0, GIFT_NOTE_MAX_LENGTH) : ''
+  if (item.noteRequired && !note) return 'write what you would like'
+  if (item.price > prayerBalance(state).balance) return 'not enough prayer points'
+  return { itemId: item.id, title: item.title, points: item.price, note: note || null }
+}
 
 // --- Validation -------------------------------------------------------------
 
@@ -231,9 +315,12 @@ export function validatePrayerMark(input: unknown, date: string, now: number): {
   return { prayer: prayer as number, prayed: fields.prayed, prayedAt: new Date(Math.min(at, now)).toISOString() }
 }
 
-export function validatePrayerGift(input: unknown, weekStart: string, state: PrayerState & { prayerGifts?: PrayerGift[] }): { note: string | null } | string {
+export type PrayerGiftKind = 'week' | 'big'
+
+export function validatePrayerGift(input: unknown, weekStart: string, state: PrayerState & { prayerGifts?: PrayerGift[]; prayerBigGifts?: PrayerGift[] }, kind: PrayerGiftKind = 'week'): { note: string | null } | string {
   if (!isIsoDate(weekStart)) return 'unknown week'
-  if (!unopenedPrayerGifts(state).some((week) => week.start === weekStart)) return 'this week has no gift waiting'
+  const waiting = kind === 'big' ? unopenedBigGifts(state) : unopenedPrayerGifts(state)
+  if (!waiting.some((week) => week.start === weekStart)) return 'this week has no gift waiting'
   const note = input && typeof input === 'object' && typeof (input as Record<string, unknown>).note === 'string' ? ((input as Record<string, unknown>).note as string).trim().slice(0, GIFT_NOTE_MAX_LENGTH) : ''
   return { note: note || null }
 }

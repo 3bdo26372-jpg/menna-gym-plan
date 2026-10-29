@@ -88,7 +88,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
     - workout from 21:00 if she hasn't trained, except on period and pain-rest days
     - each prayer from 10 minutes before its time, with a verse or hadith, and (except Fajr) again 15 minutes before its points start going down; none on period days
     - the morning adhkar two hours before Dhuhr, a short dhikr two hours after it, the evening adhkar half an hour after Asr
-    - a weekly prayer gift, the day after the week that earned it, from 12:00
+    - a weekly prayer gift, the day after the week that earned it, from 12:00, and the big gift the same way
   - A gift pass added after she turned them on is announced once.
   - A one-off message: `INSERT INTO push_messages (title, body) VALUES ('…', '…')` goes out on the next run.
   - The Worker makes its own VAPID keys the first time (`push_config` in D1), so there is no secret to set. Sent reminders are kept in `push_sent`.
@@ -104,8 +104,10 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The home page doesn't offer a pass for a missed workout on a rest day.
 - **Prayer (الصلاة)** (`shared/prayer.ts`, page `#/prayer`, home card in `src/components/Prayer.tsx`):
   - **Times** are worked out in the app for Cairo (`PRAYER_PLACE`) with the Egyptian General Authority of Survey's method (Fajr 19.5°, Isha 17.5°, Shafi'i Asr), following Cairo's summer time. A test checks them against the `adhan` library for every day of 2026–2027 (all within a minute).
-  - **Points** (their own tally, not added to نقطها): 10 per prayer, 50 a day. Full points when she taps «صليت» within an hour of the prayer's time; after that a point less every 15 minutes, never below 2. Fajr is always 10. A prayer can be ticked until the next day's Fajr, and she can pick the earlier time she actually prayed.
+  - **Points** (their own tally, not added to نقطها; spent only in the prayer shop): 10 per prayer, 50 a day. Full points when she taps «صليت» within an hour of the prayer's time; after that a point less every 15 minutes, never below 2. Fajr is always 10. A prayer can be ticked until the next day's Fajr, and she can pick the earlier time she actually prayed.
   - **Weekly gift:** weeks are 7 days from the day she first ticked a prayer. A week with 300 of its 350 points (6/7; period days are left out of both) earns a gift. After the week ends she opens it on the prayer page, optionally with a hint. It stays `pending` in `prayer_gifts` until it is fulfilled: `UPDATE prayer_gifts SET status = 'done', done_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE week_start = '…'` (`'cancelled'` lets her open it again).
+  - **Big gift:** every 4 kept weeks in a row (`BIG_GIFT_WEEKS`) earn a bigger gift, opened the same way; a week without its gift starts the count again, and a week that was all period days is skipped. Fulfil it in `prayer_big_gifts` with the same `UPDATE` as above.
+  - **Prayer shop (محل الصلاة):** everything she earned with her prayers, minus what she bought, is her prayer balance. The items live in `prayer_shop_items` (migration 0022 seeds: something sweet 150, a request she writes 300, a new prayer mat 600, an outing 1000). Change one with `UPDATE prayer_shop_items SET title = '…', price = … WHERE id = '…'`, add one with `INSERT INTO prayer_shop_items (id, title, emoji, price, note_required, sort_order) VALUES (…)`, hide one with `active = 0`. Purchases wait in `prayer_shop_buys` as `pending`; mark them `done` like the gifts, or `cancelled` to give the points back.
   - **Period days** have no prayers: no prayer reminders, nothing counted against her, and the page says so. The adhkar stay.
   - **Adhkar:** morning, evening and after-prayer, each with a tap counter kept on the phone for the day.
   - **Sources** (`shared/prayerTexts.ts`): verses verbatim from Tanzil's verified simple text (CC BY 3.0); hadith from Sahih al-Bukhari, Sahih Muslim and Sunan Abi Dawud (only those al-Albani graded sahih or hasan), numbered as on sunnah.com; adhkar from Hisn al-Muslim with the hadith each comes from. Every quote shows its source.
@@ -114,7 +116,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - The highlight is the first that applies: a special game round, a new treat to open, yesterday's feedback, the card game, the fresh start after a period, a pass for a missed yesterday, or turning on notifications. A gift or game she already opened doesn't come back to the home page.
   - Today's points (workout, water, calories) with buttons to log food and water, the overall stats, next reward and month progress live on the progress and rewards pages.
 - **Greeting** (`src/lib/greetings.ts`): the line at the top of the home page follows her day (a pain rest day, a full 100, the water target, the workout, a nudge from 7 pm with no workout, her period, or the time of day), with a few lines per case rotating daily.
-- **Bottom bar**: the tabs don't fit on a phone, so the bar scrolls sideways; the tab cut off at the edge shows there are more. The current tab is scrolled into view when a link opens a page.
+- **Bottom bar** (`src/components/NavWheel.tsx`): on a phone the tabs sit on a wheel. She drags it right or left, it loops round with no end, a flick carries on a little, and it settles on the nearest tab; tabs drop, tilt and fade as they turn away from the middle. The page she opens turns to the middle. It moves with transforms, not scrolling (a scrolled fixed bar could stop drawing on iPhone). On a wide screen the tabs are a plain row in the top bar.
 - **Reports**: weekly (7-day) and monthly (30-day) PDFs, both including the full food log (it paginates automatically) and average water intake.
 - **Rewards**: unlock at 5, 10 and 30 *active days* (days with at least half the workout done).
   - They are surprises. Until a reward unlocks, the API replaces its title, description and emoji with a generic "مفاجأة يوم N" card (`hideIfLocked` in `shared/rewards.ts`), so the real details never reach the phone early.
@@ -123,7 +125,7 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 
 ### Database (D1)
 
-`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns, 0007 gift passes, 0008 periods, 0009 period pain, …, 0021 prayers) creates these tables:
+`worker/migrations/` (0001 base schema, 0002 food log + weekly reports, 0003 reward hints, 0004 water points, 0005 day passes, 0006 water and calorie score columns, 0007 gift passes, 0008 periods, 0009 period pain, …, 0021 prayers, 0022 prayer shop) creates these tables:
 
 | Table | Purpose |
 |---|---|
@@ -140,7 +142,8 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 | `day_passes` | days completed with a pass, and the points each cost |
 | `pass_gifts` | gifted free passes and their notes |
 | `periods` | each period's start date and, once marked, its last day |
-| `prayers`, `prayer_gifts` | each prayer she ticked and when she prayed it; the weekly prayer gifts she opened |
+| `prayers`, `prayer_gifts`, `prayer_big_gifts` | each prayer she ticked and when she prayed it; the weekly and big prayer gifts she opened |
+| `prayer_shop_items`, `prayer_shop_buys` | what the prayer shop sells, and what she bought |
 | `reports` | saved weekly and monthly report snapshots, so old PDFs can be re-created |
 
 ### Exercise media
