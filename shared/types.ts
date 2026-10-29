@@ -5,6 +5,7 @@ import type { PeriodEntry } from './period'
 import type { SleepLog } from './sleep'
 import type { GamePlay, GameSpecial } from './game'
 import type { PillDose, PillPlan } from './pills'
+import type { PrayerBuy, PrayerGift, PrayerLog, PrayerShopItem } from './prayer'
 
 export type Energy = 'low' | 'normal' | 'high'
 export type Mood = 'bad' | 'okay' | 'good'
@@ -152,6 +153,15 @@ export interface AppState {
   pillPlan?: PillPlan | null
   /** The pills she ticked off. */
   pillDoses?: PillDose[]
+  /** The prayers she ticked; missing while the app is newer than the API. */
+  prayers?: PrayerLog[]
+  /** The weekly prayer gifts she opened. */
+  prayerGifts?: PrayerGift[]
+  /** The big gifts (every 4 kept weeks in a row) she opened; missing while the app is newer than the API. */
+  prayerBigGifts?: PrayerGift[]
+  /** What the prayer shop sells, and what she bought there. */
+  prayerShop?: PrayerShopItem[]
+  prayerBuys?: PrayerBuy[]
 }
 
 export interface MeasurementInput {

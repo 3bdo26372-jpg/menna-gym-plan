@@ -12,6 +12,7 @@ import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, Workou
 import { validateSleep, type SleepLog } from '../../shared/sleep'
 import { dealCards, toPrizeId, validatePlay, type GamePlay, type GameSpecial } from '../../shared/game'
 import { validatePillDose, validatePillPlan, type PillDose, type PillPlan } from '../../shared/pills'
+import { DEFAULT_PRAYER_SHOP, validatePrayerBuy, validatePrayerGift, validatePrayerMark, type PrayerBuy, type PrayerGift, type PrayerLog } from '../../shared/prayer'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -37,6 +38,10 @@ interface LocalDb {
   gameSpecials?: GameSpecial[]
   pillPlan?: PillPlan | null
   pillDoses?: PillDose[]
+  prayers?: PrayerLog[]
+  prayerGifts?: PrayerGift[]
+  prayerBigGifts?: PrayerGift[]
+  prayerBuys?: PrayerBuy[]
 }
 
 function freshDb(): LocalDb {
@@ -91,6 +96,11 @@ function toState(db: LocalDb): AppState {
     gameSpecials: db.gameSpecials ?? [],
     pillPlan: db.pillPlan ?? null,
     pillDoses: db.pillDoses ?? [],
+    prayers: db.prayers ?? [],
+    prayerGifts: db.prayerGifts ?? [],
+    prayerBigGifts: db.prayerBigGifts ?? [],
+    prayerShop: DEFAULT_PRAYER_SHOP,
+    prayerBuys: db.prayerBuys ?? [],
   }
 }
 
@@ -258,6 +268,36 @@ export function createLocalBackend(): Backend {
       if (typeof dose === 'string') return fail(400, dose)
       const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.slot !== dose.slot)
       db.pillDoses = dose.taken ? [...others, { date, slot: dose.slot, takenAt: new Date().toISOString() }] : others
+      save(db)
+      return toState(db)
+    }),
+    savePrayer: (date, prayer, prayed, at) => attempt(() => {
+      const db = load()
+      const problem = checkWritableDate(date, cairoDate(), db.programStartDate)
+      if (problem) return fail(400, problem)
+      const mark = validatePrayerMark({ prayer, prayed, at }, date, Date.now())
+      if (typeof mark === 'string') return fail(400, mark)
+      const others = (db.prayers ?? []).filter((item) => item.date !== date || item.prayer !== mark.prayer)
+      db.prayers = mark.prayed ? [...others, { date, prayer: mark.prayer, prayedAt: mark.prayedAt }] : others
+      save(db)
+      return toState(db)
+    }),
+    openPrayerGift: (weekStart, note, kind = 'week') => attempt(() => {
+      const db = load()
+      const gift = validatePrayerGift({ note }, weekStart, toState(db), kind)
+      if (typeof gift === 'string') return fail(400, gift)
+      const key = kind === 'big' ? 'prayerBigGifts' : 'prayerGifts'
+      const others = (db[key] ?? []).filter((item) => item.weekStart !== weekStart)
+      db[key] = [...others, { weekStart, note: gift.note, status: 'pending', createdAt: new Date().toISOString(), doneAt: null }]
+      save(db)
+      return toState(db)
+    }),
+    buyPrayerItem: (itemId, note) => attempt(() => {
+      const db = load()
+      const buy = validatePrayerBuy({ note }, itemId, toState(db))
+      if (typeof buy === 'string') return fail(400, buy)
+      const buys = db.prayerBuys ?? []
+      db.prayerBuys = [...buys, { ...buy, id: buys.length + 1, status: 'pending', createdAt: new Date().toISOString(), doneAt: null }]
       save(db)
       return toState(db)
     }),

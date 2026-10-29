@@ -1,7 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
 import { LazyMotion } from 'framer-motion'
-import { CalendarCheck, ChartLine, Dumbbell, Moon, FileText, Flower2, Gift, HeartPulse, KeyRound, Pill, RefreshCw, Ruler, Utensils } from 'lucide-react'
+import { CalendarCheck, ChartLine, Dumbbell, Moon, FileText, Flower2, Gift, HeartPulse, KeyRound, MoonStar, Pill, RefreshCw, Ruler, Utensils } from 'lucide-react'
 import { Celebration } from './components/Celebration'
+import { NavWheel } from './components/NavWheel'
 import { TreatPopup } from './components/ChocolateGift'
 import { Card, Spinner } from './components/ui'
 import { useRoute, type Route } from './lib/router'
@@ -11,6 +12,7 @@ import { AppDataProvider, useAppData } from './state/AppData'
 const WorkoutPage = lazy(() => import('./workout/WorkoutPage').then((module) => ({ default: module.WorkoutPage })))
 const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })))
 const SleepPage = lazy(() => import('./pages/SleepPage').then((module) => ({ default: module.SleepPage })))
+const PrayerPage = lazy(() => import('./pages/PrayerPage').then((module) => ({ default: module.PrayerPage })))
 const PillsPage = lazy(() => import('./pages/PillsPage').then((module) => ({ default: module.PillsPage })))
 const ProgressPage = lazy(() => import('./pages/ProgressPage').then((module) => ({ default: module.ProgressPage })))
 const FoodPage = lazy(() => import('./pages/FoodPage').then((module) => ({ default: module.FoodPage })))
@@ -21,6 +23,7 @@ const PeriodPage = lazy(() => import('./pages/PeriodPage').then((module) => ({ d
 
 const NAV: { route: Exclude<Route, 'workout'>; label: string; icon: typeof CalendarCheck }[] = [
   { route: 'today', label: 'اليوم', icon: CalendarCheck },
+  { route: 'prayer', label: 'الصلاة', icon: MoonStar },
   { route: 'training', label: 'التمرين', icon: Dumbbell },
   { route: 'sleep', label: 'النوم', icon: Moon },
   { route: 'pills', label: 'البرشام', icon: Pill },
@@ -59,13 +62,7 @@ function Shell() {
           <span className="brand-mark"><HeartPulse /></span>
           <span><strong>Menna Flow</strong><small>تمرين كل يوم</small></span>
         </a>
-        <nav className="nav" aria-label="الأقسام">
-          {NAV.map(({ route: target, label, icon: Icon }) => (
-            <a key={target} href={`#/${target}`} className="nav-link" aria-current={route === target ? 'page' : undefined}>
-              <Icon aria-hidden="true" /><span>{label}</span>
-            </a>
-          ))}
-        </nav>
+        <NavWheel items={NAV} current={route} />
       </header>
       {mode === 'local' && (
         <p className="mode-banner">وضع تجربة محلي: البيانات محفوظة على الجهاز ده بس لحد ما يتوصل الـ API (VITE_API_URL).</p>
@@ -86,6 +83,7 @@ function Shell() {
             {route === 'today' && <TodayPage />}
             {route === 'training' && <TrainingPage />}
             {route === 'sleep' && <SleepPage />}
+            {route === 'prayer' && <PrayerPage />}
             {route === 'pills' && <PillsPage />}
             {route === 'progress' && <ProgressPage />}
             {route === 'food' && <FoodPage />}

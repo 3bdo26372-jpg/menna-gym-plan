@@ -1,9 +1,12 @@
+import { addDays, sayTime } from './date'
 import { unusedGifts } from './dayPasses'
 import { waterMl } from './food'
 import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest, periodForecast } from './period'
 import { PILL_SLOTS, pillsOn, pillTaken } from './pills'
 import { EARN, WATER_GOAL_ML } from './points'
+import { ASR, BIG_GIFT_WEEKS, FAJR, ON_TIME_MIN, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, unopenedBigGifts, unopenedPrayerGifts } from './prayer'
+import { ASR_QUOTES, DHIKR_QUOTES, FAJR_QUOTES, PRAYER_QUOTES, quoteLine, quoteOfDay } from './prayerTexts'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import type { AppState } from './types'
 
@@ -22,6 +25,13 @@ import type { AppState } from './types'
  * - pills: until she has said when to be reminded, she is asked at 18:00 and
  *   once more at 21:00; then each pill at the time she picked, every day up to
  *   her last day, and once more 45 minutes later if she hasn't ticked it off
+ * - prayers: each one from 10 minutes before its time, with a verse or a
+ *   hadith; and (except Fajr) once more 15 minutes before its points start
+ *   going down, if she hasn't ticked it. None on her period days.
+ * - adhkar: the morning ones two hours before Dhuhr, the evening ones half an
+ *   hour after Asr, and one short dhikr two hours after Dhuhr
+ * - a weekly prayer gift, the day after the week that earned it, from 12:00,
+ *   and the big one the day after every 4 kept weeks in a row
  * A gift pass added after she turned notifications on is announced once, any time of day.
  */
 export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed' | 'pillsAsk'
@@ -48,6 +58,14 @@ const PILLS_ASK_AGAIN = '21:00'
 /** A pill's reminder goes out up to this long after its time, and the nudge this long after it. */
 const PILL_WINDOW_MIN = 3 * 60
 const PILL_AGAIN_MIN = 45
+/** Prayer notes start this long before the prayer, and the nudge comes this long before its points go down. */
+const PRAYER_EARLY_MIN = 10
+const PRAYER_NUDGE_MIN = 15
+/** The adhkar notes, in minutes from the prayer times. */
+const MORNING_ADHKAR_BEFORE_DHUHR = 120
+const EVENING_ADHKAR_AFTER_ASR = 30
+const DHIKR_AFTER_DHUHR = 120
+const PRAYER_GIFT_FROM = '12:00'
 /** The day's water as glasses, spread from waking up to the end of the water window. */
 export const GLASS_ML = 250
 export const GLASSES = WATER_GOAL_ML / GLASS_ML
@@ -55,15 +73,8 @@ export const GLASSES = WATER_GOAL_ML / GLASS_ML
 export const DEFAULT_WAKE = '12:00'
 
 const minutesOf = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
-const pad = (value: number) => String(value).padStart(2, '0')
 
-/** "4:30 العصر", "11 الصبح", "9:15 بالليل". */
-export function sayTime(minutes: number) {
-  const hour = Math.floor(minutes / 60) % 24
-  const minute = minutes % 60
-  const part = hour < 12 ? 'الصبح' : hour < 15 ? 'الضهر' : hour < 18 ? 'العصر' : hour < 20 ? 'المغرب' : 'بالليل'
-  return `${hour % 12 || 12}${minute ? `:${pad(minute)}` : ''} ${part}`
-}
+export { sayTime }
 
 /** When each of the day's glasses is due, in minutes after midnight, the first one on waking. */
 export function waterPlan(wokeAt: string | null | undefined) {
@@ -72,6 +83,9 @@ export function waterPlan(wokeAt: string | null | undefined) {
   const gap = (end - wake) / GLASSES
   return Array.from({ length: GLASSES }, (_, index) => Math.round(wake + index * gap))
 }
+
+/** "دقيقة", "دقيقتين", "5 دقايق", "15 دقيقة". */
+export const minutesSaid = (count: number) => (count === 1 ? 'دقيقة' : count === 2 ? 'دقيقتين' : count <= 10 ? `${count} دقايق` : `${count} دقيقة`)
 
 const ORDINALS = ['الأولى', 'التانية', 'التالتة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'التامنة', 'التاسعة', 'العاشرة']
 const glassCount = (count: number) => (count === 1 ? 'كوباية واحدة' : count === 2 ? 'كوبايتين' : `${count} ${count <= 10 ? 'كوبايات' : 'كوباية'}`)
@@ -147,6 +161,49 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
         add({ key: `pill-${index}-again`, title: `خدتي برشامة ${slot.label}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
       }
     })
+  }
+
+  // Prayers, from 10 minutes before each one until its points start going down (or the next prayer).
+  if (state.prayers !== undefined) {
+    const times = prayerTimes(state.today)
+    const between = (from: number, until: number) => now >= from && now < until
+    if (!prayerFreeDates(state.periods, state.today).has(state.today)) {
+      PRAYERS.forEach((prayer, index) => {
+        if (prayerLog(state.prayers, state.today, index)) return
+        const at = times.prayers[index]
+        const end = Math.min(at + ON_TIME_MIN, times.prayers[index + 1] ?? 24 * 60)
+        if (between(at - PRAYER_EARLY_MIN, end)) {
+          const quotes = index === FAJR ? FAJR_QUOTES : index === ASR ? [...ASR_QUOTES, ...PRAYER_QUOTES] : PRAYER_QUOTES
+          add({
+            key: `prayer-${index}`,
+            title: now < at ? `أذان ${prayer.name} كمان ${minutesSaid(at - now)} ${prayer.emoji}` : `أذّن ${prayer.name} يا {nick} ${prayer.emoji}`,
+            body: quoteLine(quoteOfDay(quotes, state.today, index)),
+            url: '/#/prayer',
+          })
+        }
+        if (index !== FAJR && between(at + ON_TIME_MIN - PRAYER_NUDGE_MIN, end) && sent.has(`prayer-${index}`)) {
+          add({ key: `prayer-${index}-again`, title: `صلّيتي ${prayer.name}؟ 🕌`, body: `لسه ${minutesSaid(PRAYER_NUDGE_MIN)} وتاخدي الـ ${PRAYER_POINTS} نقط كاملين، ودوسي «صليت» يا {nick} 🤍`, url: '/#/prayer' })
+        }
+      })
+    }
+    const [, dhuhr, asr, maghrib] = times.prayers
+    if (between(Math.max(times.sunrise, dhuhr - MORNING_ADHKAR_BEFORE_DHUHR), dhuhr)) {
+      add({ key: 'adhkar-morning', title: 'أذكار الصباح يا {nick} ☀️', body: `خمس دقايق تحفظك طول اليوم 🤍 ${quoteLine(quoteOfDay(DHIKR_QUOTES, state.today))}`, url: '/#/prayer/adhkar' })
+    }
+    if (between(dhuhr + DHIKR_AFTER_DHUHR, asr)) {
+      add({ key: 'dhikr', title: 'ذكر صغير يا {nick} 📿', body: quoteLine(quoteOfDay(DHIKR_QUOTES, state.today, 1)), url: '/#/prayer/adhkar' })
+    }
+    if (between(asr + EVENING_ADHKAR_AFTER_ASR, maghrib)) {
+      add({ key: 'adhkar-evening', title: 'أذكار المسا يا {nick} 🌇', body: 'قبل المغرب، وخلّي آخر يومك ذكر 🤍', url: '/#/prayer/adhkar' })
+    }
+    if (time >= PRAYER_GIFT_FROM) {
+      for (const week of unopenedPrayerGifts(state).filter((item) => addDays(item.end, 1) === state.today)) {
+        add({ key: `prayer-gift-${week.start}`, title: 'كسبتي هدية أسبوع الصلاة 🎁', body: `${week.earned} نقطة من ${week.possible} الأسبوع ده، ربنا يتقبّل يا {nick} 🤍 افتحي هديتك`, url: '/#/prayer' })
+      }
+      for (const week of unopenedBigGifts(state).filter((item) => addDays(item.end, 1) === state.today)) {
+        add({ key: `prayer-big-${week.start}`, title: `${BIG_GIFT_WEEKS} أسابيع صلاة ورا بعض 🏆`, body: 'كسبتي الهدية الكبيرة يا {nick}، ربنا يثبّتك 🤍 افتحيها من صفحة الصلاة', url: '/#/prayer' })
+      }
+    }
   }
 
   for (const gift of unusedGifts(state).filter((item) => item.createdAt > giftsAfter)) {

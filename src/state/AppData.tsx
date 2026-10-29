@@ -5,6 +5,7 @@ import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
 import type { PillPlan } from '../../shared/pills'
+import type { PrayerGiftKind } from '../../shared/prayer'
 import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
 import { createHttpBackend, passcodeStore } from '../lib/httpBackend'
@@ -38,6 +39,9 @@ interface AppDataValue {
   deletePeriod(id: number): Promise<void>
   savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<void>
   savePillDose(date: string, slot: number, taken: boolean): Promise<void>
+  savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<void>
+  openPrayerGift(weekStart: string, note?: string, kind?: PrayerGiftKind): Promise<void>
+  buyPrayerItem(itemId: string, note?: string): Promise<void>
   generateReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   getReport(kind: ReportKind, periodIndex: number): Promise<ReportData>
   /** Push notifications don't touch the state, so these go straight to the backend. */
@@ -99,6 +103,9 @@ function createBackend(): Backend {
     deletePeriod: forward('deletePeriod'),
     savePillPlan: forward('savePillPlan'),
     savePillDose: forward('savePillDose'),
+    savePrayer: forward('savePrayer'),
+    openPrayerGift: forward('openPrayerGift'),
+    buyPrayerItem: forward('buyPrayerItem'),
     generateReport: forward('generateReport'),
     getReport: forward('getReport'),
     pushKey: forward('pushKey'),
@@ -231,6 +238,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       deletePeriod: async (id) => void (await apply(backend.deletePeriod(id))),
       savePillPlan: async (plan) => void (await apply(backend.savePillPlan(plan))),
       savePillDose: async (date, slot, taken) => void (await apply(backend.savePillDose(date, slot, taken))),
+      savePrayer: async (date, prayer, prayed, at) => void (await apply(backend.savePrayer(date, prayer, prayed, at))),
+      openPrayerGift: async (weekStart, note, kind) => void (await apply(backend.openPrayerGift(weekStart, note, kind))),
+      buyPrayerItem: async (itemId, note) => void (await apply(backend.buyPrayerItem(itemId, note))),
       async generateReport(kind, periodIndex) {
         const result = await backend.generateReport(kind, periodIndex)
         setState(result.state)
