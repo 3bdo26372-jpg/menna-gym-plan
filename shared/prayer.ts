@@ -3,7 +3,7 @@ import { periodRestDates, type PeriodEntry } from './period'
 
 /**
  * Her five prayers (صلاتها). Each one is worth PRAYER_POINTS when she taps
- * «صليت» within an hour of its time; after that it loses a point every 15
+ * «صليت» within an hour of its time; after that it loses a point every 30
  * minutes, down to LATE_FLOOR, so praying late still counts for something.
  * Fajr never loses points. A prayer can be ticked until the next day's Fajr.
  * Period days have no prayers: they are left out, and never count against her.
@@ -34,7 +34,7 @@ export const DAY_POINTS = PRAYER_POINTS * PRAYERS.length
 /** Full points up to this long after the prayer's time. */
 export const ON_TIME_MIN = 60
 /** After that, a point less every this many minutes, never below LATE_FLOOR. */
-export const LATE_STEP_MIN = 15
+export const LATE_STEP_MIN = 30
 export const LATE_FLOOR = 2
 export const PRAYER_WEEK_DAYS = 7
 /** A week earns its gift at this share of its possible points: 300 of 350. */

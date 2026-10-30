@@ -49,12 +49,12 @@ describe('prayer times', () => {
 })
 
 describe('prayer points', () => {
-  it('gives 10 within an hour, then a point less every quarter hour, never below 2; Fajr always 10', () => {
+  it('gives 10 within an hour, then a point less every half hour, never below 2; Fajr always 10', () => {
     expect(prayerPoints(1, 0)).toBe(10)
     expect(prayerPoints(1, 60)).toBe(10)
     expect(prayerPoints(1, 61)).toBe(9)
-    expect(prayerPoints(1, 75)).toBe(9)
-    expect(prayerPoints(1, 76)).toBe(8)
+    expect(prayerPoints(1, 90)).toBe(9)
+    expect(prayerPoints(1, 91)).toBe(8)
     expect(prayerPoints(1, 600)).toBe(2)
     expect(prayerPoints(0, 600)).toBe(10)
   })

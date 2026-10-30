@@ -37,7 +37,7 @@ export function PrayerPage() {
   return (
     <div className="page">
       <PageHeader eyebrow="الصلاة" title="صلاتك 🕌">
-        <p>كل صلاة {PRAYER_POINTS} نقط لو صليتيها في أول ساعة من وقتها، وبعدها بتقل نقطة كل ربع ساعة. الفجر ليه الـ {PRAYER_POINTS} كاملين في أي وقت. وكل أسبوع تواظبي فيه، ليكي هدية 🎁</p>
+        <p>كل صلاة {PRAYER_POINTS} نقط لو صليتيها في أول ساعة من وقتها، وبعدها بتقل نقطة كل نص ساعة. الفجر ليه الـ {PRAYER_POINTS} كاملين في أي وقت. وكل أسبوع تواظبي فيه، ليكي هدية 🎁</p>
       </PageHeader>
 
       <QuoteBlock quote={quoteOfDay(PRAYER_QUOTES, state.today, 5)} />
