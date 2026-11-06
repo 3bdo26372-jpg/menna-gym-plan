@@ -495,3 +495,4 @@
 .recap-card .link-button { justify-self: start; }
 .pill-row.is-editing { display: block; }
 .pill-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.older-pass { display: grid; gap: 10px; padding-top: 4px; border-top: 1px solid var(--line); }
