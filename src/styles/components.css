@@ -253,8 +253,6 @@
 .earn-ways li > span { font-size: 20px; }
 .earn-ways b { font: 800 14px var(--font-num); color: var(--berry-dark); white-space: nowrap; direction: ltr; }
 .earn-ways b.rtl { direction: rtl; }
-.gift-card { grid-template-columns: auto 1fr; align-items: start; border-color: var(--rose-200); background: linear-gradient(160deg, #fff, #fde8f1); }
-.gift-card > div { display: grid; gap: 8px; justify-items: start; }
 .gift-emoji { font-size: 40px; line-height: 1; }
 .gift-note { margin: 0; font-size: 18px; font-weight: 800; color: var(--berry-dark); }
 
@@ -294,11 +292,8 @@
 .sleep-form > .field.is-wide { grid-column: 1 / -1; }
 
 /* ---- passes wrapped as a chocolate bar (gifts, and the first days of a period) */
-.chocolate-card { grid-template-columns: 1fr; justify-items: center; text-align: center; overflow: hidden; }
-.chocolate-card.is-period { background: linear-gradient(160deg, #fff, #fdf0f5); }
 .treat-inside { display: grid; gap: 8px; justify-items: center; }
 .treat-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
-.chocolate-stage { width: 100%; display: grid; place-items: center; padding: 6px 0 2px; }
 .chocolate { position: relative; width: min(100%, 290px); aspect-ratio: 2.1; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .chocolate.is-big { width: min(100%, 320px); }
 .chocolate:disabled { cursor: default; opacity: 1; }
