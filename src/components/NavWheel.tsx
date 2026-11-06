@@ -12,6 +12,8 @@ const STEP = 66
 const DRAG_SLOP = 6
 /** A flick carries on for about this long before it settles. */
 const FLING_MS = 180
+/** The wheel's turn (the tabs' transition in base.css) before the middle tab opens. */
+const SETTLE_MS = 320
 
 const DESKTOP = '(min-width: 900px)'
 const subscribe = (onChange: () => void) => {
@@ -31,8 +33,9 @@ const offset = (index: number, position: number, count: number) => {
 
 /**
  * The bottom bar on a phone: the tabs sit on a wheel that turns with her
- * finger, loops round with no end, and settles on the nearest tab. The page
- * she opens turns to the middle. It moves with transforms rather than
+ * finger, loops round with no end, and settles on the nearest tab, which
+ * opens by itself (a tap on any tab opens it too). The page she opens turns
+ * to the middle. It moves with transforms rather than
  * scrolling, because a scrolled fixed bar on iPhone could stop drawing its
  * tabs. On a wide screen it is a plain row in the top bar.
  */
@@ -50,6 +53,7 @@ export function NavWheel({ items, current }: { items: NavItem[]; current: string
   }
   const drag = useRef<{ x: number; from: number; moved: boolean; samples: { x: number; t: number }[] } | null>(null)
   const swallowClick = useRef(false)
+  const openTimer = useRef<number | undefined>(undefined)
 
   if (desktop) {
     return (
@@ -64,6 +68,8 @@ export function NavWheel({ items, current }: { items: NavItem[]; current: string
   }
 
   function down(event: PointerEvent<HTMLElement>) {
+    // A new turn before the last one settled cancels its page.
+    window.clearTimeout(openTimer.current)
     drag.current = { x: event.clientX, from: position, moved: false, samples: [{ x: event.clientX, t: event.timeStamp }] }
   }
   function move(event: PointerEvent<HTMLElement>) {
@@ -88,7 +94,12 @@ export function NavWheel({ items, current }: { items: NavItem[]; current: string
     const first = state.samples[0]
     const last = state.samples[state.samples.length - 1]
     const speed = last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0
-    setPosition((value) => Math.round(value + (speed * FLING_MS) / STEP))
+    const settled = Math.round(position + (speed * FLING_MS) / STEP)
+    setPosition(settled)
+    // The tab that stops in the middle opens by itself, once the wheel has settled.
+    const route = items[((settled % count) + count) % count].route
+    window.clearTimeout(openTimer.current)
+    if (route !== current) openTimer.current = window.setTimeout(() => { window.location.hash = `#/${route}` }, SETTLE_MS)
   }
   function click(event: MouseEvent<HTMLElement>) {
     // The tap that ends a drag shouldn't open a page.
