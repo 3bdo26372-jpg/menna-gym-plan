@@ -6,6 +6,10 @@ import { isPeriodPassDate, missedWorkout, PASS_PRICE, passCandidates, passPrice,
 import { pointsBalance } from '../../shared/points'
 import { Card, EmptyState, Notice, StatTile } from '../components/ui'
 import { useAppData, useAppState } from '../state/AppData'
+import type { DayRecord } from '../../shared/types'
+
+/** The latest days she can complete are listed; older ones she picks by date. */
+const RECENT_PASS_DAYS = 2
 
 /** Day passes: mark a day she didn't train as trained. The first is free, then calorie points. */
 export function DayPasses() {
@@ -17,6 +21,11 @@ export function DayPasses() {
   const { balance } = pointsBalance(state)
   const price = passPrice(state)
   const candidates = passCandidates(state)
+  // The two latest days she can complete; an older one she picks by its date.
+  const recent = candidates.slice(0, RECENT_PASS_DAYS)
+  const older = candidates.slice(RECENT_PASS_DAYS)
+  const [olderDate, setOlderDate] = useState('')
+  const picked = older.find((day) => day.date === olderDate) ?? null
   const label = (date: string) => (date === state.today ? 'النهارده' : date === addDays(state.today, -1) ? 'امبارح' : formatDateShort(date))
 
   async function take(date: string, dayNumber: number) {
@@ -24,6 +33,7 @@ export function DayPasses() {
     setMessage(null)
     try {
       await takeDayPass(date)
+      setOlderDate('')
       setMessage({ tone: 'success', text: `يوم ${dayNumber} بقى 100 واتحسب متمرّن ✓` })
     } catch (caught) {
       setMessage({ tone: 'care', text: caught instanceof Error ? caught.message : 'تعذّر الحفظ' })
@@ -31,6 +41,30 @@ export function DayPasses() {
       setBusy(false)
       setConfirming(null)
     }
+  }
+
+  function row(day: DayRecord) {
+    const dayPrice = passPriceFor(state, day.date)
+    return (
+      <li key={day.date}>
+        <div className="food-copy">
+          <strong>يوم {day.dayNumber} · {label(day.date)}</strong>
+          <small>{day.score.total} من 100{missedWorkout(day) ? ' · ماتمرنتيش' : ''}{isPeriodPassDate(state, day.date) ? ' · هدية ببلاش 🌸' : ''}</small>
+        </div>
+        {confirming === day.date ? (
+          <span className="spend-confirm">
+            <button type="button" className="button primary" disabled={busy} onClick={() => void take(day.date, day.dayNumber)}>
+              {busy ? 'لحظة…' : dayPrice === 0 ? 'تأكيد (ببلاش)' : `تأكيد (${dayPrice} نقطة)`}
+            </button>
+            <button type="button" className="link-button" disabled={busy} onClick={() => setConfirming(null)}>إلغاء</button>
+          </span>
+        ) : (
+          <button type="button" className="button secondary" disabled={dayPrice > balance} onClick={() => setConfirming(day.date)}>
+            {dayPrice > balance ? `محتاجة ${dayPrice - balance} نقطة` : dayPrice === 0 ? 'استخدمي الإكسبشن 🎁' : 'استخدمي الإكسبشن'}
+          </button>
+        )}
+      </li>
+    )
   }
 
   return (
@@ -43,37 +77,24 @@ export function DayPasses() {
       </div>
       <p className="muted small">أول إكسبشن ببلاش، وبعد كده بـ {PASS_PRICE} نقطة من <a href="#/rewards/points">نقطك</a>.</p>
       {unusedGifts(state).map((gift) => (
-        <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{isGiftOpened(gift.id) ? gift.note ?? 'إكسبشن ببلاش' : 'مستنياكي شوكولاتة في الصفحة الرئيسية، افتحيها الأول 🍫'}</p>
+        <p key={gift.id} className="reward-hint"><span>🎁 إكسبشن هدية</span>{isGiftOpened(gift.id) ? gift.note ?? 'إكسبشن ببلاش' : 'هتطلعلك شوكولاتة لما تفتحي البرنامج، افتحيها الأول 🍫'}</p>
       ))}
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       {candidates.length === 0 ? (
         <EmptyState icon={<Ticket />} title="كل الأيام كاملة 💪" />
       ) : (
-        <ul className="makeup-list">
-          {candidates.map((day) => {
-            const dayPrice = passPriceFor(state, day.date)
-            return (
-            <li key={day.date}>
-              <div className="food-copy">
-                <strong>يوم {day.dayNumber} · {label(day.date)}</strong>
-                <small>{day.score.total} من 100{missedWorkout(day) ? ' · ماتمرنتيش' : ''}{isPeriodPassDate(state, day.date) ? ' · هدية ببلاش 🌸' : ''}</small>
-              </div>
-              {confirming === day.date ? (
-                <span className="spend-confirm">
-                  <button type="button" className="button primary" disabled={busy} onClick={() => void take(day.date, day.dayNumber)}>
-                    {busy ? 'لحظة…' : dayPrice === 0 ? 'تأكيد (ببلاش)' : `تأكيد (${dayPrice} نقطة)`}
-                  </button>
-                  <button type="button" className="link-button" disabled={busy} onClick={() => setConfirming(null)}>إلغاء</button>
-                </span>
-              ) : (
-                <button type="button" className="button secondary" disabled={dayPrice > balance} onClick={() => setConfirming(day.date)}>
-                  {dayPrice > balance ? `محتاجة ${dayPrice - balance} نقطة` : dayPrice === 0 ? 'استخدمي الإكسبشن 🎁' : 'استخدمي الإكسبشن'}
-                </button>
-              )}
-            </li>
-            )
-          })}
-        </ul>
+        <ul className="makeup-list">{recent.map((day) => row(day))}</ul>
+      )}
+      {older.length > 0 && (
+        <div className="older-pass">
+          <label className="field">
+            <span>يوم أقدم؟ اختاري تاريخه</span>
+            <input type="date" value={olderDate} min={older.at(-1)!.date} max={older[0].date} onChange={(event) => { setOlderDate(event.target.value); setConfirming(null) }} />
+          </label>
+          {olderDate && (picked
+            ? <ul className="makeup-list">{row(picked)}</ul>
+            : <p className="muted small">اليوم ده كامل أو خد إكسبشن قبل كده، اختاري يوم تاني.</p>)}
+        </div>
       )}
     </Card>
   )
