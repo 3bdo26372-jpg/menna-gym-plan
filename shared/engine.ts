@@ -137,9 +137,9 @@ export function preferWorkout(existing: WorkoutResult | null, incoming: WorkoutR
   return !existing || incoming.mainCompletion >= existing.mainCompletion
 }
 
-/** Trained (half the workout or more), a day pass, or a period-pain rest day. */
-export function isActiveDay(day: Pick<DayRecord, 'workout' | 'excused'> & Partial<Pick<DayRecord, 'periodPain'>>) {
-  return Boolean(day.excused || isPainRest(day.periodPain) || (day.workout && day.workout.mainCompletion >= ACTIVE_DAY_MIN_COMPLETION))
+/** Trained (half the workout or more), a day pass, a period-pain rest day or a rest day of the weekly plan. */
+export function isActiveDay(day: Pick<DayRecord, 'workout' | 'excused'> & Partial<Pick<DayRecord, 'periodPain' | 'restDay'>>) {
+  return Boolean(day.excused || day.restDay || isPainRest(day.periodPain) || (day.workout && day.workout.mainCompletion >= ACTIVE_DAY_MIN_COMPLETION))
 }
 
 /** Rewards that should now be unlocked, with the date their threshold was reached. */

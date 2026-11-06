@@ -12,8 +12,8 @@ import type { CheckIn, Feedback, ScoreBreakdown, WorkoutResult } from './types'
  * - Calories (30): full points from 1,200 up to the top of the day's range;
  *   above it 1 point is lost per 25 kcal; below 1,200 points shrink so skipping
  *   meals isn't rewarded. Nothing logged earns nothing.
- * On a period-pain day (pain above 4) the workout's share is filled in, so
- * resting costs nothing.
+ * On a period-pain day (pain above 4) and on a rest day of the weekly plan
+ * (week.ts) the workout's share is filled in, so resting costs nothing.
  * A day pass completes the day: whatever is missing is filled up to 100.
  * Older "makeup" spends do the same with their points.
  */
@@ -56,7 +56,7 @@ export function computeDailyScore(day: {
   workout: WorkoutResult | null
   feedback: Feedback | null
   periodPain?: number | null
-}, makeupPoints = 0, excused = false, food?: FoodScoreInput, legacy = false): ScoreBreakdown {
+}, makeupPoints = 0, excused = false, food?: FoodScoreInput, legacy = false, restDay = false): ScoreBreakdown {
   const points = legacy ? LEGACY_POINTS : SCORE_POINTS
   const checkin = day.checkin ? points.checkin : 0
   const completion = day.workout ? Math.min(1, Math.max(0, day.workout.mainCompletion)) : 0
@@ -69,7 +69,7 @@ export function computeDailyScore(day: {
   const calories = food && !legacy ? calorieScore(food.calories, food.calorieMax) : 0
   const earned = checkin + workout + warmupCooldown + feedback + water + calories
   const workoutShare = points.checkin + points.workout + points.warmup + points.cooldown + points.feedback
-  const rest = isPainRest(day.periodPain) ? workoutShare - (checkin + workout + warmupCooldown + feedback) : 0
+  const rest = isPainRest(day.periodPain) || restDay ? workoutShare - (checkin + workout + warmupCooldown + feedback) : 0
   const makeup = Math.max(0, Math.min(makeupPoints, MAX_DAILY_SCORE - earned - rest))
   const pass = excused ? MAX_DAILY_SCORE - earned - rest - makeup : 0
   return { checkin, workout, warmupCooldown, feedback, water, calories, makeup, pass, rest, total: earned + rest + makeup + pass }

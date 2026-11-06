@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES, EXERCISE_BY_ID } from '../exercises'
-import { adaptiveState, buildWorkoutPlan, dayTypeFor, LEVELS, MAX_LEVEL, planForDay, TINY_TITLE } from '../program'
+import { adaptiveState, buildWorkoutPlan, dayTypeAfter, feltLight, LEVELS, LONG_BREAK_DAYS, MAX_LEVEL, nextDayType, planForDay, TINY_TITLE } from '../program'
+import type { PeriodEntry } from '../period'
 import { checkin, day, feedback, workout } from './fixtures'
 import { addDays } from '../date'
 
@@ -29,8 +30,44 @@ describe('exercise catalog', () => {
 })
 
 describe('workout plans', () => {
-  it('rotates three active days and a Light Movement Day', () => {
-    expect([1, 2, 3, 4, 5, 8].map(dayTypeFor)).toEqual(['cardio-burn', 'box-kick', 'sculpt-sweat', 'light', 'cardio-burn', 'light'])
+  it('rotates the three active days workout by workout', () => {
+    expect([null, 'cardio-burn', 'box-kick', 'sculpt-sweat'].map((type) => dayTypeAfter(type as never))).toEqual(['cardio-burn', 'box-kick', 'sculpt-sweat', 'cardio-burn'])
+  })
+
+  it('picks up after the last active workout, so rest days never skip a type', () => {
+    const days = [
+      day('2026-11-03', 36, { workout: workout({ dayType: 'box-kick' }) }),
+      day('2026-11-04', 37),
+      day('2026-11-05', 38, { workout: workout({ dayType: 'light' }) }),
+      day('2026-11-06', 39),
+    ]
+    expect(nextDayType(days, '2026-11-07')).toBe('sculpt-sweat')
+    expect(nextDayType([], '2026-11-07')).toBe('cardio-burn')
+    // Less than half of a workout doesn't move the rotation on.
+    expect(nextDayType([day('2026-11-03', 36, { workout: workout({ dayType: 'box-kick', mainCompletion: 0.2 }) })], '2026-11-04')).toBe('cardio-burn')
+  })
+
+  it('goes gentle just before her period, and light when she is tired too', () => {
+    const periods: PeriodEntry[] = [{ id: 1, startDate: '2026-10-12', endDate: '2026-10-16', createdAt: '' }]
+    // A 28-day cycle: the next one is expected on 11-09, so 11-06 is just before it.
+    const before = planForDay([], '2026-11-06', 39, checkin, periods)
+    expect(before.intensity).toBe('gentle')
+    expect(before.dayType).not.toBe('light')
+    expect(before.blocks.find((block) => block.id === 'cardio')!.exerciseIds.every((id) => EXERCISE_BY_ID[id].impact === 'low')).toBe(true)
+    expect(planForDay([], '2026-11-06', 39, { ...checkin, body: 'tired' }, periods).dayType).toBe('light')
+    expect(planForDay([], '2026-10-25', 27, checkin, periods).intensity).toBe('normal')
+  })
+
+  it('leaves skater steps out of every workout', () => {
+    for (let dayNumber = 1; dayNumber <= 24; dayNumber++) {
+      for (const level of [0, MAX_LEVEL]) {
+        for (const intensity of [{ energy: 'low' as const }, {}]) {
+          const plan = buildWorkoutPlan({ date: '2026-11-06', dayNumber, level, checkin: { ...checkin, ...intensity } })
+          expect(plan.blocks.flatMap((block) => block.exerciseIds)).not.toContain('skater-steps')
+        }
+      }
+    }
+    expect(buildWorkoutPlan({ date: '2026-11-06', dayNumber: 1, level: 0, painReported: true }).blocks.flatMap((block) => block.exerciseIds)).not.toContain('skater-steps')
   })
 
   it('keeps level 0 workouts around 15–20 minutes and the top level under 30', () => {
@@ -93,8 +130,8 @@ describe('adaptation', () => {
     }))
 
   it('moves up one level after three Easy workouts', () => {
-    expect(adaptiveState(history(['easy', 'easy']), '2026-10-10').level).toBe(0)
-    expect(adaptiveState(history(['easy', 'easy', 'easy']), '2026-10-10').level).toBe(1)
+    expect(adaptiveState(history(['easy', 'easy']), '2026-10-03').level).toBe(0)
+    expect(adaptiveState(history(['easy', 'easy', 'easy']), '2026-10-03').level).toBe(1)
     expect(LEVELS[1].workSeconds - LEVELS[0].workSeconds).toBe(5)
   })
 
@@ -102,6 +139,40 @@ describe('adaptation', () => {
     const state = adaptiveState(history(['easy', 'easy', 'easy', 'hard', 'hard']), '2026-10-03')
     expect(state.level).toBe(0)
     expect(state.easeAfterHard).toBe(true)
+  })
+
+  it('counts a Perfect workout that felt light (difficulty 4 or less) toward the next level', () => {
+    const light = (index: number, overrides = {}) => day(addDays(start, index), index + 1, {
+      checkin, workout: workout({ dayType: 'box-kick' }), feedback: feedback({ overall: 'perfect', difficulty: 3, ...overrides }),
+    })
+    expect(adaptiveState([light(0), light(1), light(2)], '2026-10-03').level).toBe(1)
+    // Low energy afterwards, or a 5/10, doesn't count.
+    expect(feltLight(feedback({ overall: 'perfect', difficulty: 3, energyAfter: 'low' }))).toBe(false)
+    expect(feltLight(feedback({ overall: 'perfect', difficulty: 5 }))).toBe(false)
+    expect(adaptiveState([light(0), light(1), light(2, { difficulty: 6 })], '2026-10-03').level).toBe(0)
+  })
+
+  it('goes up one level at a time, and light days count neither way', () => {
+    const easy = (index: number, dayType: 'cardio-burn' | 'light' = 'cardio-burn') => day(addDays(start, index), index + 1, {
+      checkin, workout: workout({ dayType }), feedback: feedback({ overall: 'easy' }),
+    })
+    expect(adaptiveState([easy(0), easy(1), easy(2, 'light'), easy(3)], '2026-10-03')).toMatchObject({ level: 1, lightStreak: 0 })
+    expect(adaptiveState([0, 1, 2, 3, 4].map((index) => easy(index)), '2026-10-03')).toMatchObject({ level: 1, lightStreak: 2 })
+  })
+
+  it('steps down a level after a long break, so she comes back gently', () => {
+    const easy = (index: number) => day(addDays(start, index), index + 1, { checkin, workout: workout(), feedback: feedback({ overall: 'easy' }) })
+    const three = [easy(0), easy(1), easy(2)]
+    expect(adaptiveState(three, addDays(start, 3 + LONG_BREAK_DAYS - 2)).level).toBe(1)
+    expect(adaptiveState(three, addDays(start, 2 + LONG_BREAK_DAYS)).level).toBe(0)
+  })
+
+  it('says so on the day the level goes up', () => {
+    const easy = (index: number) => day(addDays(start, index), index + 1, { checkin, workout: workout({ dayType: 'box-kick' }), feedback: feedback({ overall: 'easy' }) })
+    const plan = planForDay([easy(0), easy(1), easy(2)], addDays(start, 3), 4, checkin)
+    expect(plan.level).toBe(1)
+    expect(plan.notes.join(' ')).toContain('مستوى جديد')
+    expect(plan.dayType).toBe('sculpt-sweat')
   })
 
   it('never progresses while pain is reported', () => {

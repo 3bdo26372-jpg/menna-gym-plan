@@ -13,7 +13,8 @@ import type { AppState, DayRecord } from './types'
  * - a finished day eaten within the calorie range (1,200 up to the top): 5
  * - a finished day's score: 60+ gives 3, 80+ gives 6, 100 gives 10
  *   (a day pass or makeup doesn't count; a period-pain rest day's workout points do)
- * - every 7 workout days in a row: 15 (a period-pain rest day or a period day counts as one)
+ * - every 7 workout days in a row: 15 (a period-pain rest day, a period day or a
+ *   rest day of the weekly plan counts as one)
  * - logging the night's sleep: 3 (counts as soon as she logs it; from SLEEP_POINTS_FROM)
  * Everything is derived from the log, so deleting an entry takes its points back.
  *
@@ -74,7 +75,7 @@ export function earnings(state: Pick<AppState, 'today' | 'days' | 'foodEntries'>
     }
     const fromScore = isLegacyDay(day.date) ? 0 : scorePoints(earnedScore(day))
     if (fromScore) result.push({ date: day.date, kind: 'score', points: fromScore })
-    if (trained(day) || isPainRest(day.periodPain) || periodDays.has(day.date)) streak += 1
+    if (trained(day) || day.restDay || isPainRest(day.periodPain) || periodDays.has(day.date)) streak += 1
     else streak = 0
     if (streak === STREAK_DAYS) {
       result.push({ date: day.date, kind: 'streak', points: EARN.streak })

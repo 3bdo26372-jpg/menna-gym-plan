@@ -4,7 +4,7 @@ import type { DayPass, PassGift } from './dayPasses'
 import type { PeriodEntry } from './period'
 import type { SleepLog } from './sleep'
 import type { GamePlay, GameSpecial } from './game'
-import type { PillDose, PillPlan } from './pills'
+import type { Pill, PillDose } from './pills'
 import type { PrayerBuy, PrayerGift, PrayerLog, PrayerShopItem } from './prayer'
 
 export type Energy = 'low' | 'normal' | 'high'
@@ -75,7 +75,7 @@ export interface ScoreBreakdown {
   makeup: number
   /** Points a day pass filled in, up to 100. */
   pass: number
-  /** Workout points given on a period-pain day (pain above 4), up to the workout's full share. */
+  /** Workout points given on a period-pain day (pain above 4) or a rest day, up to the workout's full share. */
   rest: number
   total: number
 }
@@ -88,6 +88,8 @@ export interface DayRecord {
   feedback: Feedback | null
   /** A day pass marked this day as trained. */
   excused: boolean
+  /** A rest day of the weekly plan (week.ts): it counts like a trained day. */
+  restDay?: boolean
   /** Period pain she rated for the day, 1–10 (0 for none). */
   periodPain: number | null
   /** The night before this day: when she slept and woke up. */
@@ -149,8 +151,8 @@ export interface AppState {
   gamePlays?: GamePlay[]
   /** Extra rounds he gives her, like the roses; missing while the app is newer than the API. */
   gameSpecials?: GameSpecial[]
-  /** When to remind her of her pills; null until she says. Missing while the app is newer than the API. */
-  pillPlan?: PillPlan | null
+  /** Her pills, the ones she stopped too; missing while the app is newer than the API. */
+  pills?: Pill[]
   /** The pills she ticked off. */
   pillDoses?: PillDose[]
   /** The prayers she ticked; missing while the app is newer than the API. */
@@ -162,6 +164,8 @@ export interface AppState {
   /** What the prayer shop sells, and what she bought there. */
   prayerShop?: PrayerShopItem[]
   prayerBuys?: PrayerBuy[]
+  /** The days she chose to rest; missing while the app is newer than the API. */
+  restDays?: string[]
 }
 
 export interface MeasurementInput {

@@ -11,8 +11,9 @@ import { validateNewPeriod, validatePain, validatePeriodEnd, type PeriodEntry } 
 import type { AppState, CheckIn, Feedback, MeasurementEntry, RewardState, WorkoutResult } from '../../shared/types'
 import { validateSleep, type SleepLog } from '../../shared/sleep'
 import { dealCards, toPrizeId, validatePlay, type GamePlay, type GameSpecial } from '../../shared/game'
-import { validatePillDose, validatePillPlan, type PillDose, type PillPlan } from '../../shared/pills'
+import { MAX_PILLS, pillsOn, validatePill, validatePillDose, type Pill, type PillDose } from '../../shared/pills'
 import { DEFAULT_PRAYER_SHOP, validatePrayerBuy, validatePrayerGift, validatePrayerMark, type PrayerBuy, type PrayerGift, type PrayerLog } from '../../shared/prayer'
+import { canChooseRest, restDayDates, validateRestDay, weekInput } from '../../shared/week'
 import { ApiError, type Backend } from './backend'
 import { storage } from './storage'
 
@@ -36,12 +37,13 @@ interface LocalDb {
   periods?: PeriodEntry[]
   gamePlays?: GamePlay[]
   gameSpecials?: GameSpecial[]
-  pillPlan?: PillPlan | null
+  pills?: Pill[]
   pillDoses?: PillDose[]
   prayers?: PrayerLog[]
   prayerGifts?: PrayerGift[]
   prayerBigGifts?: PrayerGift[]
   prayerBuys?: PrayerBuy[]
+  restDays?: string[]
 }
 
 function freshDb(): LocalDb {
@@ -65,13 +67,19 @@ function toState(db: LocalDb): AppState {
   const start = db.programStartDate
   const makeup = makeupByDate(db.waterSpends ?? [])
   const excused = excusedDates(db.dayPasses ?? [], db.periods ?? [], today)
-  const days = start
+  const logged = start
     ? dateRange(start, today).map((date) => {
         const log = db.logs[date] ?? { checkin: null, workout: null, feedback: null }
-        const parts = { ...log, periodPain: log.periodPain ?? null, sleep: log.sleep ?? null }
-        return { date, dayNumber: dayNumberFor(start, date), ...parts, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput((db.foodEntries ?? []).filter((entry) => entry.date === date), dayNumberFor(start, date)), isLegacyDay(date)) }
+        return { date, ...log, periodPain: log.periodPain ?? null, sleep: log.sleep ?? null, excused: excused.has(date) }
       })
     : []
+  const rest = start ? restDayDates({ startDate: start, today, days: logged, restDays: db.restDays ?? [], periods: db.periods }) : new Set<string>()
+  const days = logged.map((parts) => ({
+    ...parts,
+    dayNumber: dayNumberFor(start!, parts.date),
+    restDay: rest.has(parts.date),
+    score: computeDailyScore(parts, makeup.get(parts.date), parts.excused, foodScoreInput((db.foodEntries ?? []).filter((entry) => entry.date === parts.date), dayNumberFor(start!, parts.date)), isLegacyDay(parts.date), rest.has(parts.date)),
+  }))
   const unlocks = newRewardUnlocks(days, db.rewards)
   if (unlocks.length) {
     db.rewards = db.rewards.map((reward) => ({ ...reward, unlockedOn: unlocks.find((item) => item.id === reward.id)?.unlockedOn ?? reward.unlockedOn }))
@@ -94,13 +102,14 @@ function toState(db: LocalDb): AppState {
     periods: [...(db.periods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate)),
     gamePlays: (db.gamePlays ?? []).map((play) => ({ ...play, cards: play.cards.map(toPrizeId) })),
     gameSpecials: db.gameSpecials ?? [],
-    pillPlan: db.pillPlan ?? null,
+    pills: db.pills ?? [],
     pillDoses: db.pillDoses ?? [],
     prayers: db.prayers ?? [],
     prayerGifts: db.prayerGifts ?? [],
     prayerBigGifts: db.prayerBigGifts ?? [],
     prayerShop: DEFAULT_PRAYER_SHOP,
     prayerBuys: db.prayerBuys ?? [],
+    restDays: db.restDays ?? [],
   }
 }
 
@@ -252,22 +261,62 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    savePillPlan: (input) => attempt(() => {
+    addPill: (name, time) => attempt(() => {
       const db = load()
-      const plan = validatePillPlan(input, cairoDate())
-      if (typeof plan === 'string') return fail(400, plan)
-      db.pillPlan = { ...plan, updatedAt: new Date().toISOString() }
+      const pill = validatePill({ name, time })
+      if (typeof pill === 'string') return fail(400, pill)
+      const today = cairoDate()
+      if (pillsOn(db.pills, today).length >= MAX_PILLS) return fail(409, 'too many pills')
+      const id = Math.max(0, ...(db.pills ?? []).map((item) => item.id)) + 1
+      db.pills = [...(db.pills ?? []), { id, ...pill, addedOn: today, removedOn: null }]
       save(db)
       return toState(db)
     }),
-    savePillDose: (date, slot, taken) => attempt(() => {
+    updatePill: (id, name, time) => attempt(() => {
+      const db = load()
+      const pill = validatePill({ name, time })
+      if (typeof pill === 'string') return fail(400, pill)
+      if (!(db.pills ?? []).some((item) => item.id === id && !item.removedOn)) return fail(404, 'pill not found')
+      db.pills = (db.pills ?? []).map((item) => (item.id === id ? { ...item, ...pill } : item))
+      save(db)
+      return toState(db)
+    }),
+    removePill: (id) => attempt(() => {
+      const db = load()
+      const today = cairoDate()
+      const entry = (db.pills ?? []).find((item) => item.id === id && !item.removedOn)
+      if (!entry) return fail(404, 'pill not found')
+      const taken = (db.pillDoses ?? []).some((dose) => dose.pillId === id)
+      db.pills = entry.addedOn >= today && !taken
+        ? (db.pills ?? []).filter((item) => item.id !== id)
+        : (db.pills ?? []).map((item) => (item.id === id ? { ...item, removedOn: today } : item))
+      save(db)
+      return toState(db)
+    }),
+    savePillDose: (date, pillId, taken) => attempt(() => {
       const db = load()
       const problem = checkWritableDate(date, cairoDate(), db.programStartDate)
       if (problem) return fail(400, problem)
-      const dose = validatePillDose({ slot, taken })
+      const dose = validatePillDose({ pillId, taken }, db.pills, date)
       if (typeof dose === 'string') return fail(400, dose)
-      const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.slot !== dose.slot)
-      db.pillDoses = dose.taken ? [...others, { date, slot: dose.slot, takenAt: new Date().toISOString() }] : others
+      const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.pillId !== dose.pillId)
+      db.pillDoses = dose.taken ? [...others, { date, pillId: dose.pillId, takenAt: new Date().toISOString() }] : others
+      save(db)
+      return toState(db)
+    }),
+    saveRestDay: (date, rest) => attempt(() => {
+      const db = load()
+      const problem = checkWritableDate(date, cairoDate(), db.programStartDate)
+      if (problem) return fail(400, problem)
+      const choice = validateRestDay({ rest })
+      if (typeof choice === 'string') return fail(400, choice)
+      const others = (db.restDays ?? []).filter((item) => item !== date)
+      if (choice.rest) {
+        const state = toState(db)
+        const input = weekInput(state)
+        if (!input || !canChooseRest(input, date)) return fail(409, 'no rest day left for this day')
+      }
+      db.restDays = choice.rest ? [...others, date] : others
       save(db)
       return toState(db)
     }),

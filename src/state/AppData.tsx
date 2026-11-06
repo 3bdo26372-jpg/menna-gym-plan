@@ -4,7 +4,6 @@ import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
-import type { PillPlan } from '../../shared/pills'
 import type { PrayerGiftKind } from '../../shared/prayer'
 import type { AppState, MeasurementInput, ReportKind } from '../../shared/types'
 import { AuthRequiredError, type Backend, type CheckInInput, type FeedbackInput, type WorkoutInput } from '../lib/backend'
@@ -37,8 +36,11 @@ interface AppDataValue {
   addPeriod(startDate: string, endDate?: string): Promise<void>
   endPeriod(id: number, endDate: string): Promise<void>
   deletePeriod(id: number): Promise<void>
-  savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<void>
-  savePillDose(date: string, slot: number, taken: boolean): Promise<void>
+  addPill(name: string, time: string): Promise<void>
+  updatePill(id: number, name: string, time: string): Promise<void>
+  removePill(id: number): Promise<void>
+  savePillDose(date: string, pillId: number, taken: boolean): Promise<void>
+  saveRestDay(date: string, rest: boolean): Promise<void>
   savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<void>
   openPrayerGift(weekStart: string, note?: string, kind?: PrayerGiftKind): Promise<void>
   buyPrayerItem(itemId: string, note?: string): Promise<void>
@@ -101,8 +103,11 @@ function createBackend(): Backend {
     addPeriod: forward('addPeriod'),
     endPeriod: forward('endPeriod'),
     deletePeriod: forward('deletePeriod'),
-    savePillPlan: forward('savePillPlan'),
+    addPill: forward('addPill'),
+    updatePill: forward('updatePill'),
+    removePill: forward('removePill'),
     savePillDose: forward('savePillDose'),
+    saveRestDay: forward('saveRestDay'),
     savePrayer: forward('savePrayer'),
     openPrayerGift: forward('openPrayerGift'),
     buyPrayerItem: forward('buyPrayerItem'),
@@ -236,8 +241,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addPeriod: async (startDate, endDate) => void (await apply(backend.addPeriod(startDate, endDate))),
       endPeriod: async (id, endDate) => void (await apply(backend.endPeriod(id, endDate))),
       deletePeriod: async (id) => void (await apply(backend.deletePeriod(id))),
-      savePillPlan: async (plan) => void (await apply(backend.savePillPlan(plan))),
-      savePillDose: async (date, slot, taken) => void (await apply(backend.savePillDose(date, slot, taken))),
+      addPill: async (name, time) => void (await apply(backend.addPill(name, time))),
+      updatePill: async (id, name, time) => void (await apply(backend.updatePill(id, name, time))),
+      removePill: async (id) => void (await apply(backend.removePill(id))),
+      savePillDose: async (date, pillId, taken) => void (await apply(backend.savePillDose(date, pillId, taken))),
+      saveRestDay: async (date, rest) => void (await apply(backend.saveRestDay(date, rest))),
       savePrayer: async (date, prayer, prayed, at) => void (await apply(backend.savePrayer(date, prayer, prayed, at))),
       openPrayerGift: async (weekStart, note, kind) => void (await apply(backend.openPrayerGift(weekStart, note, kind))),
       buyPrayerItem: async (itemId, note) => void (await apply(backend.buyPrayerItem(itemId, note))),

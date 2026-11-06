@@ -17,9 +17,10 @@ import type { ReportData } from '../../shared/report'
 import type { FoodCategory, FoodEntry, FoodInput } from '../../shared/food'
 import { makeupByDate, type NewWaterSpend, type WaterSpend } from '../../shared/waterPoints'
 import { excusedDates, type DayPass, type PassGift } from '../../shared/dayPasses'
+import { restDayDates } from '../../shared/week'
 import type { PeriodEntry } from '../../shared/period'
 import type { SleepLog } from '../../shared/sleep'
-import type { PillDose, PillPlan } from '../../shared/pills'
+import type { Pill, PillDose } from '../../shared/pills'
 import type { PrayerBuy, PrayerGift, PrayerGiftKind, PrayerGiftStatus, PrayerLog, PrayerShopItem } from '../../shared/prayer'
 import { PRIZES, toPrizeId, type GamePlay, type GameSpecial, type SpecialKind } from '../../shared/game'
 import type { ReportKind } from '../../shared/types'
@@ -90,16 +91,16 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
     db.prepare('SELECT round, log_date, pick, cards, created_at FROM game_plays ORDER BY round'),
     db.prepare('SELECT id, kind, created_at FROM game_specials ORDER BY id'),
-    db.prepare('SELECT times, until_date, updated_at FROM pill_plan WHERE id = 1'),
-    db.prepare('SELECT log_date, slot, taken_at FROM pill_doses ORDER BY log_date, slot'),
+    db.prepare('SELECT id, name, time, added_on, removed_on FROM pills ORDER BY id'),
+    db.prepare('SELECT log_date, pill_id, taken_at FROM pill_taken ORDER BY log_date, pill_id'),
     db.prepare('SELECT log_date, prayer, prayed_at FROM prayers ORDER BY log_date, prayer'),
     db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_gifts ORDER BY week_start'),
     db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_big_gifts ORDER BY week_start'),
     db.prepare('SELECT id, title, emoji, price, note_required, sort_order FROM prayer_shop_items WHERE active = 1 ORDER BY sort_order, id'),
     db.prepare('SELECT id, item_id, title, points, note, status, created_at, done_at FROM prayer_shop_buys ORDER BY id'),
+    db.prepare('SELECT log_date FROM rest_days ORDER BY log_date'),
   ])
-  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillPlan, pillDoses, prayers, prayerGifts, prayerBigGifts, prayerShop, prayerBuys] = fill ? results.slice(1) : results
-  const plan = pillPlan.results[0]
+  const [baseline, entries, values, logs, workouts, exercises, rewards, unlocks, reports, food, spends, passes, gifts, periods, games, specials, pillRows, pillDoses, prayers, prayerGifts, prayerBigGifts, prayerShop, prayerBuys, rests] = fill ? results.slice(1) : results
 
   const valuesByEntry = new Map<number, Record<string, number>>()
   for (const row of values.results) {
@@ -177,7 +178,8 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       ml: row.ml === null || row.ml === undefined ? null : Number(row.ml),
       createdAt: String(row.created_at),
   }))
-  const days: DayRecord[] = logs.results.map((row) => {
+  const restDays = rests.results.map((row) => String(row.log_date))
+  const logged = logs.results.map((row) => {
     const date = String(row.log_date)
     const parts = {
       checkin: parse<CheckIn>(row.checkin_json),
@@ -191,8 +193,16 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       sleptAt: String(row.slept_at), wokeAt: String(row.woke_at),
       quality: (row.sleep_quality as SleepLog['quality']) ?? null, note: (row.sleep_note as string | null) ?? null,
     } : null
-    return { date, dayNumber, ...parts, sleep, excused: excused.has(date), score: computeDailyScore(parts, makeup.get(date), excused.has(date), foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date)) }
+    return { date, dayNumber, parts, sleep, excused: excused.has(date) }
   })
+  // Rest days depend on the whole week, so they are worked out before the scores.
+  const rest = startDate
+    ? restDayDates({ startDate, today, days: logged.map((day) => ({ date: day.date, ...day.parts, excused: day.excused })), restDays, periods: periodEntries })
+    : new Set<string>()
+  const days: DayRecord[] = logged.map(({ date, dayNumber, parts, sleep, excused: isExcused }) => ({
+    date, dayNumber, ...parts, sleep, excused: isExcused, restDay: rest.has(date),
+    score: computeDailyScore(parts, makeup.get(date), isExcused, foodScoreInput(foodEntries.filter((entry) => entry.date === date), dayNumber), isLegacyDay(date), rest.has(date)),
+  }))
 
   const unlockById = new Map(unlocks.results.map((row) => [String(row.reward_id), row]))
   return {
@@ -232,8 +242,10 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       createdAt: String(row.created_at),
     })),
     gameSpecials: specials.results.map((row): GameSpecial => ({ id: Number(row.id), kind: row.kind as SpecialKind, createdAt: String(row.created_at) })),
-    pillPlan: plan ? { times: JSON.parse(String(plan.times)) as string[], until: (plan.until_date as string | null) ?? null, updatedAt: String(plan.updated_at) } satisfies PillPlan : null,
-    pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), slot: Number(row.slot), takenAt: String(row.taken_at) })),
+    pills: pillRows.results.map((row): Pill => ({
+      id: Number(row.id), name: String(row.name), time: String(row.time), addedOn: String(row.added_on), removedOn: (row.removed_on as string | null) ?? null,
+    })),
+    pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), pillId: Number(row.pill_id), takenAt: String(row.taken_at) })),
     prayers: prayers.results.map((row): PrayerLog => ({ date: String(row.log_date), prayer: Number(row.prayer), prayedAt: String(row.prayed_at) })),
     prayerGifts: prayerGifts.results.map(toPrayerGift),
     prayerBigGifts: prayerBigGifts.results.map(toPrayerGift),
@@ -245,6 +257,7 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
       noteRequired: Boolean(row.note_required),
       sortOrder: Number(row.sort_order),
     })),
+    restDays,
     prayerBuys: prayerBuys.results.map((row): PrayerBuy => ({
       id: Number(row.id),
       itemId: String(row.item_id),
@@ -258,15 +271,32 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   }
 }
 
-export async function savePillPlan(db: D1Database, plan: Omit<PillPlan, 'updatedAt'>) {
-  await db.prepare('INSERT INTO pill_plan (id, times, until_date, updated_at) VALUES (1, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET times = excluded.times, until_date = excluded.until_date, updated_at = excluded.updated_at')
-    .bind(JSON.stringify(plan.times), plan.until, now()).run()
+export async function addPill(db: D1Database, pill: { name: string; time: string }, today: string) {
+  await db.prepare('INSERT INTO pills (name, time, added_on, created_at) VALUES (?, ?, ?, ?)').bind(pill.name, pill.time, today, now()).run()
 }
 
-export async function savePillDose(db: D1Database, date: string, slot: number, taken: boolean) {
+export async function updatePill(db: D1Database, id: number, pill: { name: string; time: string }) {
+  await db.prepare('UPDATE pills SET name = ?, time = ? WHERE id = ?').bind(pill.name, pill.time, id).run()
+}
+
+/** From today on she no longer takes it; one added today and never taken just goes. */
+export async function removePill(db: D1Database, pill: Pill, today: string, takenEver: boolean) {
+  await (pill.addedOn >= today && !takenEver
+    ? db.prepare('DELETE FROM pills WHERE id = ?').bind(pill.id)
+    : db.prepare('UPDATE pills SET removed_on = ? WHERE id = ?').bind(today, pill.id)).run()
+}
+
+/** A rest day she chose, or takes back. */
+export async function saveRestDay(db: D1Database, date: string, rest: boolean) {
+  await (rest
+    ? db.prepare('INSERT OR IGNORE INTO rest_days (log_date, created_at) VALUES (?, ?)').bind(date, now())
+    : db.prepare('DELETE FROM rest_days WHERE log_date = ?').bind(date)).run()
+}
+
+export async function savePillDose(db: D1Database, date: string, pillId: number, taken: boolean) {
   await (taken
-    ? db.prepare('INSERT OR IGNORE INTO pill_doses (log_date, slot, taken_at) VALUES (?, ?, ?)').bind(date, slot, now())
-    : db.prepare('DELETE FROM pill_doses WHERE log_date = ? AND slot = ?').bind(date, slot)).run()
+    ? db.prepare('INSERT OR IGNORE INTO pill_taken (log_date, pill_id, taken_at) VALUES (?, ?, ?)').bind(date, pillId, now())
+    : db.prepare('DELETE FROM pill_taken WHERE log_date = ? AND pill_id = ?').bind(date, pillId)).run()
 }
 
 /** Ticking a prayer again moves it to the new time. */

@@ -8,9 +8,10 @@ import { validatePass } from '../../shared/dayPasses'
 import { validateNewPeriod, validatePain, validatePeriodEnd } from '../../shared/period'
 import { validateSleep } from '../../shared/sleep'
 import { dealCards, validatePlay } from '../../shared/game'
-import { validatePillDose, validatePillPlan } from '../../shared/pills'
+import { MAX_PILLS, pillsOn, validatePill, validatePillDose } from '../../shared/pills'
 import { validatePrayerBuy, validatePrayerGift, validatePrayerMark } from '../../shared/prayer'
 import type { AppState, ReportKind } from '../../shared/types'
+import { canChooseRest, validateRestDay, weekInput } from '../../shared/week'
 import {
   addFood,
   addMeasurement,
@@ -30,8 +31,11 @@ import {
   refreshDerived,
   saveCheckin,
   savePillDose,
-  savePillPlan,
+  addPill,
+  updatePill,
+  removePill,
   savePrayer,
+  saveRestDay,
   saveFeedback,
   savePeriodPain,
   saveSleep,
@@ -160,6 +164,19 @@ async function route(request: Request, env: Env): Promise<Response> {
     return json(await afterWrite(env, today, date))
   }
 
+  // A rest day she picks: it fills in the workout's share of that day's score.
+  const rest = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/rest$/)
+  if (rest && method === 'PUT') {
+    const state = await loadState(env.DB, today)
+    requireWritable(state, rest[1])
+    const choice = validateRestDay(await body(request))
+    if (typeof choice === 'string') throw new HttpError(400, choice)
+    const input = weekInput(state)
+    if (choice.rest && (!input || !canChooseRest(input, rest[1]))) throw new HttpError(409, 'no rest day left for this day')
+    await saveRestDay(env.DB, rest[1], choice.rest)
+    return json(await afterWrite(env, today, rest[1]))
+  }
+
   if (method === 'POST' && path === '/api/measurements') {
     const input = await body<{ measuredOn?: unknown; values?: unknown; note?: unknown }>(request)
     if (!isIsoDate(input.measuredOn) || input.measuredOn > today) throw new HttpError(400, 'measuredOn must be a date up to today')
@@ -249,19 +266,35 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
 
   // Pills don't touch the score either.
-  if (method === 'PUT' && path === '/api/pills') {
-    const plan = validatePillPlan(await body(request), today)
-    if (typeof plan === 'string') throw new HttpError(400, plan)
-    await savePillPlan(env.DB, plan)
+  if (method === 'POST' && path === '/api/pills') {
+    const state = await loadState(env.DB, today)
+    const pill = validatePill(await body(request))
+    if (typeof pill === 'string') throw new HttpError(400, pill)
+    if (pillsOn(state.pills, today).length >= MAX_PILLS) throw new HttpError(409, 'too many pills')
+    await addPill(env.DB, pill, today)
+    return json(await afterWrite(env, today))
+  }
+  const pillItem = path.match(/^\/api\/pills\/(\d+)$/)
+  if (pillItem && (method === 'PUT' || method === 'DELETE')) {
+    const state = await loadState(env.DB, today)
+    const entry = (state.pills ?? []).find((item) => item.id === Number(pillItem[1]))
+    if (!entry || entry.removedOn) throw new HttpError(404, 'pill not found')
+    if (method === 'PUT') {
+      const pill = validatePill(await body(request))
+      if (typeof pill === 'string') throw new HttpError(400, pill)
+      await updatePill(env.DB, entry.id, pill)
+    } else {
+      await removePill(env.DB, entry, today, (state.pillDoses ?? []).some((dose) => dose.pillId === entry.id))
+    }
     return json(await afterWrite(env, today))
   }
   const pill = path.match(/^\/api\/days\/(\d{4}-\d{2}-\d{2})\/pills$/)
   if (pill && method === 'PUT') {
     const state = await loadState(env.DB, today)
     requireWritable(state, pill[1])
-    const dose = validatePillDose(await body(request))
+    const dose = validatePillDose(await body(request), state.pills, pill[1])
     if (typeof dose === 'string') throw new HttpError(400, dose)
-    await savePillDose(env.DB, pill[1], dose.slot, dose.taken)
+    await savePillDose(env.DB, pill[1], dose.pillId, dose.taken)
     return json(await afterWrite(env, today))
   }
 

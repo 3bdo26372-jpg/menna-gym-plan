@@ -63,7 +63,7 @@ export const EXERCISES: Exercise[] = [
   }),
   define({
     id: 'skater-hops', name: 'Skater Hops', nameAr: 'قفزة المتزلجة', category: 'cardio', impact: 'high', roles: ['jump'],
-    focus: 'المؤخرة الجانبية والتوازن', alternativeId: 'skater-steps',
+    focus: 'المؤخرة الجانبية والتوازن', alternativeId: 'curtsey-squat',
     instruction: 'اقفزي للجنب على رجل واحدة والرجل التانية تعدّي وراها، والإيد العكسية تنزل ناحية القدم.',
   }),
   define({
@@ -108,8 +108,10 @@ export const EXERCISES: Exercise[] = [
     focus: 'الكتف والخصر',
     instruction: 'وقفة ملاكمة والركب مرنة، لفّي الجذع وادفعي لكمة جانبية والكوع مرفوع، وبدّلي الإيدين بسرعة.',
   }),
+  // Out of the workouts since she asked for it (feedback on 2026-11-03); kept
+  // here so the workouts she already did can still name it.
   define({
-    id: 'skater-steps', name: 'Skater Steps', nameAr: 'خطوة المتزلجة', category: 'cardio', impact: 'low', roles: ['lowCardio', 'light'],
+    id: 'skater-steps', name: 'Skater Steps', nameAr: 'خطوة المتزلجة', category: 'cardio', impact: 'low', roles: [],
     focus: 'المؤخرة الجانبية',
     instruction: 'خطوة واسعة للجنب مع ميل خفيف ومدّ الإيد ناحية القدم، وبدّلي الجهة من غير قفز.',
   }),

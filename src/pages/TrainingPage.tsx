@@ -8,6 +8,7 @@ import type { AppState, DayRecord } from '../../shared/types'
 import { CheckInForm } from '../components/CheckInForm'
 import { ExerciseMedia } from '../components/ExerciseMedia'
 import { FeedbackForm } from '../components/FeedbackForm'
+import { RestButton, WeekCard } from '../components/WeekPlan'
 import { Card, EmptyState, Notice, PageHeader } from '../components/ui'
 import { BODY_OPTIONS, ENERGY_OPTIONS, labelOf, MOOD_OPTIONS } from '../lib/labels'
 import { navigate } from '../lib/router'
@@ -27,14 +28,34 @@ export function TrainingPage() {
     )
   }
   const day = state.days.find((item) => item.date === state.today)
-  const plan = planForDay(state.days, state.today, dayNumberFor(start, state.today), day?.checkin)
+  const plan = planForDay(state.days, state.today, dayNumberFor(start, state.today), day?.checkin, state.periods)
+  const chosenRest = (state.restDays ?? []).includes(state.today)
   return (
     <div className="page">
       <PageHeader eyebrow="التمرين" title="تمرين النهارده" />
       {isPeriodPassDate(state, state.today) && !day?.workout
         ? <PeriodRest state={state} day={day} plan={plan} />
-        : <TodayWorkout state={state} day={day} plan={plan} />}
+        : chosenRest && !day?.workout
+          ? <ChosenRest state={state} />
+          : <TodayWorkout state={state} day={day} plan={plan} />}
+      <WeekCard state={state} />
     </div>
+  )
+}
+
+/** A rest day she picked. She can change her mind and train after all. */
+function ChosenRest({ state }: { state: AppState }) {
+  const { saveRestDay } = useAppData()
+  const [busy, setBusy] = useState(false)
+  return (
+    <Card className="today-card soft-card">
+      <p className="eyebrow">تمرين النهارده</p>
+      <h2>النهارده راحة 🌙</h2>
+      <p className="muted">اخترتي ترتاحي النهارده، وده من حقك. اليوم نقطه كاملة زي يوم التمرين، والمية والأكل بيكمّلوا الباقي 🤍</p>
+      <button type="button" className="link-button" disabled={busy} onClick={async () => { setBusy(true); try { await saveRestDay(state.today, false) } finally { setBusy(false) } }}>
+        غيّرت رأيي، عايزة أتمرن
+      </button>
+    </Card>
   )
 }
 
@@ -97,6 +118,7 @@ function TodayWorkout({ state, day, plan }: { state: AppState; day: DayRecord | 
           <button type="button" className="button primary large start-workout" onClick={() => navigate('workout')}>
             <Play /> {inProgress ? `كمّلي من مكانك (${Math.round(workSummary(active).ratio * 100)}%)` : 'يلا نبدأ'}
           </button>
+          {!inProgress && <RestButton state={state} className="link-button" />}
           <p className="gentle-note">🤍 على راحتك: توقفي في أي وقت، أو خدي البديل الأسهل لو حاجة تقيلة عليكي. اللي تعمليه بيتحسب.</p>
           <div className="summary-chips">
             <span className="chip soft">{ENERGY_OPTIONS.find((option) => option.value === checkin!.energy)?.emoji} {labelOf(ENERGY_OPTIONS, checkin!.energy)}</span>

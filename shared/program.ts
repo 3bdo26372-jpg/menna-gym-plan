@@ -1,6 +1,6 @@
-import { addDays } from './date'
+import { addDays, diffDays } from './date'
 import { EXERCISE_BY_ID, exercisesWithRole, type Exercise } from './exercises'
-import { isPainRest } from './period'
+import { cycleDay, isPainRest, periodForecast, type PeriodEntry } from './period'
 import type { BlockId, CheckIn, DayRecord, DayType, Intensity } from './types'
 
 /**
@@ -8,8 +8,10 @@ import type { BlockId, CheckIn, DayRecord, DayType, Intensity } from './types'
  * which kinds of exercise fill each slot, and exercises are rotated through
  * their pools so consecutive weeks do not repeat.
  *
- * A 4-day cycle: three active days, then a Light Movement Day (standing
- * stretching + easy movement). There is no "rest day".
+ * The three active day types follow each other workout by workout, so a rest
+ * day she takes (week.ts) never skips one. A Light Movement Day (standing
+ * stretching + easy movement) comes when her body asks for it: after pain, or
+ * on a tired day just before her period.
  */
 export interface PlanBlock {
   id: BlockId
@@ -89,11 +91,21 @@ export const BLOCK_LABEL: Record<BlockId, string> = {
   cooldown: 'إطالة وتهدئة',
 }
 
-export const LIGHT_DAY_EVERY = 4
+export const ACTIVE_DAY_TYPES = TEMPLATES.map((template) => template.type)
 
-export function dayTypeFor(dayNumber: number): DayType {
-  const position = (dayNumber - 1) % LIGHT_DAY_EVERY
-  return position === LIGHT_DAY_EVERY - 1 ? 'light' : TEMPLATES[position].type
+/** The active day type after this one, in order: cardio, boxing, sculpt, then cardio again. */
+export function dayTypeAfter(previous: DayType | null | undefined): DayType {
+  const index = previous ? ACTIVE_DAY_TYPES.indexOf(previous) : -1
+  return ACTIVE_DAY_TYPES[(index + 1) % ACTIVE_DAY_TYPES.length]
+}
+
+/** The day type after the last active workout she did (half of it or more) before `date`. */
+export function nextDayType(days: DayRecord[], date: string): DayType {
+  const last = days
+    .filter((day) => day.date < date && day.workout && day.workout.dayType !== 'light' && day.workout.mainCompletion >= 0.5)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .at(-1)
+  return dayTypeAfter(last?.workout?.dayType)
 }
 
 /** Pick `count` distinct exercises from a pool, rotating by `seed`. */
@@ -139,6 +151,12 @@ export interface PlanContext {
   date: string
   dayNumber: number
   level: number
+  /** The active day type; from the day number when left out. */
+  dayType?: DayType
+  /** The days just before her period, or during it: no jumps, and a light day when she's tired. */
+  beforePeriod?: boolean
+  /** The level went up since her last workout. */
+  levelUp?: boolean
   checkin?: CheckIn | null
   /** Last finished workout was rated Hard. */
   easeAfterHard?: boolean
@@ -189,14 +207,19 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
   const settings = LEVELS[level]
   // Rotate daily so neighbouring days never repeat the same session.
   const seed = context.dayNumber - 1
-  // Any period pain at all takes the jumps out.
-  const intensity = context.periodPain ? 'gentle' : intensityFor(context.checkin, context.easeAfterHard)
+  // Any period pain at all takes the jumps out, and so do the days just before a period.
+  const intensity = context.periodPain || context.beforePeriod ? 'gentle' : intensityFor(context.checkin, context.easeAfterHard)
   const notes: string[] = []
-  let dayType = dayTypeFor(context.dayNumber)
+  let dayType = context.dayType ?? ACTIVE_DAY_TYPES[(context.dayNumber - 1) % ACTIVE_DAY_TYPES.length]
+  const tired = context.checkin?.energy === 'low' || context.checkin?.body === 'tired'
   if (context.painReported && dayType !== 'light') {
     dayType = 'light'
     notes.push('سجّلتي ألم في آخر تمرين، فالنهارده يوم تمرين خفيف. لو الألم لسه موجود، ريّحي الجزء ده ومتزوديش الشدة.')
+  } else if (context.beforePeriod && tired && dayType !== 'light') {
+    dayType = 'light'
+    notes.push('جسمك تعبان والبريود قرّب، فالنهارده يوم خفيف: حركة هادية وإطالة تريّحك 🤍')
   }
+  if (context.levelUp && dayType !== 'light') notes.push(`مستوى جديد 🎉 ${LEVELS[level].change}. خطوة صغيرة، وإنتي قدها.`)
 
   const warmup: PlanBlock = {
     id: 'warmup', title: BLOCK_LABEL.warmup, rounds: 1, workSeconds: WARMUP_SECONDS, restSeconds: 0,
@@ -230,7 +253,9 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
       cardioRounds = Math.min(cardioRounds, 2)
       notes.push(context.periodPain
         ? 'سجّلتي وجع بريود خفيف، فالنهارده بدائل من غير قفز وفترات أقصر.'
-        : context.easeAfterHard
+        : context.beforePeriod
+          ? 'البريود قرّب، فالنهارده بدائل من غير قفز وفترات أقصر عشان تكوني مرتاحة.'
+          : context.easeAfterHard
           ? 'آخر تمرين كان صعب، فالنهارده بدائل أخف وفترات أقصر.'
           : 'على حسب إحساسك النهارده: بدائل من غير قفز وفترات أقصر شوية.')
     }
@@ -258,54 +283,89 @@ export function buildWorkoutPlan(context: PlanContext): WorkoutPlan {
 }
 
 /**
- * Adaptive level from the history before `date`. Three Easy workouts in a row
- * move up one level (one variable at a time); two Hard ones move down. Pain
- * always holds the level where it is.
+ * Adaptive level from the history before `date`, one step at a time:
+ * - up one level after 3 active workouts in a row that felt light for her:
+ *   rated Easy, or Perfect with a difficulty of 4/10 or less, without pain and
+ *   without her energy dropping low afterwards
+ * - down one level after 2 Hard ones (or a difficulty of 9+)
+ * - down one level after a break of LONG_BREAK_DAYS or more, so she comes back gently
+ * - pain always holds the level where it is; light days don't count either way
  */
+export const UP_STREAK = 3
+export const LIGHT_DIFFICULTY = 4
+export const LONG_BREAK_DAYS = 10
+
+/** Whether a workout felt light enough to count toward the next level. */
+export function feltLight(feedback: Pick<DayRecord, 'feedback'>['feedback']) {
+  if (!feedback || feedback.pain || feedback.energyAfter === 'low') return false
+  return feedback.overall === 'easy' || (feedback.overall === 'perfect' && feedback.difficulty <= LIGHT_DIFFICULTY)
+}
+
 export function adaptiveState(days: DayRecord[], date: string) {
   let level = 0
-  let easyStreak = 0
+  let lightStreak = 0
   let hardStreak = 0
   let last: DayRecord | undefined
+  let lastWorkoutDate: string | undefined
+  const stepDown = () => {
+    level = Math.max(0, level - 1)
+    lightStreak = 0
+    hardStreak = 0
+  }
   const history = days.filter((day) => day.date < date && day.workout && day.feedback).sort((a, b) => a.date.localeCompare(b.date))
   for (const day of history) {
+    if (lastWorkoutDate && diffDays(lastWorkoutDate, day.date) >= LONG_BREAK_DAYS) stepDown()
+    lastWorkoutDate = day.date
     last = day
     const feedback = day.feedback!
     if (feedback.pain) {
-      easyStreak = 0
+      lightStreak = 0
       continue
     }
     if (day.workout!.dayType === 'light') continue
-    if (feedback.overall === 'easy') {
-      hardStreak = 0
-      easyStreak += 1
-      if (easyStreak >= 3) {
-        level = Math.min(MAX_LEVEL, level + 1)
-        easyStreak = 0
-      }
-    } else if (feedback.overall === 'hard' || feedback.difficulty >= 9) {
-      easyStreak = 0
+    if (feedback.overall === 'hard' || feedback.difficulty >= 9) {
+      lightStreak = 0
       hardStreak += 1
-      if (hardStreak >= 2) {
-        level = Math.max(0, level - 1)
-        hardStreak = 0
+      if (hardStreak >= 2) stepDown()
+    } else if (feltLight(feedback)) {
+      hardStreak = 0
+      lightStreak += 1
+      if (lightStreak >= UP_STREAK) {
+        level = Math.min(MAX_LEVEL, level + 1)
+        lightStreak = 0
       }
     } else {
-      easyStreak = 0
+      lightStreak = 0
       hardStreak = 0
     }
   }
+  if (lastWorkoutDate && diffDays(lastWorkoutDate, date) >= LONG_BREAK_DAYS) stepDown()
   const recent = last && last.date >= addDays(date, -3) ? last : undefined
   return {
     level,
+    /** Light workouts in a row toward the next level. */
+    lightStreak,
+    lastLevel: last?.workout?.level ?? 0,
     easeAfterHard: recent?.feedback?.overall === 'hard',
     painReported: Boolean(recent?.feedback?.pain),
   }
 }
 
-/** The day's plan, read from what she logged: the check-in and any period pain. */
-export function planForDay(days: DayRecord[], date: string, dayNumber: number, checkin?: CheckIn | null): WorkoutPlan {
-  const state = adaptiveState(days, date)
+/** Just before her period, or during it, by her own cycle. */
+export function beforePeriodOn(periods: PeriodEntry[] | undefined, date: string) {
+  const phase = cycleDay(periodForecast(periods ?? [], date), date)?.phase
+  return phase === 'premenstrual' || phase === 'period'
+}
+
+/** The day's plan, read from what she logged: the check-in, any period pain and where she is in her cycle. */
+export function planForDay(days: DayRecord[], date: string, dayNumber: number, checkin?: CheckIn | null, periods?: PeriodEntry[]): WorkoutPlan {
+  const { level, lastLevel, easeAfterHard, painReported } = adaptiveState(days, date)
   const periodPain = days.find((day) => day.date === date)?.periodPain ?? null
-  return buildWorkoutPlan({ date, dayNumber, checkin, periodPain, ...state })
+  const hasHistory = days.some((day) => day.date < date && day.workout)
+  return buildWorkoutPlan({
+    date, dayNumber, checkin, periodPain, level, easeAfterHard, painReported,
+    dayType: nextDayType(days, date),
+    beforePeriod: beforePeriodOn(periods, date),
+    levelUp: hasHistory && level > lastLevel,
+  })
 }
