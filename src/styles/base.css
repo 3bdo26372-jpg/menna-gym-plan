@@ -61,10 +61,12 @@ svg { flex: none; }
 
 /*
  * On a phone the tabs sit on a wheel (NavWheel) that turns with her finger.
+ * There is no bar around them: the icons float over a soft fade of the page
+ * colour, so what scrolls under them stays out of the way.
  * It moves with transforms, never by scrolling: on iPhone a scrolled, blurred
  * fixed bar could stop drawing its tabs and show up empty.
  */
-.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 2px env(safe-area-inset-bottom); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 1px; background: #fff; border-top: 1px solid var(--line); border-radius: 22px 22px 0 0; box-shadow: 0 -6px 18px rgba(99, 33, 63, 0.05); }
+.nav { position: fixed; inset: auto 0 0 0; z-index: 30; height: calc(var(--nav-height) + env(safe-area-inset-bottom)); padding: 6px 2px env(safe-area-inset-bottom); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 1px; background: linear-gradient(to bottom, rgba(255, 250, 251, 0), var(--paper) 55%); border: 0; box-shadow: none; }
 .nav-link { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 12px; color: var(--muted); font-size: 10px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .nav-link span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .nav-link svg { flex: none; width: 22px; height: 22px; }
@@ -87,7 +89,7 @@ svg { flex: none; }
 @media (min-width: 900px) {
   .app { padding-bottom: 32px; }
   .topbar { padding: 14px max(24px, calc((100vw - 1080px) / 2)); }
-  .nav { position: static; height: auto; padding: 0; display: flex; gap: 4px; background: none; border: 0; border-radius: 0; box-shadow: none; }
+  .nav { position: static; height: auto; padding: 0; display: flex; gap: 4px; background: none; border: 0; box-shadow: none; }
   .nav-link { flex: none; flex-direction: row; gap: 8px; padding: 9px 12px; font-size: 14px; }
   .nav-link svg { width: 18px; height: 18px; }
   .nav-link[aria-current='page'] { color: var(--berry-dark); background: var(--rose-100); }
