@@ -10,7 +10,6 @@ import { newPagePeriod } from '../../shared/meals'
 import { isPainRest, periodForecast, type PeriodForecast } from '../../shared/period'
 import { ACTIVE_DAY_MIN_COMPLETION } from '../../shared/rewards'
 import { CardGame, gameOpen, specialGameOpen } from '../components/CardGame'
-import { TreatCard } from '../components/ChocolateGift'
 import { DailyTips } from '../components/DailyTips'
 import { isNewPageDismissed, NewPageCard } from '../components/NewPage'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -23,7 +22,6 @@ import { Card, ScoreRing, StatTile } from '../components/ui'
 import { formatNumber } from '../lib/format'
 import { storage } from '../lib/storage'
 import { greetingFor } from '../lib/greetings'
-import { isTreatOpened, treatsFor } from '../lib/treats'
 import { useAppData, useAppState } from '../state/AppData'
 import { RestButton, weekLine } from '../components/WeekPlan'
 import { yesterdayRecap } from '../../shared/recap'
@@ -161,21 +159,17 @@ function RecapCard({ state }: { state: AppState }) {
 
 /**
  * At most one extra card at a time, so the home page stays calm: the most
- * pressing of a special game round from him, a new treat, yesterday's feedback, the card game, the fresh
- * start after a period, a pass for a missed yesterday, or turning on
- * notifications. A gift or game she already opened doesn't come back: gift
- * passes wait on the passes page.
+ * pressing of a special game round from him, yesterday's feedback, the card
+ * game, the fresh start after a period, a pass for a missed yesterday, or
+ * turning on notifications. Gifts and period treats only come as the popup
+ * (TreatPopup), never as a card here; gift passes wait on the passes page.
  */
 function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord | undefined }) {
   // Decided once per visit, so a round stays on screen while its cards turn over.
   const [specialFirst] = useState(() => specialGameOpen(state))
   const [gameFirst] = useState(() => gameOpen(state))
   const [newPage] = useState(() => Boolean(newPagePeriod(state.periods, state.today)) && !isNewPageDismissed(state))
-  const [openedBefore] = useState(() => new Set(treatsFor(state).filter((treat) => treat.kind === 'gift' && isTreatOpened(treat.id)).map((treat) => treat.id)))
-  const treats = treatsFor(state)
-  const fresh = treats.find((treat) => !openedBefore.has(treat.id))
   if (specialFirst) return <CardGame state={state} />
-  if (fresh) return <TreatCard treat={fresh} />
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
   if (gameFirst) return <CardGame state={state} />
   if (newPage) return <NewPageCard state={state} />

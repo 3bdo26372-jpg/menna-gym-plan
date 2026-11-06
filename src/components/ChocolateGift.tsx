@@ -4,7 +4,6 @@ import { X } from 'lucide-react'
 import { PERIOD_NICKNAME } from '../../shared/nicknames'
 import type { AppState } from '../../shared/types'
 import { giftTreatId, isTreatOpened, openTreat, treatsFor, useTreatOpened, type Treat } from '../lib/treats'
-import { Card } from './ui'
 
 /** Whether she already unwrapped this gift on this device. */
 export const isGiftOpened = (id: number) => isTreatOpened(giftTreatId({ id, note: null, createdAt: '' }))
@@ -88,28 +87,6 @@ function TreatInside({ treat, onDone, inPopup = false }: { treat: Treat; onDone?
       <p className="muted small">النهارده اتحسب يوم كامل لوحده، من غير ما تعملي حاجة. ريّحي نفسك، ونقطك كلها محفوظة.</p>
       {inPopup && <button type="button" className="button primary" onClick={onDone}>تمام 💗</button>}
     </>
-  )
-}
-
-/** A treat on the home page: wrapped until she taps it. */
-export function TreatCard({ treat }: { treat: Treat }) {
-  const opened = useTreatOpened(treat.id)
-  return (
-    <Card className={`gift-card chocolate-card ${treat.kind === 'period' ? 'is-period' : ''}`}>
-      <div className="chocolate-stage">
-        <Chocolate treat={treat} opened={opened} onOpen={() => openTreat(treat.id)} />
-      </div>
-      {opened ? (
-        <m.div className="treat-inside" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}>
-          <TreatInside treat={treat} />
-        </m.div>
-      ) : (
-        <div className="treat-inside">
-          <h2 className="card-title">{treat.kind === 'period' ? 'مفاجأة النهارده 🌸' : 'فيه حاجة حلوة مستنياكي 🎁'}</h2>
-          <p className="muted small">{treat.kind === 'period' ? 'دوسي عليها وافتحيها.' : 'دوسي على الشوكولاتة وافتحيها.'}</p>
-        </div>
-      )}
-    </Card>
   )
 }
 
