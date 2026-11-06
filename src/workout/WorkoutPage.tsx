@@ -29,7 +29,7 @@ function initialSession(state: AppState): Session | null {
   const start = state.profile.programStartDate
   const today = state.days.find((day) => day.date === state.today)
   if (!start || !today?.checkin) return null
-  return createSession(state.today, planForDay(state.days, state.today, dayNumberFor(start, state.today), today.checkin))
+  return createSession(state.today, planForDay(state.days, state.today, dayNumberFor(start, state.today), today.checkin, state.periods))
 }
 
 export function WorkoutPage() {

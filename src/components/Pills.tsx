@@ -1,33 +1,23 @@
 import { useState } from 'react'
-import { Check, Pill } from 'lucide-react'
-import { addDays, cairoDate, cairoTime, formatDateShort, sayTime } from '../../shared/date'
-import { PILL_MAX_DAYS, PILL_SLOTS, PILL_TIME_FROM, PILL_TIME_UNTIL, pillsDue, pillsOn, pillTaken, usualPillTime, validatePillPlan } from '../../shared/pills'
+import { Check, Pencil, Pill as PillIcon, Trash2 } from 'lucide-react'
+import { addDays, cairoTime, formatDateShort, sayTime } from '../../shared/date'
+import { PILL_NAME_MAX, PILL_TIME_FROM, PILL_TIME_UNTIL, pillsDue, pillsOn, pillTaken, validatePill, type Pill } from '../../shared/pills'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
-import { Card, ChoiceGroup, Notice } from './ui'
+import { Card, Notice } from './ui'
 
-/** Her usual meal times come from this many recent days of her food log. */
-const USUAL_DAYS = 30
+export const sayPillTime = (time: string) => sayTime(Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)))
 
-const say = (time: string) => sayTime(Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)))
+const failed = (caught: unknown) => (caught instanceof Error ? caught.message : 'تعذّر الحفظ')
 
-type Until = 'open' | 'date'
-const UNTIL_OPTIONS: { value: Until; label: string; emoji: string }[] = [
-  { value: 'open', label: 'لسه مش عارفة', emoji: '♾️' },
-  { value: 'date', label: 'لحد يوم معيّن', emoji: '📅' },
-]
-
-/** When to remind her of each pill, and until which day; it starts at her usual meal times. */
-export function PillPlanForm({ state, onDone }: { state: AppState; onDone?: () => void }) {
-  const { savePillPlan } = useAppData()
-  const plan = state.pillPlan ?? null
-  const recent = state.foodEntries.filter((entry) => entry.date >= addDays(state.today, -USUAL_DAYS))
-  const [times, setTimes] = useState(() => PILL_SLOTS.map((_, slot) => plan?.times[slot] ?? usualPillTime(recent, slot)))
-  const [until, setUntil] = useState<Until>(plan?.until ? 'date' : 'open')
-  const [date, setDate] = useState(plan?.until && plan.until >= state.today ? plan.until : '')
+/** A pill's name and time: a new one, or changing one she has. */
+export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void }) {
+  const { addPill, updatePill } = useAppData()
+  const [name, setName] = useState(pill?.name ?? '')
+  const [time, setTime] = useState(pill?.time ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const draft = validatePillPlan({ times, until: until === 'date' ? date || 'missing' : null }, state.today)
+  const draft = validatePill({ name, time })
   const valid = typeof draft !== 'string'
 
   async function save() {
@@ -35,10 +25,13 @@ export function PillPlanForm({ state, onDone }: { state: AppState; onDone?: () =
     setBusy(true)
     setError(null)
     try {
-      await savePillPlan(draft)
+      if (pill) await updatePill(pill.id, draft.name, draft.time)
+      else await addPill(draft.name, draft.time)
+      setName('')
+      setTime('')
       onDone?.()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'تعذّر الحفظ')
+      setError(failed(caught))
     } finally {
       setBusy(false)
     }
@@ -46,23 +39,16 @@ export function PillPlanForm({ state, onDone }: { state: AppState; onDone?: () =
 
   return (
     <form className="sleep-form" onSubmit={(event) => { event.preventDefault(); void save() }}>
-      {PILL_SLOTS.map((slot, index) => (
-        <label key={slot.label} className="field">
-          <span>{slot.emoji} أفكرك ببرشامة {slot.label} الساعة</span>
-          <input type="time" value={times[index]} min={PILL_TIME_FROM} max={PILL_TIME_UNTIL} required
-            onChange={(event) => setTimes((current) => current.map((time, other) => (other === index ? event.target.value : time)))} />
-        </label>
-      ))}
-      <ChoiceGroup legend="هتاخديهم لحد امتى؟" options={UNTIL_OPTIONS} value={until} onChange={setUntil} columns={2} />
-      {until === 'date' && (
-        <label className="field">
-          <span>آخر يوم هتاخدي فيه البرشام</span>
-          <input type="date" value={date} min={state.today} max={addDays(state.today, PILL_MAX_DAYS)} required onChange={(event) => setDate(event.target.value)} />
-        </label>
-      )}
-      {until === 'open' && <p className="muted small">هفكرك كل يوم لحد ما تقوليلي إنك خلصتيهم 🤍</p>}
+      <label className="field">
+        <span>اسم البرشامة</span>
+        <input type="text" value={name} maxLength={PILL_NAME_MAX} placeholder="مثلًا: فيتامين د، أو برشامة بعد الغدا" required onChange={(event) => setName(event.target.value)} />
+      </label>
+      <label className="field">
+        <span>بتاخديها الساعة كام؟</span>
+        <input type="time" value={time} min={PILL_TIME_FROM} max={PILL_TIME_UNTIL} required onChange={(event) => setTime(event.target.value)} />
+      </label>
       <div className="sleep-actions">
-        <button type="submit" className="button primary" disabled={!valid || busy}>{busy ? 'لحظة…' : 'فكّرني'}</button>
+        <button type="submit" className="button primary" disabled={!valid || busy}>{busy ? 'لحظة…' : pill ? 'احفظي' : 'ضيفيها'}</button>
         {onDone && <button type="button" className="link-button" onClick={onDone}>إلغاء</button>}
       </div>
       {error && <Notice tone="care">{error}</Notice>}
@@ -70,82 +56,78 @@ export function PillPlanForm({ state, onDone }: { state: AppState; onDone?: () =
   )
 }
 
-/** One pill today: when it is, and "خدتها". */
-export function PillRow({ state, date, slot }: { state: AppState; date: string; slot: number }) {
-  const { savePillDose } = useAppData()
+/** One pill on a day: its time and "خدتها"; on the pills page also changing or removing it. */
+export function PillRow({ state, date, pill, editable = false }: { state: AppState; date: string; pill: Pill; editable?: boolean }) {
+  const { savePillDose, removePill } = useAppData()
   const [busy, setBusy] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const taken = pillTaken(state.pillDoses, date, slot)
-  const { label, emoji } = PILL_SLOTS[slot]
+  const taken = pillTaken(state.pillDoses, date, pill.id)
 
-  async function mark(next: boolean) {
+  async function run(action: () => Promise<void>) {
     setBusy(true)
     setError(null)
     try {
-      await savePillDose(date, slot, next)
+      await action()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'تعذّر الحفظ')
+      setError(failed(caught))
     } finally {
       setBusy(false)
     }
   }
 
+  if (editing) return <li className="pill-row is-editing"><PillForm pill={pill} onDone={() => setEditing(false)} /></li>
   return (
     <li className={`pill-row${taken ? ' is-taken' : ''}`}>
-      <span aria-hidden="true">{emoji}</span>
+      <span aria-hidden="true">💊</span>
       <div>
-        <strong>{label}</strong>
-        {state.pillPlan && <small>الساعة {say(state.pillPlan.times[slot])}</small>}
+        <strong>{pill.name}</strong>
+        <small>الساعة {sayPillTime(pill.time)}</small>
       </div>
       {taken
-        ? <button type="button" className="chip soft" disabled={busy} onClick={() => void mark(false)} aria-label={`إلغاء: برشامة ${label} اتاخدت`}><Check /> خدتيها</button>
-        : <button type="button" className="button primary small-button" disabled={busy} onClick={() => void mark(true)}><Check /> {busy ? 'لحظة…' : 'خدتها'}</button>}
+        ? <button type="button" className="chip soft" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, false))} aria-label={`إلغاء: ${pill.name} اتاخدت`}><Check /> خدتيها</button>
+        : <button type="button" className="button primary small-button" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, true))}><Check /> {busy ? 'لحظة…' : 'خدتها'}</button>}
+      {editable && (
+        <div className="pill-tools">
+          <button type="button" className="link-button" onClick={() => setEditing(true)}><Pencil /> غيّري</button>
+          {confirming
+            ? <>
+                <button type="button" className="link-button danger" disabled={busy} onClick={() => void run(() => removePill(pill.id))}>أيوه، شيليها</button>
+                <button type="button" className="link-button" onClick={() => setConfirming(false)}>لأ</button>
+              </>
+            : <button type="button" className="link-button danger" onClick={() => setConfirming(true)}><Trash2 /> شيليها</button>}
+        </div>
+      )}
       {error && <Notice tone="care">{error}</Notice>}
     </li>
   )
 }
 
-/**
- * On the home page only when it matters: until she says when to be reminded,
- * and while a pill whose time has come is still waiting.
- */
+/** On the home page only while a pill whose time has come is still waiting. */
 export function PillsCard({ state }: { state: AppState }) {
-  const [asking, setAsking] = useState(false)
-  if (state.pillPlan === undefined || !state.profile.programStartDate) return null
-  if (state.pillPlan === null) {
-    return (
-      <Card className="soft-card">
-        <h2 className="card-title"><Pill /> عندك برشامتين 💊</h2>
-        <p className="muted">واحدة بعد الفطار وواحدة بعد الغدا. قوليلي أفكرك بيهم الساعة كام، وهتاخديهم لحد امتى، وأنا هفكرك كل يوم 🤍</p>
-        {asking ? <PillPlanForm state={state} onDone={() => setAsking(false)} /> : <button type="button" className="button primary" onClick={() => setAsking(true)}>اختاري المواعيد</button>}
-      </Card>
-    )
-  }
-  const due = pillsDue(state.pillPlan, state.pillDoses, state.today, cairoTime())
+  if (!state.pills || !state.profile.programStartDate) return null
+  const due = pillsDue(state.pills, state.pillDoses, state.today, cairoTime())
   if (!due.length) return null
   return (
     <Card className="soft-card">
-      <h2 className="card-title"><Pill /> وقت البرشام 💊</h2>
-      <ul className="pill-list">{due.map((slot) => <PillRow key={slot} state={state} date={state.today} slot={slot} />)}</ul>
+      <h2 className="card-title"><PillIcon /> وقت البرشام 💊</h2>
+      <ul className="pill-list">{due.map((pill) => <PillRow key={pill.id} state={state} date={state.today} pill={pill} />)}</ul>
     </Card>
   )
 }
 
-/** The last days, a mark per pill. */
+/** The last days: the pills she took on each one. */
 export function PillHistory({ state, days }: { state: AppState; days: number }) {
-  const plan = state.pillPlan
-  if (!plan) return null
-  // From when she set it up: her first ticked pill, or the plan itself.
-  const since = [cairoDate(new Date(plan.updatedAt)), ...(state.pillDoses ?? []).map((dose) => dose.date)].sort()[0]
   const dates = Array.from({ length: days }, (_, index) => addDays(state.today, -(index + 1)))
-    .filter((date) => date >= since && pillsOn(plan, date) && state.days.some((day) => day.date === date))
-  if (!dates.length) return null
+    .filter((date) => pillsOn(state.pills, date).length > 0 && state.days.some((day) => day.date === date))
+  if (!dates.length) return <p className="muted small">لسه مفيش أيام فاتت فيها برشام.</p>
   return (
     <ul className="sleep-history">
       {dates.map((date) => (
         <li key={date}>
           <strong>{formatDateShort(date)}</strong>
-          {PILL_SLOTS.map((slot, index) => <span key={slot.label}>{slot.label} {pillTaken(state.pillDoses, date, index) ? '✅' : '—'}</span>)}
+          {pillsOn(state.pills, date).map((pill) => <span key={pill.id}>{pill.name} {pillTaken(state.pillDoses, date, pill.id) ? '✅' : '—'}</span>)}
         </li>
       ))}
     </ul>

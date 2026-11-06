@@ -2,7 +2,6 @@ import type { ReportData } from '../../shared/report'
 import type { FoodInput } from '../../shared/food'
 import type { WaterSpendInput } from '../../shared/waterPoints'
 import type { SleepLog } from '../../shared/sleep'
-import type { PillPlan } from '../../shared/pills'
 import type { PrayerGiftKind } from '../../shared/prayer'
 import type { AppState, CheckIn, Feedback, MeasurementInput, ReportKind, WorkoutResult } from '../../shared/types'
 
@@ -30,8 +29,13 @@ export interface Backend {
   addPeriod(startDate: string, endDate?: string): Promise<AppState>
   endPeriod(id: number, endDate: string): Promise<AppState>
   deletePeriod(id: number): Promise<AppState>
-  savePillPlan(plan: Omit<PillPlan, 'updatedAt'>): Promise<AppState>
-  savePillDose(date: string, slot: number, taken: boolean): Promise<AppState>
+  addPill(name: string, time: string): Promise<AppState>
+  updatePill(id: number, name: string, time: string): Promise<AppState>
+  /** She stops taking it from today on. */
+  removePill(id: number): Promise<AppState>
+  savePillDose(date: string, pillId: number, taken: boolean): Promise<AppState>
+  /** A rest day she picks (rest: true), or takes back. */
+  saveRestDay(date: string, rest: boolean): Promise<AppState>
   /** `at` is when she prayed (ISO); the API uses now when it is left out. */
   savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<AppState>
   openPrayerGift(weekStart: string, note?: string, kind?: PrayerGiftKind): Promise<AppState>

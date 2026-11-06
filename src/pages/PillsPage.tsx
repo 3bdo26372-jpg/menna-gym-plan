@@ -1,43 +1,47 @@
 import { useState } from 'react'
-import { Pencil, Pill } from 'lucide-react'
-import { formatDateLong } from '../../shared/date'
-import { PILL_SLOTS } from '../../shared/pills'
-import { PillHistory, PillPlanForm, PillRow } from '../components/Pills'
+import { Pill, Plus } from 'lucide-react'
+import { MAX_PILLS, pillsOn } from '../../shared/pills'
+import { PillForm, PillHistory, PillRow } from '../components/Pills'
 import { Card, PageHeader } from '../components/ui'
 import { useAppState } from '../state/AppData'
 
 /** How many days back the page shows which pills she took. */
 const HISTORY_DAYS = 7
 
-/** البرشام: when she's reminded of each pill, ticking today's off, and the last days. */
+/** البرشام: her own list of pills, ticking today's off, and the last days. */
 export function PillsPage() {
   const state = useAppState()
-  const [editing, setEditing] = useState(false)
-  const plan = state.pillPlan ?? null
-  const ended = plan?.until ? plan.until < state.today : false
+  const [adding, setAdding] = useState(false)
+  const today = pillsOn(state.pills, state.today)
+  const started = Boolean(state.profile.programStartDate)
+  const known = state.pills !== undefined
 
   return (
     <div className="page">
       <PageHeader eyebrow="البرشام" title="برشامك 💊">
-        <p>برشامتين كل يوم: واحدة بعد الفطار وواحدة بعد الغدا. اختاري أفكرك بيهم امتى، وأنا هبعتلك إشعار في ميعاد كل واحدة لحد آخر يوم 🤍</p>
+        <p>ضيفي كل برشامة بتاخديها باسمها وميعادها، وأنا هبعتلك إشعار في ميعاد كل واحدة. ولما تبطّلي واحدة، شيليها 🤍</p>
       </PageHeader>
 
-      {!state.profile.programStartDate ? null : !plan || editing || ended ? (
-        <Card>
-          <h2 className="card-title"><Pill /> {ended ? 'خلصتي البرشام؟ 🎉' : 'أفكرك امتى؟'}</h2>
-          {ended && <p className="muted">آخر يوم كان {formatDateLong(plan!.until!)}. لو لسه هتكمّلي، اختاري المواعيد تاني.</p>}
-          <PillPlanForm state={state} onDone={plan && !ended ? () => setEditing(false) : undefined} />
-        </Card>
-      ) : (
+      {started && known && (
         <Card>
           <h2 className="card-title"><Pill /> النهارده</h2>
-          <ul className="pill-list">{PILL_SLOTS.map((_, slot) => <PillRow key={slot} state={state} date={state.today} slot={slot} />)}</ul>
-          <p className="muted small">{plan.until ? `هفكرك لحد ${formatDateLong(plan.until)}.` : 'هفكرك كل يوم لحد ما تقوليلي إنك خلصتيهم.'} ولو مدوستيش «خدتها» هفكرك تاني بعد شوية.</p>
-          <button type="button" className="link-button" onClick={() => setEditing(true)}><Pencil /> غيّري المواعيد أو آخر يوم</button>
+          {today.length
+            ? <ul className="pill-list">{today.map((pill) => <PillRow key={pill.id} state={state} date={state.today} pill={pill} editable />)}</ul>
+            : <p className="muted">مفيش برشام دلوقتي. لو بتاخدي حاجة، ضيفيها تحت وأنا هفكرك بيها.</p>}
+          {today.length > 0 && <p className="muted small">ولو مدوستيش «خدتها» هفكرك تاني بعد شوية.</p>}
         </Card>
       )}
 
-      {plan && (
+      {started && known && today.length < MAX_PILLS && (
+        <Card>
+          <h2 className="card-title"><Plus /> ضيفي برشامة</h2>
+          {adding || !today.length
+            ? <PillForm onDone={today.length ? () => setAdding(false) : undefined} />
+            : <button type="button" className="button secondary" onClick={() => setAdding(true)}><Plus /> برشامة جديدة</button>}
+        </Card>
+      )}
+
+      {started && known && (
         <Card>
           <h2 className="card-title">آخر {HISTORY_DAYS} أيام</h2>
           <PillHistory state={state} days={HISTORY_DAYS} />

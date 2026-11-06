@@ -21,9 +21,13 @@ import { isUrgent, PeriodCard } from '../components/PeriodCard'
 import { SafetyNote } from '../components/SafetyNote'
 import { Card, ScoreRing, StatTile } from '../components/ui'
 import { formatNumber } from '../lib/format'
+import { storage } from '../lib/storage'
 import { greetingFor } from '../lib/greetings'
 import { isTreatOpened, treatsFor } from '../lib/treats'
 import { useAppData, useAppState } from '../state/AppData'
+import { RestButton, weekLine } from '../components/WeekPlan'
+import { yesterdayRecap } from '../../shared/recap'
+import { currentWeek } from '../../shared/week'
 
 export function TodayPage() {
   const state = useAppState()
@@ -65,7 +69,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
   const today = state.days.find((day) => day.date === state.today)
   const dayNumber = dayNumberFor(startDate, state.today)
   const yesterday = state.days.find((day) => day.date === addDays(state.today, -1))
-  const plan = planForDay(state.days, state.today, dayNumber, today?.checkin)
+  const plan = planForDay(state.days, state.today, dayNumber, today?.checkin, state.periods)
   const recentPain = [today, yesterday].some((day) => day?.feedback?.pain)
   // The app can deploy before the Worker that sends periods; skip the card until it does.
   const cycle = state.periods ? periodForecast(state.periods, state.today) : null
@@ -82,6 +86,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
       {recentPain && <SafetyNote compact />}
       {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
+      <RecapCard state={state} />
       <Highlight state={state} yesterday={yesterday} />
       <PrayerCard state={state} />
       <PillsCard state={state} />
@@ -99,18 +104,57 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
 
 /** Today's workout in one line, with the way to its own page. */
 function WorkoutLink({ state, day, plan }: { state: AppState; day: DayRecord | undefined; plan: WorkoutPlan }) {
-  const rest = isPeriodPassDate(state, state.today) && !day?.workout
-  const status = rest ? 'النهارده راحة 🌸 اليوم متحسب لك'
-    : day?.feedback ? 'خلّصتيه 👏'
-      : day?.workout ? 'فاضل تقييمك بعد التمرين'
-        : day?.checkin ? 'جاهز، يلا نبدأ' : `${Math.round(plan.totalSeconds / 60)} دقيقة · ${plan.title}`
+  const period = isPeriodPassDate(state, state.today) && !day?.workout
+  const chosenRest = (state.restDays ?? []).includes(state.today) && !day?.workout
+  const week = currentWeek(state)
+  const weekDone = week !== null && week.workoutsLeft === 0 && !day?.workout
+  const calm = period || chosenRest || weekDone || Boolean(day?.feedback)
+  const status = period ? 'النهارده راحة 🌸 اليوم متحسب لك'
+    : chosenRest ? 'النهارده راحة 🌙 اختيارك'
+      : day?.feedback ? 'خلّصتيه 👏'
+        : day?.workout ? 'فاضل تقييمك بعد التمرين'
+          : weekDone ? 'تمارين الأسبوع خلصت 🎉'
+            : day?.checkin ? 'جاهز، يلا نبدأ' : `${Math.round(plan.totalSeconds / 60)} دقيقة · ${plan.title}`
   return (
     <Card className="workout-link">
       <div>
         <p className="eyebrow">تمرين النهارده</p>
         <h2 className="card-title"><Dumbbell /> {status}</h2>
+        {week && <p className="muted small week-line">{weekLine(week)}</p>}
       </div>
-      <a className={`button ${rest || day?.feedback ? 'secondary' : 'primary'}`} href="#/training">{rest || day?.feedback ? 'شوفي' : 'روحي للتمرين'}</a>
+      <div className="workout-link-actions">
+        <a className={`button ${calm ? 'secondary' : 'primary'}`} href="#/training">{calm ? 'شوفي' : 'روحي للتمرين'}</a>
+        {!day?.workout && !day?.checkin && <RestButton state={state} className="link-button" />}
+      </div>
+    </Card>
+  )
+}
+
+/** Yesterday in a few gentle lines; she can fold it away until tomorrow. */
+function RecapCard({ state }: { state: AppState }) {
+  const recap = yesterdayRecap(state)
+  const key = `menna-flow:recap-seen:${recap?.date ?? ''}`
+  const [seen, setSeen] = useState(() => Boolean(recap && storage.get(key)))
+  if (!recap || seen) return null
+  const fold = () => {
+    storage.set(key, '1')
+    setSeen(true)
+  }
+  return (
+    <Card className="recap-card">
+      <p className="eyebrow">امبارح</p>
+      {recap.done.length > 0 && (
+        <div className="chips" aria-label="اللي عملتيه امبارح">
+          {recap.done.map((item) => <span key={item} className="chip soft">✓ {item}</span>)}
+        </div>
+      )}
+      {recap.next.length > 0 && (
+        <ul className="recap-next" aria-label="خطوة صغيرة للنهارده">
+          {recap.next.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+      )}
+      <p className="recap-cheer">{recap.cheer}</p>
+      <button type="button" className="link-button" onClick={fold}>تمام 🤍</button>
     </Card>
   )
 }
@@ -135,7 +179,7 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
   if (yesterday?.workout && !yesterday.feedback) return <YesterdayFeedback day={yesterday} />
   if (gameFirst) return <CardGame state={state} />
   if (newPage) return <NewPageCard state={state} />
-  if (yesterday && missedWorkout(yesterday) && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date)) {
+  if (yesterday && missedWorkout(yesterday) && !yesterday.restDay && !isPainRest(yesterday.periodPain) && canTakePass(yesterday) && canAffordPassFor(state, yesterday.date)) {
     return (
       <Card className="soft-card">
         <h2 className="card-title">فاتك تمرين امبارح؟ 🎟️</h2>

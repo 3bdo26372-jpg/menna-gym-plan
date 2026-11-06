@@ -3,12 +3,13 @@ import { unusedGifts } from './dayPasses'
 import { waterMl } from './food'
 import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest, periodForecast } from './period'
-import { PILL_SLOTS, pillsOn, pillTaken } from './pills'
+import { pillsOn, pillTaken } from './pills'
 import { EARN, WATER_GOAL_ML } from './points'
 import { ASR, BIG_GIFT_WEEKS, FAJR, ON_TIME_MIN, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, unopenedBigGifts, unopenedPrayerGifts } from './prayer'
 import { ASR_QUOTES, DHIKR_QUOTES, FAJR_QUOTES, PRAYER_QUOTES, quoteLine, quoteOfDay } from './prayerTexts'
 import { ACTIVE_DAY_MIN_COMPLETION } from './rewards'
 import type { AppState } from './types'
+import { currentWeek } from './week'
 
 /**
  * Push notifications on her phone. The Worker checks every 15 minutes and
@@ -19,12 +20,12 @@ import type { AppState } from './types'
  *   she woke up (her sleep log, or noon) to 23:30; each glass gets one
  *   notification when it is due, unless she already drank that far, saying
  *   how many are left and when the next one is
- * - workout, from 21:00: no workout yet, and not a period or pain-rest day
+ * - workout, from 21:00: no workout yet, and not a period, pain-rest or chosen
+ *   rest day, nor a week whose workouts are already done
  * - missed, from 18:00: nothing at all logged today, so she hears that his
  *   program misses her
- * - pills: until she has said when to be reminded, she is asked at 18:00 and
- *   once more at 21:00; then each pill at the time she picked, every day up to
- *   her last day, and once more 45 minutes later if she hasn't ticked it off
+ * - pills: each pill on her list at its own time, every day until she removes
+ *   it, and once more 45 minutes later if she hasn't ticked it off
  * - prayers: each one from 10 minutes before its time, with a verse or a
  *   hadith; and (except Fajr) once more 15 minutes before its points start
  *   going down, if she hasn't ticked it. None on her period days.
@@ -34,7 +35,7 @@ import type { AppState } from './types'
  *   and the big one the day after every 4 kept weeks in a row
  * A gift pass added after she turned notifications on is announced once, any time of day.
  */
-export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed' | 'pillsAsk'
+export type ReminderKind = 'sleep' | 'water' | 'workout' | 'missed'
 
 export interface Reminder {
   /** Key for "already sent": the reminder kind, or `gift-<id>`. */
@@ -51,10 +52,7 @@ export const REMINDER_WINDOWS: Record<ReminderKind, { from: string; until: strin
   water: { from: '05:00', until: '23:30' },
   workout: { from: '21:00', until: '23:30' },
   missed: { from: '18:00', until: '23:30' },
-  pillsAsk: { from: '18:00', until: '23:30' },
 }
-/** The second ask, when she hasn't answered the first. */
-const PILLS_ASK_AGAIN = '21:00'
 /** A pill's reminder goes out up to this long after its time, and the nudge this long after it. */
 const PILL_WINDOW_MIN = 3 * 60
 const PILL_AGAIN_MIN = 45
@@ -139,28 +137,23 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
 
   const trained = (day.workout?.mainCompletion ?? 0) >= ACTIVE_DAY_MIN_COMPLETION
   const period = periodForecast(state.periods ?? [], state.today).phase === 'period'
-  if (inWindow('workout', time) && !trained && !day.excused && !period && !isPainRest(day.periodPain)) {
-    add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body: 'ربع ساعة بس وتخلصي، وبعدها نامي بدري 🌙', url: '/#/training' })
+  const week = currentWeek(state)
+  const resting = (state.restDays ?? []).includes(state.today) || (week !== null && week.workoutsLeft === 0)
+  if (inWindow('workout', time) && !trained && !day.excused && !period && !isPainRest(day.periodPain) && !resting) {
+    const body = week && week.restLeft > 0
+      ? 'ربع ساعة بس وتخلصي 💪 ولو جسمك محتاج راحة، النهارده يتحسب يوم راحة من أيامك 🌙'
+      : 'ربع ساعة بس وتخلصي، وبعدها نامي بدري 🌙'
+    add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body, url: '/#/training' })
   }
 
-  // Pills: ask when to remind her until she says, then remind her of each one.
-  if (state.pillPlan === null && inWindow('pillsAsk', time)) {
-    add({ key: 'pills-ask', title: 'عندك برشامتين يا {nick} 💊', body: 'واحدة بعد الفطار وواحدة بعد الغدا. قوليلي أفكرك بيهم الساعة كام وهتاخديهم لحد امتى، وأنا هفكرك كل يوم 🤍', url: '/#/pills' })
-    if (time >= PILLS_ASK_AGAIN && sent.has('pills-ask')) {
-      add({ key: 'pills-ask-again', title: 'لسه مستني ردك يا {nick} 💊', body: 'أفكرك بالبرشام امتى؟ اختاري الميعاد وأنا عليا الباقي 🤍', url: '/#/pills' })
+  // Pills: each one she takes, at its own time, and once more if she hasn't ticked it.
+  for (const pill of pillsOn(state.pills, state.today)) {
+    const since = now - minutesOf(pill.time)
+    if (since < 0 || since >= PILL_WINDOW_MIN || pillTaken(state.pillDoses, state.today, pill.id)) continue
+    add({ key: `pill-${pill.id}`, title: `وقت ${pill.name} يا {nick} 💊`, body: 'خديها دلوقتي ودوسي «خدتها» في البرنامج ✅', url: '/#/pills' })
+    if (since >= PILL_AGAIN_MIN && sent.has(`pill-${pill.id}`)) {
+      add({ key: `pill-${pill.id}-again`, title: `خدتي ${pill.name}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
     }
-  }
-  const pills = state.pillPlan
-  if (pillsOn(pills, state.today)) {
-    PILL_SLOTS.forEach((slot, index) => {
-      const since = now - minutesOf(pills.times[index])
-      if (since < 0 || since >= PILL_WINDOW_MIN || pillTaken(state.pillDoses, state.today, index)) return
-      const last = pills.until === state.today ? ' النهارده آخر يوم 🎉' : ''
-      add({ key: `pill-${index}`, title: `وقت برشامة ${slot.label} يا {nick} 💊`, body: `خديها دلوقتي ودوسي «خدتها» في البرنامج ✅${last}`, url: '/#/pills' })
-      if (since >= PILL_AGAIN_MIN && sent.has(`pill-${index}`)) {
-        add({ key: `pill-${index}-again`, title: `خدتي برشامة ${slot.label}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
-      }
-    })
   }
 
   // Prayers, from 10 minutes before each one until its points start going down (or the next prayer).

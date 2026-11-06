@@ -41,13 +41,21 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
 - **Exercises**: all standing, bodyweight only; no floor, wall, chair, bench or equipment.
 - **Alternatives**: every jumping movement names a low-impact alternative, and the player's **صعب؟ أسهل** button switches to it mid-workout without resetting the timer.
 - **Session structure**: warm-up → full-body cardio → standing core/body control → standing stretches.
-- **Weekly shape**: a 4-day cycle of three active day types, then a **Light Movement Day** (يوم تمرين خفيف: easy movement plus stretching). There is never a "rest day".
-  - Exercises rotate daily so neighbouring days differ.
+- **Weekly plan** (`shared/week.ts`, from the week starting `WEEKLY_PLAN_FROM`, 2026-11-03): a program week is 7 days from the start date, the same weeks as the weekly report. She trains 5 days at most and picks which ones.
+  - A usual week is 5 workouts and 2 rest days. A week with 3 or more days just before or during her period (the 5 days before a start, logged period days, pain-rest days, or what her forecast expects) is 4 workouts and 3 rest days.
+  - Logged period days and pain-rest days are rest on top of that: they lower the week's workouts instead of using her rest days.
+  - She can tap **النهارده راحة** (home or training page) while the week has a rest day left; it is stored in `rest_days`, and she can take it back. A past day without a workout becomes a rest day by itself while the week still has one. Only a day past that is a missed workout.
+  - A rest day fills in the workout's 40 points (`rest` in the score) and counts like a trained day for the milestone rewards and the 7-day streak, the same as a pain-rest day. A day pass counts toward the week's workouts. Earlier weeks keep the old every-day rule.
+  - The training page shows the week as seven dots (workout, pass, period, rest, missed, today, coming), how many workouts and rest days are left, and why.
+- **Day types**: the three active types (cardio, boxing, sculpt) follow each other workout by workout, so a rest day never skips one. A **Light Movement Day** (يوم تمرين خفيف) comes after pain, or on a tired check-in just before her period.
+  - Exercises rotate daily so neighbouring days differ. Skater steps are out of the workouts since she asked (feedback on 2026-11-03); Skater Hops now ease to a curtsey squat.
 - **Duration**: level 0 sessions are about 18 minutes (Light Movement Days about 15); the top level stays under 28 minutes.
-- **Adaptation**:
-  - Three workouts in a row rated *Easy* move up one level, and each level changes exactly one variable (work time, rest, rounds, more jumps, core rounds).
-  - Two *Hard* ratings move down a level. After a *Hard* rating, or a low-energy / tired check-in, the jumps are swapped for their alternatives and the intervals get shorter.
-  - Reporting pain holds the level and makes the next day light.
+- **Adaptation** (`adaptiveState` in `shared/program.ts`), one level at a time, and each level changes exactly one variable (work time, rest, rounds, more jumps, core rounds):
+  - Three active workouts in a row that felt light move up one level: rated *Easy*, or *Perfect* with a difficulty of 4/10 or less, without pain and without her energy dropping low afterwards. The workout that day says «مستوى جديد».
+  - Two *Hard* ratings (or a difficulty of 9+) move down a level, and so does a break of 10 days or more, so she comes back gently.
+  - After a *Hard* rating, a low-energy / tired check-in, or on the days just before and during her period, the jumps are swapped for their alternatives and the intervals get shorter.
+  - Reporting pain holds the level and makes the next day light. Light days count neither way.
+- **Yesterday's recap** (`shared/recap.ts`, the «امبارح» card at the top of the home page): what she did as chips (workout, rest day, water, food in range, pills, prayers), then up to 3 things that were left out, each said as one small step for today, and a cheer with her nickname. It never says she fell short: a missed workout is «ولا يهمك» with the days the week still has. «تمام 🤍» folds it until the next day.
 - **Cheers** (`src/workout/cheers.ts`): short messages with her nicknames during the workout, kept sparse on purpose.
   - One after every 5 finished exercises (skipped ones don't count), and one after a hard exercise (a jump, or one she once rated hardest) at most once a workout. That is about 4 a workout, never two close together and none during the cool-down.
   - Each shows for about 3 seconds over the demo and never blocks a tap.
@@ -85,13 +93,16 @@ Vercel (Vite + React SPA)  ──HTTPS + passcode──▶  Cloudflare Worker (w
   - A cron trigger runs every 15 minutes (`[triggers]` in `worker/wrangler.toml`) and sends each reminder at most once a day, only while it still applies:
     - sleep from 12:30 if last night isn't logged
     - water from 17:30 if under 1 L
-    - workout from 21:00 if she hasn't trained, except on period and pain-rest days
+    - workout from 21:00 if she hasn't trained, except on period, pain-rest and chosen rest days, and once the week's workouts are done
+    - each pill on her list at its own time, and once more 45 minutes later if she hasn't ticked it
     - each prayer from 10 minutes before its time, with a verse or hadith, and (except Fajr) again 15 minutes before its points start going down; none on period days
     - the morning adhkar two hours before Dhuhr, a short dhikr two hours after it, the evening adhkar half an hour after Asr
     - a weekly prayer gift, the day after the week that earned it, from 12:00, and the big gift the same way
   - A gift pass added after she turned them on is announced once.
   - A one-off message: `INSERT INTO push_messages (title, body) VALUES ('…', '…')` goes out on the next run.
   - The Worker makes its own VAPID keys the first time (`push_config` in D1), so there is no secret to set. Sent reminders are kept in `push_sent`.
+- **Pills (البرشام)** (`shared/pills.ts`, page `#/pills`): she adds each pill with its name and time, can change either, and removes it when she stops (`removed_on` is the first day she no longer takes it, so the history keeps what she took). She ticks each one off per day (`pill_taken`). The home page shows a pill only once its time has come and it isn't ticked.
+  - Migration 0026 turned the old two-slot plan into this list: the after-breakfast and after-lunch pills up to the plan's last day, then the after-lunch one again from the day it runs, at the same time.
 - **Period tracking (البريود)** (`shared/period.ts`, page `#/period`):
   - Menna logs the day a period starts, with one tap on the home page (**بدأ النهارده**) or any date on the period page, and optionally the day it ends. A past month can be logged with both dates at once.
   - The period page has a month-by-month table (month, came on, ended on, length). Tapping a month's end date sets or corrects it, or deletes the month.
