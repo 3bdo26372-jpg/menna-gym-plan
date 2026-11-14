@@ -496,3 +496,9 @@
 .pill-row.is-editing { display: block; }
 .pill-tools { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .older-pass { display: grid; gap: 10px; padding-top: 4px; border-top: 1px solid var(--line); }
+
+/* Notifications once they are on: one quiet line with a way to redo them. */
+.push-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 0 4px; }
+.push-line p { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.push-line p svg { width: 16px; flex: none; }
+.push-line .notice { flex-basis: 100%; }
