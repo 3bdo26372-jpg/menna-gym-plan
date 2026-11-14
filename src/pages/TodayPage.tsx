@@ -86,6 +86,7 @@ function Dashboard({ state, startDate }: { state: AppState; startDate: string })
       {cycle && isUrgent(cycle) && <PeriodCard state={state} forecast={cycle} />}
       <RecapCard state={state} />
       <Highlight state={state} yesterday={yesterday} />
+      <NotificationsCard state={state} />
       <PrayerCard state={state} />
       <PillsCard state={state} />
 
@@ -160,9 +161,10 @@ function RecapCard({ state }: { state: AppState }) {
 /**
  * At most one extra card at a time, so the home page stays calm: the most
  * pressing of a special game round from him, yesterday's feedback, the card
- * game, the fresh start after a period, a pass for a missed yesterday, or
- * turning on notifications. Gifts and period treats only come as the popup
- * (TreatPopup), never as a card here; gift passes wait on the passes page.
+ * game, the fresh start after a period, or a pass for a missed yesterday.
+ * Notifications have their own spot under it (NotificationsCard). Gifts and
+ * period treats only come as the popup (TreatPopup), never as a card here;
+ * gift passes wait on the passes page.
  */
 function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord | undefined }) {
   // Decided once per visit, so a round stays on screen while its cards turn over.
@@ -182,7 +184,7 @@ function Highlight({ state, yesterday }: { state: AppState; yesterday: DayRecord
       </Card>
     )
   }
-  return <NotificationsCard state={state} />
+  return null
 }
 
 /** The Cairo hour, kept current so the greeting changes at 7 pm without a reload. */
