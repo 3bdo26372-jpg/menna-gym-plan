@@ -19,6 +19,12 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
   const [error, setError] = useState<string | null>(null)
   const draft = validatePill({ name, time })
   const valid = typeof draft !== 'string'
+  // Said under the button so it never just greys out without a reason.
+  const missing = valid ? null
+    : !name.trim() ? 'اكتبي اسم البرشامة الأول'
+    : !time ? 'اختاري الساعة اللي بتاخديها فيها'
+    : time > PILL_TIME_UNTIL ? `آخر ميعاد ممكن ${sayPillTime(PILL_TIME_UNTIL)}، اختاري ${sayPillTime(PILL_TIME_UNTIL)} أو بعد 12 بالليل`
+    : null
 
   async function save() {
     if (!valid) return
@@ -51,6 +57,7 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
         <button type="submit" className="button primary" disabled={!valid || busy}>{busy ? 'لحظة…' : pill ? 'احفظي' : 'ضيفيها'}</button>
         {onDone && <button type="button" className="link-button" onClick={onDone}>إلغاء</button>}
       </div>
+      {missing && (name || time) && <p className="muted small">{missing}</p>}
       {error && <Notice tone="care">{error}</Notice>}
     </form>
   )
