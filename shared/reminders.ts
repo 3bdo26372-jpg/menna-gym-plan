@@ -3,7 +3,7 @@ import { unusedGifts } from './dayPasses'
 import { waterMl } from './food'
 import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest, periodForecast } from './period'
-import { pillsOn, pillTaken } from './pills'
+import { pillDosesOn, pillTaken } from './pills'
 import { EARN, WATER_GOAL_ML } from './points'
 import { ASR, BIG_GIFT_WEEKS, FAJR, ON_TIME_MIN, PRAYER_POINTS, PRAYERS, prayerFreeDates, prayerLog, prayerTimes, unopenedBigGifts, unopenedPrayerGifts } from './prayer'
 import { ASR_QUOTES, DHIKR_QUOTES, FAJR_QUOTES, PRAYER_QUOTES, quoteLine, quoteOfDay } from './prayerTexts'
@@ -24,8 +24,9 @@ import { currentWeek } from './week'
  *   rest day, nor a week whose workouts are already done
  * - missed, from 18:00: nothing at all logged today, so she hears that his
  *   program misses her
- * - pills: each pill on her list at its own time, every day until she removes
- *   it, and once more 45 minutes later if she hasn't ticked it off
+ * - pills: each dose on her list at its own time (a pill that repeats has one
+ *   every few hours), every day until she removes it, and once more 45 minutes
+ *   later if she hasn't ticked it off
  * - prayers: each one from 10 minutes before its time, with a verse or a
  *   hadith; and (except Fajr) once more 15 minutes before its points start
  *   going down, if she hasn't ticked it. None on her period days.
@@ -146,13 +147,14 @@ export function dueReminders(state: AppState, time: string, sent: Set<string>, g
     add({ key: 'workout', title: 'التمرين مستنيكي يا {nick} 💪', body, url: '/#/training' })
   }
 
-  // Pills: each one she takes, at its own time, and once more if she hasn't ticked it.
-  for (const pill of pillsOn(state.pills, state.today)) {
-    const since = now - minutesOf(pill.time)
-    if (since < 0 || since >= PILL_WINDOW_MIN || pillTaken(state.pillDoses, state.today, pill.id)) continue
-    add({ key: `pill-${pill.id}`, title: `وقت ${pill.name} يا {nick} 💊`, body: 'خديها دلوقتي ودوسي «خدتها» في البرنامج ✅', url: '/#/pills' })
-    if (since >= PILL_AGAIN_MIN && sent.has(`pill-${pill.id}`)) {
-      add({ key: `pill-${pill.id}-again`, title: `خدتي ${pill.name}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
+  // Pills: each dose she takes, at its own time, and once more if she hasn't ticked it.
+  for (const { pill, slot, time: at } of pillDosesOn(state.pills, state.today)) {
+    const since = now - minutesOf(at)
+    if (since < 0 || since >= PILL_WINDOW_MIN || pillTaken(state.pillDoses, state.today, pill.id, slot)) continue
+    const key = slot ? `pill-${pill.id}-${slot}` : `pill-${pill.id}`
+    add({ key, title: `وقت ${pill.name} يا {nick} 💊`, body: 'خديها دلوقتي ودوسي «خدتها» في البرنامج ✅', url: '/#/pills' })
+    if (since >= PILL_AGAIN_MIN && sent.has(key)) {
+      add({ key: `${key}-again`, title: `خدتي ${pill.name}؟ 💊`, body: 'لو خدتيها دوسي «خدتها» عشان مفكّركيش تاني يا {nick} 🤍', url: '/#/pills' })
     }
   }
 

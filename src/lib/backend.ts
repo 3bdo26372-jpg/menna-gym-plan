@@ -29,11 +29,13 @@ export interface Backend {
   addPeriod(startDate: string, endDate?: string): Promise<AppState>
   endPeriod(id: number, endDate: string): Promise<AppState>
   deletePeriod(id: number): Promise<AppState>
-  addPill(name: string, time: string): Promise<AppState>
-  updatePill(id: number, name: string, time: string): Promise<AppState>
+  /** `everyHours` when she takes it every few hours, null for once a day. */
+  addPill(name: string, time: string, everyHours: number | null): Promise<AppState>
+  updatePill(id: number, name: string, time: string, everyHours: number | null): Promise<AppState>
   /** She stops taking it from today on. */
   removePill(id: number): Promise<AppState>
-  savePillDose(date: string, pillId: number, taken: boolean): Promise<AppState>
+  /** `slot` is which of the pill's doses that day (0 for its own time). */
+  savePillDose(date: string, pillId: number, slot: number, taken: boolean): Promise<AppState>
   /** A rest day she picks (rest: true), or takes back. */
   saveRestDay(date: string, rest: boolean): Promise<AppState>
   /** `at` is when she prayed (ISO); the API uses now when it is left out. */

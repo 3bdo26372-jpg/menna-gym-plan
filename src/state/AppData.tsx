@@ -36,10 +36,10 @@ interface AppDataValue {
   addPeriod(startDate: string, endDate?: string): Promise<void>
   endPeriod(id: number, endDate: string): Promise<void>
   deletePeriod(id: number): Promise<void>
-  addPill(name: string, time: string): Promise<void>
-  updatePill(id: number, name: string, time: string): Promise<void>
+  addPill(name: string, time: string, everyHours: number | null): Promise<void>
+  updatePill(id: number, name: string, time: string, everyHours: number | null): Promise<void>
   removePill(id: number): Promise<void>
-  savePillDose(date: string, pillId: number, taken: boolean): Promise<void>
+  savePillDose(date: string, pillId: number, slot: number, taken: boolean): Promise<void>
   saveRestDay(date: string, rest: boolean): Promise<void>
   savePrayer(date: string, prayer: number, prayed: boolean, at?: string): Promise<void>
   openPrayerGift(weekStart: string, note?: string, kind?: PrayerGiftKind): Promise<void>
@@ -241,10 +241,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addPeriod: async (startDate, endDate) => void (await apply(backend.addPeriod(startDate, endDate))),
       endPeriod: async (id, endDate) => void (await apply(backend.endPeriod(id, endDate))),
       deletePeriod: async (id) => void (await apply(backend.deletePeriod(id))),
-      addPill: async (name, time) => void (await apply(backend.addPill(name, time))),
-      updatePill: async (id, name, time) => void (await apply(backend.updatePill(id, name, time))),
+      addPill: async (name, time, everyHours) => void (await apply(backend.addPill(name, time, everyHours))),
+      updatePill: async (id, name, time, everyHours) => void (await apply(backend.updatePill(id, name, time, everyHours))),
       removePill: async (id) => void (await apply(backend.removePill(id))),
-      savePillDose: async (date, pillId, taken) => void (await apply(backend.savePillDose(date, pillId, taken))),
+      savePillDose: async (date, pillId, slot, taken) => void (await apply(backend.savePillDose(date, pillId, slot, taken))),
       saveRestDay: async (date, rest) => void (await apply(backend.saveRestDay(date, rest))),
       savePrayer: async (date, prayer, prayed, at) => void (await apply(backend.savePrayer(date, prayer, prayed, at))),
       openPrayerGift: async (weekStart, note, kind) => void (await apply(backend.openPrayerGift(weekStart, note, kind))),

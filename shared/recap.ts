@@ -3,7 +3,7 @@ import { addDays } from './date'
 import { formatLitres, waterMl, WATER_TARGET_ML } from './food'
 import { NICKNAMES, withNickname } from './nicknames'
 import { isPainRest } from './period'
-import { pillsOn, pillTaken } from './pills'
+import { pillsOn, pillTakenCount, pillTimes } from './pills'
 import { WATER_GOAL_ML } from './points'
 import { PRAYERS, prayerFreeDates, prayerLog } from './prayer'
 import { DAY_TYPE_LABEL } from './program'
@@ -107,7 +107,7 @@ function foodPart(state: AppState, date: string, dayNumber: number, done: string
 function pillsPart(state: AppState, date: string, done: string[], next: string[]) {
   const pills = pillsOn(state.pills, date)
   if (!pills.length) return
-  const missing = pills.filter((pill) => !pillTaken(state.pillDoses, date, pill.id))
+  const missing = pills.filter((pill) => pillTakenCount(state.pillDoses, date, pill) < pillTimes(pill).length)
   if (!missing.length) done.push(pills.length === 1 ? `${pills[0].name} 💊` : 'البرشام كله 💊')
   else next.push(`${missing.map((pill) => pill.name).join(' و')} ماتعلّمتش امبارح. النهارده دوسي «خدتها» أول ما تاخديها 💊`)
 }

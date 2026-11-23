@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { Check, Pencil, Pill as PillIcon, Trash2 } from 'lucide-react'
 import { addDays, cairoTime, formatDateShort, sayTime } from '../../shared/date'
-import { PILL_NAME_MAX, PILL_TIME_FROM, PILL_TIME_UNTIL, pillsDue, pillsOn, pillTaken, validatePill, type Pill } from '../../shared/pills'
+import { PILL_EVERY_HOURS, PILL_NAME_MAX, PILL_TIME_FROM, PILL_TIME_UNTIL, pillsDue, pillsOn, pillTaken, pillTakenCount, pillTimes, validatePill, type Pill } from '../../shared/pills'
 import type { AppState } from '../../shared/types'
 import { useAppData } from '../state/AppData'
 import { Card, Notice } from './ui'
 
 export const sayPillTime = (time: string) => sayTime(Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)))
+
+/** "كل 8 ساعات: 2 الصبح، 10 الصبح، 6 المغرب", for a pill that repeats. */
+export const sayPillTimes = (pill: Pick<Pill, 'time' | 'everyHours'>) =>
+  `كل ${pill.everyHours} ساعات: ${[...pillTimes(pill)].sort().map(sayPillTime).join('، ')}`
 
 const failed = (caught: unknown) => (caught instanceof Error ? caught.message : 'تعذّر الحفظ')
 
@@ -15,15 +19,17 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
   const { addPill, updatePill } = useAppData()
   const [name, setName] = useState(pill?.name ?? '')
   const [time, setTime] = useState(pill?.time ?? '')
+  const [everyHours, setEveryHours] = useState<number | null>(pill?.everyHours ?? null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const draft = validatePill({ name, time })
+  const draft = validatePill({ name, time, everyHours })
   const valid = typeof draft !== 'string'
   // Said under the button so it never just greys out without a reason.
   const missing = valid ? null
     : !name.trim() ? 'اكتبي اسم البرشامة الأول'
     : !time ? 'اختاري الساعة اللي بتاخديها فيها'
     : time > PILL_TIME_UNTIL ? `آخر ميعاد ممكن ${sayPillTime(PILL_TIME_UNTIL)}، اختاري ${sayPillTime(PILL_TIME_UNTIL)} أو بعد 12 بالليل`
+    : everyHours ? `واحدة من جرعاتها هتيجي بعد ${sayPillTime(PILL_TIME_UNTIL)}، قدّمي الساعة أو أخّريها شوية`
     : null
 
   async function save() {
@@ -31,10 +37,11 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
     setBusy(true)
     setError(null)
     try {
-      if (pill) await updatePill(pill.id, draft.name, draft.time)
-      else await addPill(draft.name, draft.time)
+      if (pill) await updatePill(pill.id, draft.name, draft.time, draft.everyHours)
+      else await addPill(draft.name, draft.time, draft.everyHours)
       setName('')
       setTime('')
+      setEveryHours(null)
       onDone?.()
     } catch (caught) {
       setError(failed(caught))
@@ -53,6 +60,14 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
         <span>بتاخديها الساعة كام؟</span>
         <input type="time" value={time} min={PILL_TIME_FROM} max={PILL_TIME_UNTIL} required onChange={(event) => setTime(event.target.value)} />
       </label>
+      <label className="field">
+        <span>بتتكرر؟</span>
+        <select value={everyHours ?? ''} onChange={(event) => setEveryHours(event.target.value ? Number(event.target.value) : null)}>
+          <option value="">مرة واحدة في اليوم</option>
+          {PILL_EVERY_HOURS.map((hours) => <option key={hours} value={hours}>كل {hours} ساعات</option>)}
+        </select>
+      </label>
+      {typeof draft !== 'string' && draft.everyHours && <p className="muted small">هفكرك بيها {sayPillTimes(draft)}</p>}
       <div className="sleep-actions">
         <button type="submit" className="button primary" disabled={!valid || busy}>{busy ? 'لحظة…' : pill ? 'احفظي' : 'ضيفيها'}</button>
         {onDone && <button type="button" className="link-button" onClick={onDone}>إلغاء</button>}
@@ -63,14 +78,17 @@ export function PillForm({ pill, onDone }: { pill?: Pill; onDone?: () => void })
   )
 }
 
-/** One pill on a day: its time and "خدتها"; on the pills page also changing or removing it. */
-export function PillRow({ state, date, pill, editable = false }: { state: AppState; date: string; pill: Pill; editable?: boolean }) {
+/**
+ * One dose on a day: its time and "خدتها"; on the pills page its first dose
+ * (slot 0) also has changing or removing the pill.
+ */
+export function PillRow({ state, date, pill, slot = 0, time = pill.time, editable = false }: { state: AppState; date: string; pill: Pill; slot?: number; time?: string; editable?: boolean }) {
   const { savePillDose, removePill } = useAppData()
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const taken = pillTaken(state.pillDoses, date, pill.id)
+  const taken = pillTaken(state.pillDoses, date, pill.id, slot)
 
   async function run(action: () => Promise<void>) {
     setBusy(true)
@@ -90,12 +108,12 @@ export function PillRow({ state, date, pill, editable = false }: { state: AppSta
       <span aria-hidden="true">💊</span>
       <div>
         <strong>{pill.name}</strong>
-        <small>الساعة {sayPillTime(pill.time)}</small>
+        <small>الساعة {sayPillTime(time)}{pill.everyHours ? ` · كل ${pill.everyHours} ساعات` : ''}</small>
       </div>
       {taken
-        ? <button type="button" className="chip soft" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, false))} aria-label={`إلغاء: ${pill.name} اتاخدت`}><Check /> خدتيها</button>
-        : <button type="button" className="button primary small-button" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, true))}><Check /> {busy ? 'لحظة…' : 'خدتها'}</button>}
-      {editable && (
+        ? <button type="button" className="chip soft" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, slot, false))} aria-label={`إلغاء: ${pill.name} اتاخدت`}><Check /> خدتيها</button>
+        : <button type="button" className="button primary small-button" disabled={busy} onClick={() => void run(() => savePillDose(date, pill.id, slot, true))}><Check /> {busy ? 'لحظة…' : 'خدتها'}</button>}
+      {editable && slot === 0 && (
         <div className="pill-tools">
           <button type="button" className="link-button" onClick={() => setEditing(true)}><Pencil /> غيّري</button>
           {confirming
@@ -119,7 +137,7 @@ export function PillsCard({ state }: { state: AppState }) {
   return (
     <Card className="soft-card">
       <h2 className="card-title"><PillIcon /> وقت البرشام 💊</h2>
-      <ul className="pill-list">{due.map((pill) => <PillRow key={pill.id} state={state} date={state.today} pill={pill} />)}</ul>
+      <ul className="pill-list">{due.map((dose) => <PillRow key={`${dose.pill.id}-${dose.slot}`} state={state} date={state.today} pill={dose.pill} slot={dose.slot} time={dose.time} />)}</ul>
     </Card>
   )
 }
@@ -134,7 +152,11 @@ export function PillHistory({ state, days }: { state: AppState; days: number }) 
       {dates.map((date) => (
         <li key={date}>
           <strong>{formatDateShort(date)}</strong>
-          {pillsOn(state.pills, date).map((pill) => <span key={pill.id}>{pill.name} {pillTaken(state.pillDoses, date, pill.id) ? '✅' : '—'}</span>)}
+          {pillsOn(state.pills, date).map((pill) => {
+            const count = pillTimes(pill).length
+            const taken = pillTakenCount(state.pillDoses, date, pill)
+            return <span key={pill.id}>{pill.name} {taken === count ? '✅' : count > 1 ? `${taken}/${count}` : '—'}</span>
+          })}
         </li>
       ))}
     </ul>

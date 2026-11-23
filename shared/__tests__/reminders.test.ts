@@ -38,6 +38,9 @@ describe('push reminders', () => {
     expect(waterPlan(null)[0]).toBe(12 * 60)
     expect(sayTime(16 * 60 + 30)).toBe('4:30 العصر')
     expect(sayTime(21 * 60)).toBe('9 بالليل')
+    expect(sayTime(0)).toBe('12 بالليل')
+    expect(sayTime(2 * 60)).toBe('2 بالليل')
+    expect(sayTime(8 * 60)).toBe('8 الصبح')
   })
 
   it('sends each glass once when it is due, says how many are left and when the next one is', () => {
@@ -110,6 +113,15 @@ describe('push reminders', () => {
       expect(pills(dueReminders(state({}, { pills: [{ ...list[0], removedOn: today }] }), '16:15', none, ''))).toEqual([])
       expect(pills(dueReminders(state({}, { pills: [] }), '18:00', none, ''))).toEqual([])
       expect(pills(dueReminders(state(), '18:00', none, ''))).toEqual([])
+    })
+
+    it('reminds her of each dose of a pill that repeats, each on its own', () => {
+      const every = [{ id: 9, name: 'مضاد', time: '08:00', addedOn: '2026-10-01', removedOn: null, everyHours: 8 }]
+      expect(pills(dueReminders(state({}, { pills: every }), '08:00', none, ''))).toEqual(['pill-9'])
+      expect(pills(dueReminders(state({}, { pills: every }), '16:00', new Set(['pill-9', 'pill-9-again']), ''))).toEqual(['pill-9-1'])
+      expect(pills(dueReminders(state({}, { pills: every }), '16:45', new Set(['pill-9', 'pill-9-again', 'pill-9-1']), ''))).toEqual(['pill-9-1-again'])
+      const took = [{ date: today, pillId: 9, slot: 1, takenAt: '' }]
+      expect(pills(dueReminders(state({}, { pills: every, pillDoses: took }), '16:45', new Set(['pill-9', 'pill-9-again', 'pill-9-1']), ''))).toEqual([])
     })
   })
 })

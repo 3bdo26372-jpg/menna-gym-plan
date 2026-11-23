@@ -84,10 +84,10 @@ export function cairoTime(at: Date = new Date()): string {
   return cairoClock.format(at)
 }
 
-/** "4:30 العصر", "11 الصبح", "9:15 بالليل", from minutes after midnight. */
+/** "4:30 العصر", "11 الصبح", "9:15 بالليل", "12 بالليل", from minutes after midnight. */
 export function sayTime(minutes: number) {
   const hour = Math.floor(minutes / 60) % 24
   const minute = minutes % 60
-  const part = hour < 12 ? 'الصبح' : hour < 15 ? 'الضهر' : hour < 18 ? 'العصر' : hour < 20 ? 'المغرب' : 'بالليل'
+  const part = hour < 4 ? 'بالليل' : hour < 12 ? 'الصبح' : hour < 15 ? 'الضهر' : hour < 18 ? 'العصر' : hour < 20 ? 'المغرب' : 'بالليل'
   return `${hour % 12 || 12}${minute ? `:${String(minute).padStart(2, '0')}` : ''} ${part}`
 }
