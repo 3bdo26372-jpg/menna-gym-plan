@@ -9,7 +9,9 @@ describe('pills', () => {
     expect(validatePill({ name: '  فيتامين   د ', time: '20:00' })).toEqual({ name: 'فيتامين د', time: '20:00' })
     expect(typeof validatePill({ name: '', time: '20:00' })).toBe('string')
     expect(typeof validatePill({ name: 'x'.repeat(41), time: '20:00' })).toBe('string')
-    expect(typeof validatePill({ name: 'حديد', time: '02:00' })).toBe('string')
+    expect(validatePill({ name: 'حديد', time: '02:00' })).toEqual({ name: 'حديد', time: '02:00' })
+    expect(validatePill({ name: 'حديد', time: '00:00' })).toEqual({ name: 'حديد', time: '00:00' })
+    expect(typeof validatePill({ name: 'حديد', time: '23:50' })).toBe('string')
     expect(typeof validatePill({ name: 'حديد', time: '8pm' })).toBe('string')
   })
 

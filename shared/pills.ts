@@ -23,8 +23,12 @@ export interface PillDose {
   takenAt: string
 }
 
-/** Reminder times stay inside the day, so each one belongs to its own date. */
-export const PILL_TIME_FROM = '05:00'
+/**
+ * Any time of the day, after midnight too, since each day starts at Cairo
+ * midnight. The last one is 23:45, the Worker's last check before midnight
+ * (it checks every 15 minutes), so every pill gets its reminder on its own date.
+ */
+export const PILL_TIME_FROM = '00:00'
 export const PILL_TIME_UNTIL = '23:45'
 export const PILL_NAME_MAX = 40
 /** The most pills she can be taking at once. */
