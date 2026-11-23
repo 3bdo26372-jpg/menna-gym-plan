@@ -261,9 +261,9 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    addPill: (name, time) => attempt(() => {
+    addPill: (name, time, everyHours) => attempt(() => {
       const db = load()
-      const pill = validatePill({ name, time })
+      const pill = validatePill({ name, time, everyHours })
       if (typeof pill === 'string') return fail(400, pill)
       const today = cairoDate()
       if (pillsOn(db.pills, today).length >= MAX_PILLS) return fail(409, 'too many pills')
@@ -272,9 +272,9 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    updatePill: (id, name, time) => attempt(() => {
+    updatePill: (id, name, time, everyHours) => attempt(() => {
       const db = load()
-      const pill = validatePill({ name, time })
+      const pill = validatePill({ name, time, everyHours })
       if (typeof pill === 'string') return fail(400, pill)
       if (!(db.pills ?? []).some((item) => item.id === id && !item.removedOn)) return fail(404, 'pill not found')
       db.pills = (db.pills ?? []).map((item) => (item.id === id ? { ...item, ...pill } : item))
@@ -293,14 +293,14 @@ export function createLocalBackend(): Backend {
       save(db)
       return toState(db)
     }),
-    savePillDose: (date, pillId, taken) => attempt(() => {
+    savePillDose: (date, pillId, slot, taken) => attempt(() => {
       const db = load()
       const problem = checkWritableDate(date, cairoDate(), db.programStartDate)
       if (problem) return fail(400, problem)
-      const dose = validatePillDose({ pillId, taken }, db.pills, date)
+      const dose = validatePillDose({ pillId, slot, taken }, db.pills, date)
       if (typeof dose === 'string') return fail(400, dose)
-      const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.pillId !== dose.pillId)
-      db.pillDoses = dose.taken ? [...others, { date, pillId: dose.pillId, takenAt: new Date().toISOString() }] : others
+      const others = (db.pillDoses ?? []).filter((item) => item.date !== date || item.pillId !== dose.pillId || (item.slot ?? 0) !== dose.slot)
+      db.pillDoses = dose.taken ? [...others, { date, pillId: dose.pillId, slot: dose.slot, takenAt: new Date().toISOString() }] : others
       save(db)
       return toState(db)
     }),

@@ -294,7 +294,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     requireWritable(state, pill[1])
     const dose = validatePillDose(await body(request), state.pills, pill[1])
     if (typeof dose === 'string') throw new HttpError(400, dose)
-    await savePillDose(env.DB, pill[1], dose.pillId, dose.taken)
+    await savePillDose(env.DB, pill[1], dose.pillId, dose.slot, dose.taken)
     return json(await afterWrite(env, today))
   }
 

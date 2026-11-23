@@ -91,8 +91,8 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     db.prepare('SELECT id, start_date, end_date, created_at FROM periods ORDER BY start_date'),
     db.prepare('SELECT round, log_date, pick, cards, created_at FROM game_plays ORDER BY round'),
     db.prepare('SELECT id, kind, created_at FROM game_specials ORDER BY id'),
-    db.prepare('SELECT id, name, time, added_on, removed_on FROM pills ORDER BY id'),
-    db.prepare('SELECT log_date, pill_id, taken_at FROM pill_taken ORDER BY log_date, pill_id'),
+    db.prepare('SELECT id, name, time, every_hours, added_on, removed_on FROM pills ORDER BY id'),
+    db.prepare('SELECT log_date, pill_id, slot, taken_at FROM pill_taken ORDER BY log_date, pill_id, slot'),
     db.prepare('SELECT log_date, prayer, prayed_at FROM prayers ORDER BY log_date, prayer'),
     db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_gifts ORDER BY week_start'),
     db.prepare('SELECT week_start, note, status, created_at, done_at FROM prayer_big_gifts ORDER BY week_start'),
@@ -244,8 +244,9 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
     gameSpecials: specials.results.map((row): GameSpecial => ({ id: Number(row.id), kind: row.kind as SpecialKind, createdAt: String(row.created_at) })),
     pills: pillRows.results.map((row): Pill => ({
       id: Number(row.id), name: String(row.name), time: String(row.time), addedOn: String(row.added_on), removedOn: (row.removed_on as string | null) ?? null,
+      everyHours: row.every_hours === null || row.every_hours === undefined ? null : Number(row.every_hours),
     })),
-    pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), pillId: Number(row.pill_id), takenAt: String(row.taken_at) })),
+    pillDoses: pillDoses.results.map((row): PillDose => ({ date: String(row.log_date), pillId: Number(row.pill_id), slot: Number(row.slot), takenAt: String(row.taken_at) })),
     prayers: prayers.results.map((row): PrayerLog => ({ date: String(row.log_date), prayer: Number(row.prayer), prayedAt: String(row.prayed_at) })),
     prayerGifts: prayerGifts.results.map(toPrayerGift),
     prayerBigGifts: prayerBigGifts.results.map(toPrayerGift),
@@ -271,12 +272,12 @@ export async function loadState(db: D1Database, today: string): Promise<AppState
   }
 }
 
-export async function addPill(db: D1Database, pill: { name: string; time: string }, today: string) {
-  await db.prepare('INSERT INTO pills (name, time, added_on, created_at) VALUES (?, ?, ?, ?)').bind(pill.name, pill.time, today, now()).run()
+export async function addPill(db: D1Database, pill: { name: string; time: string; everyHours: number | null }, today: string) {
+  await db.prepare('INSERT INTO pills (name, time, every_hours, added_on, created_at) VALUES (?, ?, ?, ?, ?)').bind(pill.name, pill.time, pill.everyHours, today, now()).run()
 }
 
-export async function updatePill(db: D1Database, id: number, pill: { name: string; time: string }) {
-  await db.prepare('UPDATE pills SET name = ?, time = ? WHERE id = ?').bind(pill.name, pill.time, id).run()
+export async function updatePill(db: D1Database, id: number, pill: { name: string; time: string; everyHours: number | null }) {
+  await db.prepare('UPDATE pills SET name = ?, time = ?, every_hours = ? WHERE id = ?').bind(pill.name, pill.time, pill.everyHours, id).run()
 }
 
 /** From today on she no longer takes it; one added today and never taken just goes. */
@@ -293,10 +294,10 @@ export async function saveRestDay(db: D1Database, date: string, rest: boolean) {
     : db.prepare('DELETE FROM rest_days WHERE log_date = ?').bind(date)).run()
 }
 
-export async function savePillDose(db: D1Database, date: string, pillId: number, taken: boolean) {
+export async function savePillDose(db: D1Database, date: string, pillId: number, slot: number, taken: boolean) {
   await (taken
-    ? db.prepare('INSERT OR IGNORE INTO pill_taken (log_date, pill_id, taken_at) VALUES (?, ?, ?)').bind(date, pillId, now())
-    : db.prepare('DELETE FROM pill_taken WHERE log_date = ? AND pill_id = ?').bind(date, pillId)).run()
+    ? db.prepare('INSERT OR IGNORE INTO pill_taken (log_date, pill_id, slot, taken_at) VALUES (?, ?, ?, ?)').bind(date, pillId, slot, now())
+    : db.prepare('DELETE FROM pill_taken WHERE log_date = ? AND pill_id = ? AND slot = ?').bind(date, pillId, slot)).run()
 }
 
 /** Ticking a prayer again moves it to the new time. */
